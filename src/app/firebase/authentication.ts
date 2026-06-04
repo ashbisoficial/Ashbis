@@ -11,6 +11,7 @@ import {
 } from '@angular/fire/auth';
 import { Observable } from 'rxjs';
 import { User } from 'firebase/auth';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -37,7 +38,15 @@ export class AuthenticationService {
   // 🔵 LOGIN GOOGLE
   async loginWithGoogle() {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     return await signInWithPopup(this.auth, provider);
+  }
+
+  getAuthConfigStatus() {
+    return {
+      authDomain: environment.firebase.authDomain,
+      expectedAuthorizedDomains: environment.authAuthorizedDomains
+    };
   }
 
   // 🔐 RESET PASSWORD

@@ -4,11 +4,16 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
 import { provideIonicAngular, IonicRouteStrategy } from '@ionic/angular/standalone';
-import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
-import { provideAuth, getAuth } from '@angular/fire/auth';
+import { provideFirebaseApp, initializeApp, getApp } from '@angular/fire/app';
+import {
+  provideAuth,
+  initializeAuth,
+  browserLocalPersistence,
+  browserPopupRedirectResolver
+} from '@angular/fire/auth';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+import { provideStorage, getStorage } from '@angular/fire/storage';
 import { provideAppCheck, initializeAppCheck, ReCaptchaV3Provider } from '@angular/fire/app-check';
-import { getApp } from 'firebase/app';
 
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
@@ -17,8 +22,9 @@ import { environment } from './environments/environment';
 
 registerLocaleData(localeEsCl);
 
-if (!environment.production) {
-  (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+if (!environment.production && environment.appCheckDebug) {
+  (self as Window & typeof globalThis & { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean })
+    .FIREBASE_APPCHECK_DEBUG_TOKEN = environment.appCheckDebugToken || true;
 }
 
 bootstrapApplication(AppComponent, {
@@ -28,12 +34,18 @@ bootstrapApplication(AppComponent, {
     provideRouter(routes, withPreloading(PreloadAllModules)),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideAuth(() => getAuth()),
+    provideAuth(() =>
+      initializeAuth(getApp(), {
+        persistence: browserLocalPersistence,
+        popupRedirectResolver: browserPopupRedirectResolver
+      })
+    ),
     provideFirestore(() => getFirestore()),
+    provideStorage(() => getStorage()),
     provideAppCheck(() =>
       initializeAppCheck(getApp(), {
         provider: new ReCaptchaV3Provider(
-          environment.appCheckSiteKey || 'debug-placeholder'
+          environment.appCheckSiteKey
         ),
         isTokenAutoRefreshEnabled: true
       })

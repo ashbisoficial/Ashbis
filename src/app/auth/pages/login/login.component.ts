@@ -20,6 +20,8 @@ import {
   IonText,
   IonThumbnail
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { eye, eyeOff, logoGoogle } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
@@ -61,6 +63,10 @@ export class LoginComponent implements OnInit, OnDestroy {
   cargando = false;
   showPass = false;
   loginError: string | null = null;
+
+  constructor() {
+    addIcons({ eye, eyeOff, logoGoogle });
+  }
 
   ngOnInit(): void {
     this.datosForm = this.fb.group({

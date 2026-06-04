@@ -1,24 +1,5 @@
-import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-
-import { AuthRoutingModule } from './auth-routing-module';
-import { LoginComponent } from './pages/login/login.component';
-import { RegistroComponent } from './pages/registro/registro.component';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
-
-
-// @NgModule({
-//   declarations: [
-//     LoginComponent,
-//     RegistroComponent
-//   ],
-//   imports: [
-//     CommonModule,
-//     AuthRoutingModule,
-//     IonicModule,
-//     FormsModule,
-//     ReactiveFormsModule
-//   ]
-// })
-export class AuthModule { }
+// ARCHIVO ELIMINADO EN PHASE A CLEANUP
+// Este módulo Angular obsoleto no se importaba en ningún lado.
+// Proyecto utiliza componentes standalone, no módulos NgModule.
+// Fecha de eliminación: 2025-06-04
+// Ver: PHASE_A_B_REVIEW.md → CAMBIO 2

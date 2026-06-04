@@ -1,33 +1,51 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Funciones auxiliares
     function isSignedIn() {
       return request.auth != null;
     }
-
+    
     function isOwner(uid) {
       return isSignedIn() && request.auth.uid == uid;
     }
-
+    
+    function hasValidAppCheck() {
+      return request.auth.token.app_check != null;
+    }
+    
+    // Usuarios - Solo lectura/escritura propia + App Check
     match /usuarios/{userId} {
-      allow read, write: if isOwner(userId);
-
+      allow read, write: if isOwner(userId) && hasValidAppCheck();
+      
       match /veterinariasFavoritas/{docId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) && hasValidAppCheck();
       }
     }
-
+    
+    // Mascotas - Solo propias + App Check
     match /mascotas/{mascotaId} {
-      allow create: if isSignedIn()
+      allow create: if isSignedIn() && hasValidAppCheck()
         && request.resource.data.uidUsuario == request.auth.uid;
-      allow read, update, delete: if isSignedIn()
+      
+      allow read, update, delete: if isSignedIn() && hasValidAppCheck()
         && resource.data.uidUsuario == request.auth.uid;
-
+      
+      // Subcoleción de mascotas
       match /{subCollection}/{docId} {
-        allow read, write: if isSignedIn()
+        allow read, write: if isSignedIn() && hasValidAppCheck()
           && get(/databases/$(database)/documents/mascotas/$(mascotaId)).data.uidUsuario == request.auth.uid;
       }
     }
+    
+    // Rechazar todo acceso no autorizado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
 
     match /lugares/{placeId} {
       allow read: if isSignedIn();

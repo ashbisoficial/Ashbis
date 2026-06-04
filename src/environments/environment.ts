@@ -14,8 +14,10 @@ export const environment = {
     measurementId: "G-8P1SNJ4TL3"
   },
   aiProxyUrl: "/api/ai-proxy",
-  appCheckSiteKey: "",
-  appCheckDebug: true
+  appCheckSiteKey: "6LdcheUsAAAAAFPlmx2tqObzif4QvGLHr6deQhSS",
+  appCheckDebug: true,
+  appCheckDebugToken: 'debug-token-dev',
+  authAuthorizedDomains: ['localhost', '127.0.0.1']
 };
  
 /*

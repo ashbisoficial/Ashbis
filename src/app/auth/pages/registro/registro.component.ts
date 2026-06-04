@@ -33,7 +33,7 @@ import {
   IonThumbnail
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { eyeOffOutline, eyeOutline } from 'ionicons/icons';
+import { eye, eyeOff } from 'ionicons/icons';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
 import { Models } from 'src/app/models/models';
@@ -103,7 +103,7 @@ export class RegistroComponent implements OnInit {
   );
 
   constructor() {
-    addIcons({ eyeOutline, eyeOffOutline });
+    addIcons({ eye, eyeOff });
   }
 
   ngOnInit(): void {}

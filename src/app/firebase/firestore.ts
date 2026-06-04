@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Firestore, collection, collectionData, deleteDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc, docData, addDoc } from '@angular/fire/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
 import { Observable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { query, where, orderBy, CollectionReference } from '@angular/fire/firestore';
@@ -87,6 +87,7 @@ export type VeterinariaFavorita = {
 export class FirestoreService {
 
   firestore: Firestore = inject(Firestore);
+  private storage: Storage = inject(Storage);
   private auth: Auth = inject(Auth);
   private security = inject(SecurityService);
 
@@ -111,12 +112,6 @@ export class FirestoreService {
     return dataDoc.id;
   }
 
-  createDocumentID(data: any, enlace: string, idDoc: string) {
-    const document = doc(this.firestore, `${enlace}/${idDoc}`);
-    return setDoc(document, data);
-  }
-
-  createIdDoc() { return uuidv4(); }
   createId(): string { return uuidv4(); }
 
   deleteDocumentID(enlace: string, idDoc: string) {
@@ -162,11 +157,10 @@ export class FirestoreService {
   }
 
   async uploadPetPhotos(uid: string, petId: string, files: File[]): Promise<string[]> {
-    const storage = getStorage();
     const urls: string[] = [];
     for (const f of files) {
       const path = `mascotas/${uid}/${petId}/galeria/${Date.now()}-${f.name}`;
-      const r = ref(storage, path);
+      const r = ref(this.storage, path);
       await uploadBytes(r, f);
       urls.push(await getDownloadURL(r));
     }
@@ -184,8 +178,7 @@ export class FirestoreService {
   }
 
   async deletePhotoFromStorage(url: string): Promise<void> {
-    const storage = getStorage();
-    const r = ref(storage, url);
+    const r = ref(this.storage, url);
     await deleteObject(r);
   }
 
@@ -247,16 +240,14 @@ export class FirestoreService {
   }
 
   async uploadExamenFile(uid: string, petId: string, examenId: string, file: File, kind: 'orden' | 'resultado'): Promise<string> {
-    const storage = getStorage();
     const path = `mascotas/${uid}/${petId}/examenes/${examenId}/${kind}-${Date.now()}-${file.name}`;
-    const r = ref(storage, path);
+    const r = ref(this.storage, path);
     await uploadBytes(r, file);
     return getDownloadURL(r);
   }
 
   async removeExamenFileByUrl(url: string): Promise<void> {
-    const storage = getStorage();
-    await deleteObject(ref(storage, url));
+    await deleteObject(ref(this.storage, url));
   }
 
   // ── Medicamentos ──────────────────────────────────────

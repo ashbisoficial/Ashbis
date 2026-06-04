@@ -1,6 +1,9 @@
 rules_version = '2';
+
 service firebase.storage {
   match /b/{bucket}/o {
+    
+    // Funciones auxiliares
     function isSignedIn() {
       return request.auth != null;
     }
@@ -14,14 +17,21 @@ service firebase.storage {
     }
 
     function validSize() {
-      return request.resource.size < 5 * 1024 * 1024;
+      return request.resource.size < 5 * 1024 * 1024;  // 5MB máximo
     }
 
+    function hasValidAppCheck() {
+      return request.auth.token.app_check != null;
+    }
+
+    // Mascotas - Solo propias, solo imágenes válidas + App Check
     match /mascotas/{uid}/{allPaths=**} {
-      allow read, delete: if isOwner(uid);
-      allow create, update: if isOwner(uid) && validImageType() && validSize();
+      allow read, delete: if isOwner(uid) && hasValidAppCheck();
+      allow create, update: if isOwner(uid) && hasValidAppCheck()
+        && validImageType() && validSize();
     }
 
+    // Rechazar todo acceso no autorizado
     match /{allPaths=**} {
       allow read, write: if false;
     }

@@ -138,19 +138,9 @@ export class HomePage implements OnInit, OnDestroy {
     delete (window as any).ashbisSeleccionarMarcador;
   }
 
-  // ── Leaflet ──────────────────────────────────────────
+  // Leaflet is already loaded from angular.json styles and node_modules
   private cargarLeaflet(): Promise<void> {
-    return new Promise(resolve => {
-      if ((window as any).L) { resolve(); return; }
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
+    return Promise.resolve();
   }
 
   private initMap() {

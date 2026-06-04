@@ -83,9 +83,5 @@ export const routes: Routes = [
   {
     path: '**',
     redirectTo: 'login',
-  },
-  {
-    path: 'carnet-mascota',
-    loadComponent: () => import('./carnet-mascota/carnet-mascota.page').then( m => m.CarnetMascotaPage)
   }
 ];

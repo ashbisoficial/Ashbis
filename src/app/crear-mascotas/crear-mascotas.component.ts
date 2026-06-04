@@ -2,28 +2,21 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { getDownloadURL, getStorage, ref, uploadBytes } from '@angular/fire/storage';
+import { getDownloadURL, ref, Storage, uploadBytes } from '@angular/fire/storage';
 import {
   AlertController,
   IonAccordion,
   IonAccordionGroup,
-  IonBackButton,
   IonButton,
-  IonButtons,
-  IonCard,
-  IonCardContent,
   IonCheckbox,
   IonCol,
   IonContent,
   IonDatetime,
-  IonDatetimeButton,
   IonGrid,
-  IonHeader,
   IonIcon,
   IonImg,
   IonInput,
   IonItem,
-  IonItemDivider,
   IonLabel,
   IonList,
   IonModal,
@@ -31,9 +24,7 @@ import {
   IonRow,
   IonSelect,
   IonSelectOption,
-  IonSpinner,
-  IonTitle,
-  IonToolbar
+  IonSpinner
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addOutline, cameraOutline, cloudUploadOutline, closeCircle, imageOutline, imagesOutline, trashOutline } from 'ionicons/icons';
@@ -56,11 +47,6 @@ import { SecurityService } from 'src/app/services/security.service';
     IonItem,
     IonLabel,
     IonCheckbox,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
     IonContent,
     IonGrid,
     IonRow,
@@ -73,12 +59,8 @@ import { SecurityService } from 'src/app/services/security.service';
     IonButton,
     IonImg,
     IonModal,
-    IonDatetimeButton,
     IonDatetime,
     IonIcon,
-    IonCard,
-    IonCardContent,
-    IonItemDivider,
     IonSpinner
   ]
 })
@@ -86,6 +68,7 @@ export class CrearMascotasComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly firestoreService = inject(FirestoreService);
   private readonly authService = inject(AuthenticationService);
+  private readonly storage = inject(Storage);
   private readonly router = inject(Router);
   private readonly alertCtrl = inject(AlertController);
   private readonly security = inject(SecurityService);
@@ -224,13 +207,12 @@ export class CrearMascotasComponent implements OnInit {
       const user = await this.authService.getUser();
       if (!user) throw new Error('Usuario no autenticado');
       const id = this.firestoreService.createId();
-      const storage = getStorage();
 
       let fotoUrl = '';
       let galeriaUrls: string[] = [];
 
       if (this.imagenFile) {
-        const refPrincipal = ref(storage, `mascotas/${user.uid}/${id}/principal-${Date.now()}-${this.imagenFile.name}`);
+        const refPrincipal = ref(this.storage, `mascotas/${user.uid}/${id}/principal-${Date.now()}-${this.imagenFile.name}`);
         await uploadBytes(refPrincipal, this.imagenFile);
         fotoUrl = await getDownloadURL(refPrincipal);
       }
@@ -238,7 +220,7 @@ export class CrearMascotasComponent implements OnInit {
       if (this.galeriaFiles.length) {
         galeriaUrls = await Promise.all(
           this.galeriaFiles.map(async (file, idx) => {
-            const refGaleria = ref(storage, `mascotas/${user.uid}/${id}/galeria/${Date.now()}-${idx}-${file.name}`);
+            const refGaleria = ref(this.storage, `mascotas/${user.uid}/${id}/galeria/${Date.now()}-${idx}-${file.name}`);
             await uploadBytes(refGaleria, file);
             return getDownloadURL(refGaleria);
           })

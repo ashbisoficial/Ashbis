@@ -19,9 +19,10 @@ import { Models } from '../../models/models';
 // Componentes de Ionic
 import {
   IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
-  IonSegment, IonSegmentButton, IonLabel, IonList, IonItem, IonNote, IonIcon, IonSpinner, IonCard, IonCardContent, IonButton
+  IonSegment, IonSegmentButton, IonLabel, IonList, IonItem, IonNote, IonIcon, IonSpinner, IonCard, IonCardContent
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
+import { clipboardOutline, eyedropOutline, medicalOutline, pawOutline } from 'ionicons/icons';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { Router } from '@angular/router';
 
@@ -31,7 +32,7 @@ import { Router } from '@angular/router';
   imports: [
     CommonModule, NgIf, DatePipe,
     IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
-    IonSegment, IonSegmentButton, IonLabel, IonList, IonItem, IonNote, IonIcon, IonSpinner, IonCard, IonCardContent, IonButton
+    IonSegment, IonSegmentButton, IonLabel, IonList, IonItem, IonNote, IonIcon, IonSpinner, IonCard, IonCardContent
   ],
   providers: [DatePipe],
   templateUrl: './mascota-detalle.component.html',
@@ -59,6 +60,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   veterinariasFavoritas: VeterinariaFavorita[] = []; 
 
   constructor() {
+    addIcons({ medicalOutline, clipboardOutline, eyedropOutline, pawOutline });
   }
 
   ngOnInit() {

@@ -10,6 +10,13 @@ export const environment = {
     measurementId: "G-8P1SNJ4TL3"
   },
   aiProxyUrl: "/api/ai-proxy",
-  appCheckSiteKey: "",
-  appCheckDebug: false
+  appCheckSiteKey: "6LdcheUsAAAAAFPlmx2tqObzif4QvGLHr6deQhSS",
+  appCheckDebug: false,
+  appCheckDebugToken: '',
+  authAuthorizedDomains: [
+    'ashbis-ae5b2.firebaseapp.com',
+    'ashbis-ae5b2.web.app',
+    'ashbis.app',
+    '*.ashbis.app'
+  ]
 };
