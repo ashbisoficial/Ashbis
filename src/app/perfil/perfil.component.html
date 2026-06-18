@@ -1,88 +1,289 @@
 <ion-content [fullscreen]="true" class="perfil">
   <div class="container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <ion-card class="photo-card">
-        <img class="logo" [src]="user_profile.foto || defaultPhoto" alt="Foto" />
-      </ion-card>
-    </aside>
 
-    <!-- Panel de datos -->
-    <section class="panel">
-      <ion-skeleton-text *ngIf="cargando" [animated]="true" style="height: 300px;"></ion-skeleton-text>
+    <!-- ───────────── ESTADO: CARGANDO ───────────── -->
+    <div class="estado estado-carga" *ngIf="cargando">
+      <ion-skeleton-text [animated]="true" class="skeleton-avatar"></ion-skeleton-text>
+      <ion-skeleton-text [animated]="true" class="skeleton-linea" style="width: 50%;"></ion-skeleton-text>
+      <ion-skeleton-text [animated]="true" class="skeleton-linea" style="width: 30%;"></ion-skeleton-text>
+      <ion-skeleton-text [animated]="true" class="skeleton-bloque"></ion-skeleton-text>
+    </div>
 
-      <form *ngIf="!cargando && user_profile" class="form" [formGroup]="profileForm">
-        <ion-grid>
-          <ion-row>
-            <ion-col size="12" sizeMd="6">
-              <ion-item>
-                <ion-label position="stacked">Nombre</ion-label>
-                <ion-input formControlName="nombre" [readonly]="!editMode"></ion-input>
-              </ion-item>
-            </ion-col>
+    <!-- ───────────── ESTADO: SIN SESIÓN (caso borde) ───────────── -->
+    <div class="estado estado-vacio" *ngIf="!cargando && !user">
+      <ion-icon name="person-circle-outline"></ion-icon>
+      <p>Inicia sesión para ver tu perfil.</p>
+    </div>
 
-            <ion-col size="12" sizeMd="6">
-              <ion-item>
-                <ion-label position="stacked">Apellidos</ion-label>
-                <ion-input formControlName="apellido" [readonly]="!editMode"></ion-input>
-              </ion-item>
-            </ion-col>
+    <!-- ───────────── ESTADO: ERROR AL CARGAR EL PERFIL ───────────── -->
+    <ion-card class="estado-error" *ngIf="!cargando && user && cargaFallida">
+      <ion-card-content class="ion-text-center">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <p>No pudimos cargar tu perfil. Puede ser un problema de conexión o que tu cuenta no terminó de crearse correctamente.</p>
+        <ion-button (click)="reintentarCarga()" fill="outline" color="danger">
+          <ion-icon name="refresh-outline" slot="start"></ion-icon>
+          Reintentar
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
 
-            <ion-col size="12" sizeMd="6">
-              <ion-item>
-                <ion-label position="stacked">Email</ion-label>
-                <!-- Sólo lectura (proviene del Auth normalmente) -->
-                <ion-input formControlName="email" readonly></ion-input>
-              </ion-item>
-            </ion-col>
+    <!-- ───────────── ESTADO: PERFIL CARGADO ───────────── -->
+    <ng-container *ngIf="!cargando && user && user_profile && !cargaFallida">
 
-            <ion-col size="12" sizeMd="6">
-              <ion-item>
-                <ion-label position="stacked">Teléfono</ion-label>
-                <ion-input formControlName="telefono" [readonly]="!editMode" inputmode="tel"></ion-input>
-              </ion-item>
-            </ion-col>
+      <!-- Cabecera: foto + nombre + badges -->
+      <div class="perfil-header">
+        <div class="avatar-wrap">
+          <img class="avatar-img" [src]="fotoActual" alt="Foto de perfil" />
 
-            <ion-col size="12" sizeMd="6">
-              <ion-item>
-                <ion-label position="stacked">Región</ion-label>
-                <ion-input formControlName="region" [readonly]="!editMode"></ion-input>
-              </ion-item>
-            </ion-col>
+          <div class="avatar-overlay" *ngIf="subiendoFoto">
+            <ion-spinner name="crescent" color="light"></ion-spinner>
+          </div>
 
-            <ion-col size="12" sizeMd="6">
-              <ion-item>
-                <ion-label position="stacked">Dirección</ion-label>
-                <ion-input formControlName="direccion" [readonly]="!editMode"></ion-input>
-              </ion-item>
-            </ion-col>
-          </ion-row>
+          <span class="google-badge" *ngIf="user_profile.fotoOrigen === 'google'" title="Foto de tu cuenta de Google">
+            <ion-icon name="logo-google"></ion-icon>
+          </span>
 
-          <ion-row class="actions" style="margin-top: 16px;">
-            <ion-col size="12" class="ion-text-right">
-              <ion-button *ngIf="!editMode" (click)="habilitarEdicion()" fill="solid" color="danger">
-                Editar
-              </ion-button>
+          <button
+            type="button"
+            class="avatar-edit-btn"
+            (click)="abrirSelectorFoto()"
+            [disabled]="subiendoFoto"
+            aria-label="Cambiar foto de perfil"
+          >
+            <ion-icon name="camera-outline"></ion-icon>
+          </button>
 
-              <ion-button *ngIf="editMode" color="medium" (click)="cancelarEdicion()" fill="outline" class="ion-margin-end">
-                Cancelar
-              </ion-button>
+          <input
+            #fotoInput
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            hidden
+            (change)="seleccionarFoto($event)"
+          />
+        </div>
 
-              <ion-button *ngIf="editMode" color="primary" (click)="guardar()" [disabled]="profileForm.invalid" color="danger">
-                Guardar
-              </ion-button>
-            </ion-col>
-          </ion-row>
-        </ion-grid>
+        <h1 class="perfil-nombre">{{ user_profile.nombre }} {{ user_profile.apellido }}</h1>
+        <p class="perfil-email">{{ user_profile.email }}</p>
+
+        <div class="perfil-badges" *ngIf="esCuentaGoogle">
+          <ion-badge color="medium">
+            <ion-icon name="logo-google"></ion-icon>
+            Cuenta de Google
+          </ion-badge>
+        </div>
+
+        <ion-button
+          *ngIf="puedeUsarFotoDeGoogle"
+          fill="clear"
+          size="small"
+          class="btn-link"
+          (click)="usarFotoDeGoogle()"
+          [disabled]="subiendoFoto"
+        >
+          <ion-icon name="logo-google" slot="start"></ion-icon>
+          Usar foto de Google
+        </ion-button>
+      </div>
+
+      <!-- Formulario -->
+      <form class="form" [formGroup]="profileForm" (ngSubmit)="guardar()">
+
+        <ion-card class="seccion-card">
+          <ion-card-header>
+            <ion-card-title>Datos personales</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-grid>
+              <ion-row>
+                <ion-col size="12" sizeMd="6">
+                  <ion-item>
+                    <ion-icon name="person-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Nombre</ion-label>
+                    <ion-input
+                      formControlName="nombre"
+                      [readonly]="!editMode"
+                      (ionBlur)="profileForm.get('nombre')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getError('nombre')">{{ getError('nombre') }}</ion-note>
+                </ion-col>
+
+                <ion-col size="12" sizeMd="6">
+                  <ion-item>
+                    <ion-icon name="person-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Apellido</ion-label>
+                    <ion-input
+                      formControlName="apellido"
+                      [readonly]="!editMode"
+                      (ionBlur)="profileForm.get('apellido')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getError('apellido')">{{ getError('apellido') }}</ion-note>
+                </ion-col>
+
+                <ion-col size="12" sizeMd="6">
+                  <ion-item>
+                    <ion-icon name="mail-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Email</ion-label>
+                    <ion-input formControlName="email" readonly></ion-input>
+                  </ion-item>
+                  <ion-note color="medium">Tu correo no se puede modificar.</ion-note>
+                </ion-col>
+
+                <ion-col size="12" sizeMd="6">
+                  <ion-item>
+                    <ion-icon name="call-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Teléfono</ion-label>
+                    <ion-input
+                      formControlName="telefono"
+                      [readonly]="!editMode"
+                      inputmode="tel"
+                      placeholder="+56 9 1234 5678"
+                      (ionBlur)="profileForm.get('telefono')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getError('telefono')">{{ getError('telefono') }}</ion-note>
+                </ion-col>
+
+                <ion-col size="12" sizeMd="6">
+                  <ion-item>
+                    <ion-icon name="calendar-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Fecha de nacimiento</ion-label>
+                    <ion-input
+                      type="date"
+                      formControlName="fechaNacimiento"
+                      [readonly]="!editMode"
+                      (ionBlur)="profileForm.get('fechaNacimiento')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getError('fechaNacimiento')">{{ getError('fechaNacimiento') }}</ion-note>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="seccion-card">
+          <ion-card-header>
+            <ion-card-title>Ubicación</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-grid>
+              <ion-row>
+                <ion-col size="12" sizeMd="6">
+                  <ion-item>
+                    <ion-icon name="location-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Región</ion-label>
+                    <ion-select
+                      formControlName="region"
+                      interface="popover"
+                      placeholder="Selecciona una región"
+                      [disabled]="!editMode"
+                    >
+                      <ion-select-option value="I">Tarapacá</ion-select-option>
+                      <ion-select-option value="II">Antofagasta</ion-select-option>
+                      <ion-select-option value="III">Atacama</ion-select-option>
+                      <ion-select-option value="IV">Coquimbo</ion-select-option>
+                      <ion-select-option value="V">Valparaíso</ion-select-option>
+                      <ion-select-option value="RM">Región Metropolitana</ion-select-option>
+                      <ion-select-option value="VI">O'Higgins</ion-select-option>
+                      <ion-select-option value="VII">Maule</ion-select-option>
+                      <ion-select-option value="XVI">Ñuble</ion-select-option>
+                      <ion-select-option value="VIII">Biobío</ion-select-option>
+                      <ion-select-option value="IX">La Araucanía</ion-select-option>
+                      <ion-select-option value="X">Los Lagos</ion-select-option>
+                      <ion-select-option value="XI">Aysén</ion-select-option>
+                      <ion-select-option value="XII">Magallanes y Antártica Chilena</ion-select-option>
+                      <ion-select-option value="XV">Arica y Parinacota</ion-select-option>
+                    </ion-select>
+                  </ion-item>
+                </ion-col>
+
+                <ion-col size="12" sizeMd="6">
+                  <ion-item>
+                    <ion-icon name="location-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Comuna</ion-label>
+                    <ion-input
+                      formControlName="comuna"
+                      [readonly]="!editMode"
+                      (ionBlur)="profileForm.get('comuna')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getError('comuna')">{{ getError('comuna') }}</ion-note>
+                </ion-col>
+
+                <ion-col size="12">
+                  <ion-item>
+                    <ion-icon name="location-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Dirección</ion-label>
+                    <ion-input
+                      formControlName="direccion"
+                      [readonly]="!editMode"
+                      (ionBlur)="profileForm.get('direccion')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getError('direccion')">{{ getError('direccion') }}</ion-note>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="seccion-card">
+          <ion-card-header>
+            <ion-card-title>Sobre mí</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-item>
+              <ion-icon name="document-text-outline" slot="start"></ion-icon>
+              <ion-label position="stacked">Descripción</ion-label>
+              <ion-textarea
+                formControlName="descripcion"
+                [readonly]="!editMode"
+                [autoGrow]="true"
+                rows="3"
+                placeholder="Cuéntanos algo sobre ti y tus mascotas..."
+                (ionBlur)="profileForm.get('descripcion')?.markAsTouched()"
+              ></ion-textarea>
+            </ion-item>
+            <div class="contador-row">
+              <ion-note color="danger" *ngIf="getError('descripcion')">{{ getError('descripcion') }}</ion-note>
+              <ion-note [color]="descripcionLength > maxDescripcionLen ? 'danger' : 'medium'" class="contador">
+                {{ descripcionLength }}/{{ maxDescripcionLen }}
+              </ion-note>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Acciones -->
+        <div class="acciones">
+          <ion-button *ngIf="!editMode" type="button" (click)="habilitarEdicion()" fill="solid" color="danger">
+            <ion-icon name="create-outline" slot="start"></ion-icon>
+            Editar perfil
+          </ion-button>
+
+          <ng-container *ngIf="editMode">
+            <ion-button type="button" color="medium" fill="outline" (click)="cancelarEdicion()" [disabled]="guardando">
+              <ion-icon name="close-outline" slot="start"></ion-icon>
+              Cancelar
+            </ion-button>
+            <ion-button type="submit" color="danger" fill="solid" [disabled]="profileForm.invalid || guardando">
+              <ion-spinner *ngIf="guardando" name="crescent"></ion-spinner>
+              <ng-container *ngIf="!guardando">
+                <ion-icon name="checkmark-outline" slot="start"></ion-icon>
+                Guardar cambios
+              </ng-container>
+            </ion-button>
+          </ng-container>
+        </div>
       </form>
-    </section>
-     <!-- 🚪 Botón de Cerrar Sesión -->
-      <ion-button class="btn-cerrar"
-        expand="block"
-        (click)="logout()"
-      >
-        Cerrar Sesión
+
+      <!-- 🚪 Botón de Cerrar Sesión -->
+      <ion-button class="btn-cerrar" expand="block" (click)="logout()">
+        <ion-icon name="log-out-outline" slot="start"></ion-icon>
+        Cerrar sesión
       </ion-button>
 
+    </ng-container>
   </div>
 </ion-content>

@@ -9,11 +9,18 @@ import {
 } from '@ionic/angular/standalone';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FirestoreService, Mascota, Cita, Vacuna, Examen, Medicamento } from '../firebase/firestore';
+import { NotificationService } from '../services/notification.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { Auth } from '@angular/fire/auth';
 import { LOCALE_ID } from '@angular/core';
 import { deleteField } from 'firebase/firestore';
+import { addIcons } from 'ionicons';
+import {
+  addOutline, closeCircleOutline, cloudUploadOutline, createOutline,
+  eyeOutline, imagesOutline, trashOutline,
+  checkmarkDoneOutline, checkboxOutline
+} from 'ionicons/icons';
 
 type Section =
   | 'info'
@@ -46,6 +53,7 @@ export class MascotaEditarComponent implements OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fs = inject(FirestoreService);
+  private notificationService = inject(NotificationService);
   private fb = inject(FormBuilder);
   private auth = inject(Auth);
 
@@ -114,6 +122,12 @@ export class MascotaEditarComponent implements OnDestroy {
 
   
   constructor() {
+    addIcons({
+      addOutline, closeCircleOutline, cloudUploadOutline, createOutline,
+      eyeOutline, imagesOutline, trashOutline,
+      checkmarkDoneOutline, checkboxOutline
+    });
+
     const id = this.route.snapshot.paramMap.get('id')!;
     this.sub = this.fs.getPetById(id).subscribe(doc => {
       if (doc) {
@@ -371,9 +385,11 @@ export class MascotaEditarComponent implements OnDestroy {
     const fi = new Date(c.fechaInicio);
     const ff = c.fechaFin ? new Date(c.fechaFin) : null;
 
-    const isoFecha = new Date(fi.getFullYear(), fi.getMonth(), fi.getDate()).toISOString();
-    const horaInicio = fi.toISOString().substring(11, 16); // HH:mm
-    const horaFin = ff ? ff.toISOString().substring(11, 16) : '';
+    // Construimos la fecha "solo día" en horario LOCAL (no UTC) para que
+    // el ion-datetime del formulario muestre el mismo día que se guardó.
+    const isoFecha = new Date(fi.getFullYear(), fi.getMonth(), fi.getDate(), 12, 0, 0).toISOString();
+    const horaInicio = `${String(fi.getHours()).padStart(2, '0')}:${String(fi.getMinutes()).padStart(2, '0')}`;
+    const horaFin = ff ? `${String(ff.getHours()).padStart(2, '0')}:${String(ff.getMinutes()).padStart(2, '0')}` : '';
 
     this.editandoCitaId.set(c.id || null);
     this.citaForm = this.fb.group({
@@ -419,13 +435,19 @@ export class MascotaEditarComponent implements OnDestroy {
 
     try {
       const editId = this.editandoCitaId();
+      let citaId: string;
+
       if (editId) {
         await this.fs.updateCita(petId, editId, payload);
+        citaId = editId;
         this.showToast('Cita actualizada.');
       } else {
-        await this.fs.addCita(petId, payload);
+        const ref = await this.fs.addCita(petId, payload);
+        citaId = ref.id;
         this.showToast('Cita creada.');
       }
+
+      await this.programarRecordatorioCita(citaId, payload);
       this.citaModalOpen.set(false);
     } catch (e) {
       console.error(e);
@@ -433,10 +455,35 @@ export class MascotaEditarComponent implements OnDestroy {
     }
   }
 
+  /**
+   * Programa un recordatorio local 1 hora antes de la cita.
+   * Si el usuario no ha dado permiso de notificaciones, se lo solicita
+   * en este momento (no se molesta con esto hasta que realmente lo necesita).
+   */
+  private async programarRecordatorioCita(citaId: string, cita: Cita): Promise<void> {
+    const numId = this.notificationService.hashIdToNumber(`cita-${citaId}`);
+    await this.notificationService.cancel(numId);
+
+    const tienePermiso = await this.notificationService.hasPermission()
+      || await this.notificationService.requestPermission();
+    if (!tienePermiso) return;
+
+    const fechaCita = new Date(cita.fechaInicio);
+    const recordatorio = new Date(fechaCita.getTime() - 60 * 60 * 1000); // 1h antes
+
+    await this.notificationService.schedule({
+      id: numId,
+      title: `Cita: ${cita.titulo}`,
+      body: `${this.mascota()?.nombre || 'Tu mascota'} tiene una cita en 1 hora${cita.lugar ? ' en ' + cita.lugar : ''}.`,
+      at: recordatorio
+    });
+  }
+
   async borrarCita(c: Cita) {
     if (!this.mascota()?.id || !c.id) return;
     try {
       await this.fs.deleteCita(this.mascota()!.id, c.id);
+      await this.notificationService.cancel(this.notificationService.hashIdToNumber(`cita-${c.id}`));
       this.showToast('Cita eliminada.');
     } catch (e) {
       console.error(e);
@@ -446,9 +493,12 @@ export class MascotaEditarComponent implements OnDestroy {
 
   // Combina fecha (ISO) + hora (HH:mm) a ISO en zona local
   private combineFechaHora(fechaISO: string, hhmm: string): string {
-    const f = new Date(fechaISO);
+    // Extraemos año/mes/día directamente del string ISO (YYYY-MM-DD...)
+    // para evitar que new Date(fechaISO) interprete la fecha en UTC
+    // y termine desplazando el día en zonas horarias negativas (Chile, etc).
+    const [yyyy, mm, dd] = fechaISO.substring(0, 10).split('-').map(n => parseInt(n, 10));
     const [h, m] = hhmm.split(':').map((n: string) => parseInt(n, 10));
-    f.setHours(h, m, 0, 0);
+    const f = new Date(yyyy, mm - 1, dd, h, m, 0, 0); // construido en horario LOCAL
     return f.toISOString();
   }
 
@@ -492,13 +542,19 @@ export class MascotaEditarComponent implements OnDestroy {
 
     try {
       const editId = this.editandoVacunaId();
+      let vacunaId: string;
+
       if (editId) {
         await this.fs.updateVacuna(petId, editId, payload);
+        vacunaId = editId;
         this.showToast('Vacuna actualizada.');
       } else {
-        await this.fs.addVacuna(petId, payload);
+        const ref = await this.fs.addVacuna(petId, payload);
+        vacunaId = ref.id;
         this.showToast('Vacuna registrada.');
       }
+
+      await this.programarRecordatorioVacuna(vacunaId, payload);
       this.vacunaModalOpen.set(false);
     } catch (e) {
       console.error(e);
@@ -506,10 +562,36 @@ export class MascotaEditarComponent implements OnDestroy {
     }
   }
 
+  /**
+   * Programa un recordatorio el día de la próxima dosis (9:00 AM),
+   * si se especificó una "próxima fecha".
+   */
+  private async programarRecordatorioVacuna(vacunaId: string, vacuna: Vacuna): Promise<void> {
+    const numId = this.notificationService.hashIdToNumber(`vacuna-${vacunaId}`);
+    await this.notificationService.cancel(numId);
+
+    if (!vacuna.proximaFecha) return;
+
+    const tienePermiso = await this.notificationService.hasPermission()
+      || await this.notificationService.requestPermission();
+    if (!tienePermiso) return;
+
+    const [yyyy, mm, dd] = vacuna.proximaFecha.substring(0, 10).split('-').map(n => parseInt(n, 10));
+    const recordatorio = new Date(yyyy, mm - 1, dd, 9, 0, 0); // 9:00 AM ese día
+
+    await this.notificationService.schedule({
+      id: numId,
+      title: `Vacuna pendiente: ${vacuna.tipo}`,
+      body: `Hoy le corresponde la próxima dosis de ${vacuna.tipo} a ${this.mascota()?.nombre || 'tu mascota'}.`,
+      at: recordatorio
+    });
+  }
+
   async borrarVacuna(v: Vacuna) {
     if (!this.mascota()?.id || !v.id) return;
     try {
       await this.fs.deleteVacuna(this.mascota()!.id, v.id);
+      await this.notificationService.cancel(this.notificationService.hashIdToNumber(`vacuna-${v.id}`));
       this.showToast('Vacuna eliminada.');
     } catch (e) {
       console.error(e);
@@ -742,13 +824,19 @@ async onUploadResultado(ev: Event, e: Examen) {
 
     try {
       const editId = this.editandoMedicamentoId();
+      let medicamentoId: string;
+
       if (editId) {
         await this.fs.updateMedicamento(petId, editId, payload);
+        medicamentoId = editId;
         this.showToast('Medicamento actualizado.');
       } else {
-        await this.fs.addMedicamento(petId, payload);
+        const ref = await this.fs.addMedicamento(petId, payload);
+        medicamentoId = ref.id;
         this.showToast('Medicamento registrado.');
       }
+
+      await this.programarRecordatorioMedicamento(medicamentoId, payload);
       this.medicamentoModalOpen.set(false);
     } catch (e) {
       console.error(e);
@@ -756,10 +844,36 @@ async onUploadResultado(ev: Event, e: Examen) {
     }
   }
 
+  /**
+   * Programa un recordatorio el día en que termina el tratamiento
+   * (fechaFin, a las 9:00 AM), si fue especificada.
+   */
+  private async programarRecordatorioMedicamento(medicamentoId: string, medicamento: any): Promise<void> {
+    const numId = this.notificationService.hashIdToNumber(`medicamento-${medicamentoId}`);
+    await this.notificationService.cancel(numId);
+
+    if (!medicamento.fechaFin) return;
+
+    const tienePermiso = await this.notificationService.hasPermission()
+      || await this.notificationService.requestPermission();
+    if (!tienePermiso) return;
+
+    const [yyyy, mm, dd] = String(medicamento.fechaFin).substring(0, 10).split('-').map((n: string) => parseInt(n, 10));
+    const recordatorio = new Date(yyyy, mm - 1, dd, 9, 0, 0);
+
+    await this.notificationService.schedule({
+      id: numId,
+      title: `Fin de tratamiento: ${medicamento.nombre}`,
+      body: `Hoy termina el tratamiento con ${medicamento.nombre} para ${this.mascota()?.nombre || 'tu mascota'}.`,
+      at: recordatorio
+    });
+  }
+
   async borrarMedicamento(m: Medicamento) {
     if (!this.mascota()?.id || !m.id) return;
     try {
       await this.fs.deleteMedicamento(this.mascota()!.id, m.id);
+      await this.notificationService.cancel(this.notificationService.hashIdToNumber(`medicamento-${m.id}`));
       this.showToast('Medicamento eliminado.');
     } catch (e) {
       console.error(e);

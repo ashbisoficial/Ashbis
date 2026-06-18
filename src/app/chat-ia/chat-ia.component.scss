@@ -1,246 +1,102 @@
-/* ===========================
-   HEADER
-=========================== */
-.chat-header {
-  --background: #000000;
-  border-bottom: 2px solid #8b0808;
+.chat-content {
+  --background: #f5f5f5;
 }
 
-.chat-title {
-  text-align: center;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-/* ===========================
-   COLOR GENERAL
-=========================== */
-ion-content {
-  --background: #0a0a0a;
-}
-
-ion-label,
-ion-title {
-  color: #ffffff !important;
-}
-
-/* ===========================
-   LISTA DE MENSAJES
-=========================== */
-ion-list {
-  background: transparent !important;
-  padding-bottom: 80px; /* 👈 espacio para input */
-}
-
-.mensaje-container {
-  width: 100%;
+// ── Contenedor de mensajes ───────────────────────────────────────────────────
+.messages-container {
   display: flex;
-  margin: 10px 0;
+  flex-direction: column;
+  padding: 16px;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
+  padding-bottom: 8px;
 }
 
-/* Usuario */
-.mensaje-container.user {
-  justify-content: flex-end;
-}
+// ── Burbujas ─────────────────────────────────────────────────────────────────
+.message-bubble {
+  display: flex;
+  max-width: 80%;
 
-/* Bot */
-.mensaje-container.bot {
-  justify-content: flex-start;
-}
+  &.user {
+    align-self: flex-end;
 
-/* ===========================
-   BURBUJAS (MEJORADAS)
-=========================== */
-.burbuja {
-  max-width: 75%;
-  padding: 12px 14px;
-  border-radius: 18px;
-  font-size: 14px;
-  line-height: 1.5;
-  animation: burbuja 0.25s ease-out;
-}
+    .bubble-inner {
+      background: var(--ion-color-primary);
+      color: white;
+      border-radius: 18px 18px 4px 18px;
+    }
 
-/* Usuario */
-.mensaje-container.user .burbuja {
-  background: linear-gradient(135deg, #8b0808, #b91c1c);
-  color: #ffffff;
-  border-bottom-right-radius: 6px;
-}
-
-/* Bot */
-.mensaje-container.bot .burbuja {
-  background: #1a1a1a;
-  color: #ffffff;
-  border-bottom-left-radius: 6px;
-}
-
-/* Animación */
-@keyframes burbuja {
-  0% {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
+    .hora { color: rgba(255,255,255,0.7); }
   }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+
+  &.ia {
+    align-self: flex-start;
+
+    .bubble-inner {
+      background: white;
+      color: #333;
+      border-radius: 18px 18px 18px 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .hora { color: #999; }
   }
 }
 
-/* ===========================
-   INPUT CHAT (TIPO WHATSAPP)
-=========================== */
-.input-chat {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
+.bubble-inner {
+  padding: 10px 14px;
+  max-width: 100%;
 
+  .texto {
+    margin: 0 0 4px;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .hora {
+    font-size: 0.72rem;
+    display: block;
+    text-align: right;
+  }
+}
+
+.loading-bubble {
+  padding: 8px 14px;
+}
+
+// ── Panel de chips ────────────────────────────────────────────────────────────
+.chips-panel {
+  padding: 12px 16px;
+  background: white;
+  border-top: 1px solid #eee;
+
+  .chips-hint {
+    margin: 0 0 10px;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+.chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// ── Panel de input ────────────────────────────────────────────────────────────
+.input-panel {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 10px 12px;
+  background: white;
+  border-top: 1px solid #eee;
 
-  padding: 10px;
-  background: #000000;
-  border-top: 1px solid #222;
-}
-
-.input-chat ion-item {
-  flex: 1;
-  --background: #1a1a1a;
-  border-radius: 20px;
-  padding-left: 10px;
-}
-
-.input-chat ion-input {
-  color: white;
-}
-
-/* Botón enviar */
-.input-chat ion-button {
-  --background: #8b0808;
-  --color: #ffffff;
-
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* ===========================
-   BOTONES (PASOS)
-=========================== */
-.btn-ashbis {
-  --background: #8b0808 !important;
-  --background-hover: #b91c1c !important;
-  --background-activated: #991b1b !important;
-
-  --color: #ffffff !important;
-
-  --border-radius: 20px;
-  font-weight: 600;
-}
-
-/* ===========================
-   BOTÓN REINICIAR
-=========================== */
-.reset-btn {
-  --background: #ffffff;
-  --color: #000000;
-
-  --border-radius: 30px !important;
-  font-weight: bold;
-  height: 45px;
-
-  width: 90%;
-  max-width: 250px;
-  margin: 20px auto;
-
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* ===========================
-   LOADER
-=========================== */
-.loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  margin: 10px 0;
-  color: #ccc;
-  font-size: 14px;
-}
-
-/* ===========================
-   AVATAR BOT
-=========================== */
-.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #8b0808;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 16px;
-  margin-right: 6px;
-}
-
-/* ===========================
-   TEXTO + HORA
-=========================== */
-.burbuja {
-  display: flex;
-  flex-direction: column;
-}
-
-.texto {
-  margin-bottom: 4px;
-}
-
-.hora {
-  font-size: 10px;
-  opacity: 0.6;
-  text-align: right;
-}
-
-/* ===========================
-   TYPING ANIMATION
-=========================== */
-.typing {
-  display: flex;
-  gap: 4px;
-}
-
-.typing span {
-  width: 6px;
-  height: 6px;
-  background: #ccc;
-  border-radius: 50%;
-  animation: typing 1.2s infinite;
-}
-
-.typing span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes typing {
-  0%, 80%, 100% {
-    transform: scale(0.6);
-    opacity: 0.4;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 1;
+  ion-input.chat-input {
+    flex: 1;
+    --background: #f0f0f0;
   }
 }

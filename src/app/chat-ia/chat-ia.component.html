@@ -1,88 +1,90 @@
-<ion-header>
-  <ion-toolbar class="chat-header">
+<ion-header translucent="true">
+  <ion-toolbar>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/tabs/home"></ion-back-button>
     </ion-buttons>
-
-    <ion-title class="chat-title">
-      Ashbis IA
-    </ion-title>
+    <ion-title>🐾 Ashbis IA</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="reiniciarChat()">
+        <ion-icon name="refresh-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
+<ion-content [fullscreen]="true" class="chat-content">
 
-  <!-- LISTA DE MENSAJES -->
-  <ion-list>
-    <div *ngFor="let msg of mensajes"
-         class="mensaje-container"
-         [ngClass]="msg.autor === 'Tú' ? 'user' : 'bot'">
-
-      <div class="burbuja">
-        <strong>{{ msg.autor }}:</strong> {{ msg.texto }}
+  <!-- Historial de mensajes -->
+  <div class="messages-container" #scrollContainer>
+    <div
+      *ngFor="let m of mensajes"
+      class="message-bubble"
+      [class.user]="m.autor === 'Tu'"
+      [class.ia]="m.autor === 'Ashbis IA'"
+    >
+      <div class="bubble-inner">
+        <p class="texto">{{ m.texto }}</p>
+        <span class="hora">{{ m.hora }}</span>
       </div>
-
     </div>
-  </ion-list>
 
-  <div class="mensaje-container bot" *ngIf="cargando">
-  <div class="avatar">🐾</div>
-
-  <div class="burbuja typing">
-    <span></span>
-    <span></span>
-    <span></span>
-  </div>
-</div>
-  <!-- LOADER -->
-  <div class="loader" *ngIf="cargando">
-    <ion-spinner name="dots"></ion-spinner>
-    <span style="margin-left: 8px;">Ashbis IA está pensando...</span>
+    <!-- Spinner de carga -->
+    <div *ngIf="cargando" class="message-bubble ia">
+      <div class="bubble-inner loading-bubble">
+        <ion-spinner name="dots" color="primary"></ion-spinner>
+      </div>
+    </div>
   </div>
 
-  <!-- PASO 1 -->
-  <div *ngIf="pasoActual === 1" class="botones">
-    <ion-button expand="block" class="btn-ashbis" (click)="seleccionarCategoria('Salud')">
-      1️⃣ Salud 🩺
-    </ion-button>
-
-    <ion-button expand="block" class="btn-ashbis" (click)="seleccionarCategoria('Alimentación')">
-      2️⃣ Alimentación 🍖
-    </ion-button>
-
-    <ion-button expand="block" class="btn-ashbis" (click)="seleccionarCategoria('Cuidados')">
-      3️⃣ Cuidados 🧴
-    </ion-button>
+  <!-- Paso 1: elegir categoría -->
+  <div *ngIf="pasoActual === 1" class="chips-panel">
+    <p class="chips-hint">Elige un tema:</p>
+    <div class="chips-grid">
+      <ion-chip
+        *ngFor="let cat of categorias"
+        (click)="seleccionarCategoria(cat)"
+        color="primary"
+        outline="true"
+      >
+        <ion-label>{{ cat.label }}</ion-label>
+      </ion-chip>
+    </div>
   </div>
 
-  <!-- PASO 2 -->
-  <div *ngIf="pasoActual === 2" class="botones">
-    <ion-button expand="block" class="btn-ashbis" (click)="seleccionarMascota('Perro')">
-      🐶 Perro
-    </ion-button>
-
-    <ion-button expand="block" class="btn-ashbis" (click)="seleccionarMascota('Gato')">
-      🐱 Gato
-    </ion-button>
+  <!-- Paso 2: elegir tipo de mascota -->
+  <div *ngIf="pasoActual === 2" class="chips-panel">
+    <p class="chips-hint">¿Qué tipo de mascota tienes?</p>
+    <div class="chips-grid">
+      <ion-chip
+        *ngFor="let tipo of tiposMascota"
+        (click)="seleccionarMascota(tipo)"
+        color="secondary"
+        outline="true"
+      >
+        <ion-label>{{ tipo.label }}</ion-label>
+      </ion-chip>
+    </div>
   </div>
 
-  <!-- INPUT FIJO ABAJO -->
-  <div *ngIf="pasoActual === 3" class="input-chat">
-
-  <ion-item lines="none">
+  <!-- Paso 3: input de pregunta -->
+  <div *ngIf="pasoActual === 3" class="input-panel">
     <ion-input
       [(ngModel)]="mensaje"
-      placeholder="Escribe tu mensaje..."
+      placeholder="Escribe tu pregunta..."
+      [disabled]="cargando"
+      (keyup.enter)="enviarPregunta()"
+      class="chat-input"
+      fill="outline"
+      shape="round"
     ></ion-input>
-  </ion-item>
-
-  <ion-button (click)="enviarPregunta()">
-    <ion-icon name="send-outline"></ion-icon>
-  </ion-button>
-
-</div>
-
-  <!-- BOTÓN REINICIAR CHAT (BLANCO) -->
-  <ion-button expand="block" class="reset-btn" (click)="reiniciarChat()">🔄 Reiniciar chat</ion-button>
+    <ion-button
+      (click)="enviarPregunta()"
+      [disabled]="!mensaje.trim() || cargando"
+      shape="round"
+      color="primary"
+    >
+      <ion-icon name="send-outline" slot="icon-only"></ion-icon>
+    </ion-button>
+  </div>
 
 </ion-content>

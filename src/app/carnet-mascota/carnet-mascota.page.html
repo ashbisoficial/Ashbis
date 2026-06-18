@@ -1,6 +1,18 @@
 <ion-content class="wallet-bg">
 
-  <div class="wallet-card">
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="loading-center">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando ficha...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!cargando && error" class="error-center">
+    <p>❌ No se encontró esta ficha veterinaria.</p>
+  </div>
+
+  <!-- Carnet -->
+  <div *ngIf="!cargando && !error && mascota" class="wallet-card">
 
     <!-- Header -->
     <div class="wallet-header">
@@ -8,45 +20,86 @@
         <h2>{{ mascota?.nombre }}</h2>
         <p>{{ mascota?.especie }} • {{ mascota?.raza }}</p>
       </div>
-
-      <img [src]="mascota?.fotoUrl || 'assets/img/logo_ashbis.jpeg'" />
+      <img [src]="mascota?.fotoUrl || 'assets/img/logo_ashbis.jpeg'" alt="foto mascota" />
     </div>
 
-    <!-- Info -->
+    <!-- Info básica -->
     <div class="wallet-body">
-      <div class="row">
-        <span>Edad</span>
-        <strong>{{ mascota?.edad }} años</strong>
-      </div>
+      <div class="row"><span>Edad</span><strong>{{ mascota?.edad ?? '—' }} años</strong></div>
+      <div class="row"><span>Sexo</span><strong>{{ mascota?.sexo || '—' }}</strong></div>
+      <div class="row"><span>Color / Desc.</span><strong>{{ mascota?.color || '—' }}</strong></div>
+      <div class="row"><span>Castrado/a</span><strong>{{ mascota?.castrado || '—' }}</strong></div>
+      <div class="row"><span>Chip</span><strong>{{ mascota?.numeroChip || 'No registrado' }}</strong></div>
+    </div>
 
-      <div class="row">
-        <span>Sexo</span>
-        <strong>{{ mascota?.sexo }}</strong>
-      </div>
-
-      <div class="row">
-        <span>Peso</span>
-        <strong>{{ mascota?.peso }} kg</strong>
-      </div>
-
-      <div class="row">
-        <span>Chip</span>
-        <strong>{{ mascota?.numeroChip || 'No registrado' }}</strong>
-      </div>
+    <!-- Indicadores de cuidado especial -->
+    <div *ngIf="mascota?.indicadores?.length" class="wallet-alert">
+      <strong>⚠️ Cuidados especiales:</strong>
+      <span *ngFor="let ind of mascota.indicadores" class="badge-indicador">{{ ind }}</span>
     </div>
 
     <!-- Dueño -->
-    <div class="wallet-owner">
+    <div class="wallet-owner" *ngIf="dueno">
       <p>👤 {{ dueno?.nombre }} {{ dueno?.apellido }}</p>
-      <p>📞 {{ dueno?.telefono }}</p>
+      <p>📞 {{ dueno?.telefono || 'Sin teléfono registrado' }}</p>
     </div>
 
-    <!-- QR -->
+    <!-- Vacunas -->
+    <div class="seccion" *ngIf="vacunas.length">
+      <h3>💉 Vacunas</h3>
+      <div class="item-card" *ngFor="let v of vacunas">
+        <strong>{{ v.tipo }}</strong>
+        <span>{{ v.fechaAplicacion | date:'dd/MM/yyyy' }}</span>
+        <span *ngIf="v.proximaFecha" class="proxima">Próxima: {{ v.proximaFecha | date:'dd/MM/yyyy' }}</span>
+        <span *ngIf="v.notas" class="nota">{{ v.notas }}</span>
+      </div>
+    </div>
+
+    <!-- Medicamentos -->
+    <div class="seccion" *ngIf="medicamentos.length">
+      <h3>💊 Medicamentos</h3>
+      <div class="item-card" *ngFor="let m of medicamentos">
+        <strong>{{ m.nombre }}</strong> {{ m.mg }}mg
+        <span>Desde {{ m.fechaInicio | date:'dd/MM/yyyy' }}
+          <ng-container *ngIf="m.fechaFin"> hasta {{ m.fechaFin | date:'dd/MM/yyyy' }}</ng-container>
+        </span>
+        <span *ngIf="m.notas" class="nota">{{ m.notas }}</span>
+      </div>
+    </div>
+
+    <!-- Exámenes -->
+    <div class="seccion" *ngIf="examenes.length">
+      <h3>🔬 Exámenes</h3>
+      <div class="item-card" *ngFor="let e of examenes">
+        <strong>{{ e.tipo }}</strong>
+        <span *ngIf="e.fechaProgramada">Programado: {{ e.fechaProgramada | date:'dd/MM/yyyy' }}</span>
+        <ion-badge [color]="e.realizado ? 'success' : 'warning'">
+          {{ e.realizado ? 'Realizado' : 'Pendiente' }}
+        </ion-badge>
+        <span *ngIf="e.notas" class="nota">{{ e.notas }}</span>
+      </div>
+    </div>
+
+    <!-- Próximas citas -->
+    <div class="seccion" *ngIf="citas.length">
+      <h3>📅 Citas / Próximos eventos</h3>
+      <div class="item-card" *ngFor="let c of citas">
+        <strong>{{ c.titulo }}</strong>
+        <span>{{ c.fechaInicio | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span *ngIf="c.lugar" class="nota">📍 {{ c.lugar }}</span>
+      </div>
+    </div>
+
+    <!-- Sin registros -->
+    <div *ngIf="!vacunas.length && !medicamentos.length && !examenes.length" class="sin-registros">
+      <p>Sin historial médico registrado</p>
+    </div>
+
+    <!-- QR para compartir esta ficha -->
     <div class="wallet-qr">
-      <qrcode [qrdata]="qrSeguro" [width]="180"></qrcode>
+      <qrcode [qrdata]="qrUrl" [width]="160"></qrcode>
+      <p class="scan-text">Escanea para ver esta ficha</p>
     </div>
-
-    <p class="scan-text">Escanea para ver ficha completa</p>
 
   </div>
 

@@ -1,55 +1,113 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Funciones auxiliares
-    function isSignedIn() {
+
+    function isAuth() {
       return request.auth != null;
     }
-    
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
+
+    function isUser(uid) {
+      return isAuth() && request.auth.uid == uid;
     }
-    
-    function hasValidAppCheck() {
-      return request.auth.token.app_check != null;
+
+    function ownsData() {
+      return isAuth() &&
+        request.resource.data.get('uidUsuario', null) == request.auth.uid;
     }
-    
-    // Usuarios - Solo lectura/escritura propia + App Check
-    match /usuarios/{userId} {
-      allow read, write: if isOwner(userId) && hasValidAppCheck();
-      
-      match /veterinariasFavoritas/{docId} {
-        allow read, write: if isOwner(userId) && hasValidAppCheck();
+
+    function ownsPet(petId) {
+      return isAuth() &&
+        get(/databases/$(database)/documents/mascotas/$(petId)).data.uidUsuario
+          == request.auth.uid;
+    }
+
+    function noLongStrings(data) {
+      return !data.keys().hasAny(['__proto__', 'constructor', 'prototype']) &&
+        (
+          (!('nombre'    in data) || data.nombre.size()    <= 500) &&
+          (!('notas'     in data) || data.notas.size()     <= 1000) &&
+          (!('titulo'    in data) || data.titulo.size()    <= 500) &&
+          (!('lugar'     in data) || data.lugar.size()     <= 500) &&
+          (!('tipo'      in data) || data.tipo.size()      <= 200) &&
+          (!('direccion' in data) || data.direccion.size() <= 500)
+        );
+    }
+
+    match /usuarios/{uid} {
+      allow read:   if isUser(uid);
+      allow create: if isUser(uid) && noLongStrings(request.resource.data);
+      allow update: if isUser(uid) && noLongStrings(request.resource.data)
+                    && request.resource.data.get('uid', uid) == uid
+                    && request.resource.data.get('email', resource.data.get('email',''))
+                       == resource.data.get('email', '');
+      allow delete: if false;
+
+      match /veterinariasFavoritas/{vetId} {
+        allow read:   if isUser(uid);
+        allow create: if isUser(uid)
+                      && request.resource.data.uidUsuario == uid
+                      && noLongStrings(request.resource.data);
+        allow update: if isUser(uid) && noLongStrings(request.resource.data);
+        allow delete: if isUser(uid);
       }
     }
-    
-    // Mascotas - Solo propias + App Check
-    match /mascotas/{mascotaId} {
-      allow create: if isSignedIn() && hasValidAppCheck()
-        && request.resource.data.uidUsuario == request.auth.uid;
-      
-      allow read, update, delete: if isSignedIn() && hasValidAppCheck()
-        && resource.data.uidUsuario == request.auth.uid;
-      
-      // Subcoleción de mascotas
-      match /{subCollection}/{docId} {
-        allow read, write: if isSignedIn() && hasValidAppCheck()
-          && get(/databases/$(database)/documents/mascotas/$(mascotaId)).data.uidUsuario == request.auth.uid;
+
+    match /mascotas/{petId} {
+      allow read: if true;
+
+      allow create: if ownsData() && noLongStrings(request.resource.data);
+
+      allow update: if isAuth()
+                    && resource.data.uidUsuario == request.auth.uid
+                    && request.resource.data.get('uidUsuario', request.auth.uid)
+                       == request.auth.uid
+                    && noLongStrings(request.resource.data);
+
+      allow delete: if isAuth() && resource.data.uidUsuario == request.auth.uid;
+
+      match /vacunas/{vacunaId} {
+        allow read:   if true;
+        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow delete: if ownsPet(petId);
+      }
+
+      match /medicamentos/{medId} {
+        allow read:   if true;
+        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow delete: if ownsPet(petId);
+      }
+
+      match /examenes/{examenId} {
+        allow read:   if true;
+        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow delete: if ownsPet(petId);
+      }
+
+      match /citas/{citaId} {
+        allow read:   if ownsPet(petId);
+        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow delete: if ownsPet(petId);
+      }
+
+      match /documentos/{docId} {
+        allow read:   if ownsPet(petId);
+        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
+        allow delete: if ownsPet(petId);
       }
     }
-    
-    // Rechazar todo acceso no autorizado
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
 
     match /lugares/{placeId} {
-      allow read: if isSignedIn();
-      allow write: if false;
+      allow read:  if isAuth();
+      allow write: if isAuth() && noLongStrings(request.resource.data);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

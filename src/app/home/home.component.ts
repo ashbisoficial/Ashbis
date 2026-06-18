@@ -10,21 +10,22 @@ import {
 } from '@ionic/angular/standalone';
 import { ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { addIcons } from 'ionicons';
 import {
   hourglassOutline, locateOutline, star, bagOutline, pawOutline,
-  chatbubblesOutline, heartOutline, closeOutline, createOutline,
-  callOutline, globeOutline, timeOutline, starOutline
+  chatbubblesOutline, heartOutline, heart, closeOutline, createOutline,
+  callOutline, globeOutline, timeOutline, starOutline,
+  chevronBackOutline, chevronForwardOutline, paw, bag
 } from 'ionicons/icons';
 import { register } from 'swiper/element/bundle';
-import { FirestoreService } from '../firebase/firestore';
-import { firstValueFrom } from 'rxjs';
+import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
+import { firstValueFrom, of, Subject, takeUntil } from 'rxjs';
 import { User } from '@angular/fire/auth';
-
+import * as L from 'leaflet';
 register();
-declare const L: any;
+
 
 interface Marcador {
   lat: number;
@@ -39,6 +40,7 @@ interface Marcador {
   openingHours?: string;
   isOpen?: boolean | null;
   userInfo?: LugarUserInfo;
+  distanciaM?: number;
 }
 
 interface LugarUserInfo {
@@ -61,8 +63,9 @@ type VeterinariaFavoritaInput = {
 
 addIcons({
   hourglassOutline, locateOutline, bagOutline, pawOutline, star,
-  chatbubblesOutline, heartOutline, closeOutline, createOutline,
-  callOutline, globeOutline, timeOutline, starOutline
+  chatbubblesOutline, heartOutline, heart, closeOutline, createOutline,
+  callOutline, globeOutline, timeOutline, starOutline,
+  chevronBackOutline, chevronForwardOutline, paw, bag
 });
 
 @Component({
@@ -101,7 +104,12 @@ export class HomePage implements OnInit, OnDestroy {
   private map: any;
   private markersLayer: any;
   private userMarker: any;
+  private markerRefs = new Map<string, L.Marker>();
   userPositionMarker: { lat: number; lng: number } | undefined;
+
+  // Favoritos
+  private destroy$ = new Subject<void>();
+  veterinariasFavoritas: VeterinariaFavorita[] = [];
 
   // Servidores Overpass en orden de prioridad
   private readonly OVERPASS_SERVERS = [
@@ -130,12 +138,41 @@ export class HomePage implements OnInit, OnDestroy {
   // ── Lifecycle ────────────────────────────────────────
   ngOnInit() {
     this.cargarLeaflet().then(() => this.initMap());
+    this.cargarVeterinariasFavoritas();
   }
 
   ngOnDestroy() {
     if (this.map) { this.map.remove(); this.map = null; }
+    this.markerRefs.clear();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     delete (window as any).ashbisSeleccionarMarcador;
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private cargarVeterinariasFavoritas() {
+    this.auth.authState$.pipe(
+      takeUntil(this.destroy$),
+      switchMap(user => {
+        if (!user) return of<VeterinariaFavorita[]>([]);
+        return runInInjectionContext(this.injector, () =>
+          this.firestoreService.getVeterinariasFavoritasByUsuario(user.uid)
+        );
+      })
+    ).subscribe(vets => {
+      this.veterinariasFavoritas = vets;
+    });
+  }
+
+  /** Devuelve true si la veterinaria (por placeId) ya está en favoritos del usuario */
+  esFavorita(placeId?: string): boolean {
+    if (!placeId) return false;
+    return this.veterinariasFavoritas.some(v => v.placeId === placeId);
+  }
+
+  private buscarFavoritaPorPlaceId(placeId?: string): VeterinariaFavorita | undefined {
+    if (!placeId) return undefined;
+    return this.veterinariasFavoritas.find(v => v.placeId === placeId);
   }
 
   // Leaflet is already loaded from angular.json styles and node_modules
@@ -247,6 +284,7 @@ export class HomePage implements OnInit, OnDestroy {
   searchNearbyPlaces(coords: { lat: number; lng: number }) {
     this.estaCargando = true;
     this.markersLayer?.clearLayers();
+    this.markerRefs.clear();
 
     const tag = this.currentSearchType === 'veterinary_care' ? 'amenity=veterinary' : 'shop=pet';
     const query = `
@@ -290,10 +328,6 @@ export class HomePage implements OnInit, OnDestroy {
       return;
     }
 
-    const colorAbierto     = this.currentSearchType === 'veterinary_care' ? '#dc2626' : '#16a34a';
-    const colorCerrado     = '#6b7280';
-    const colorDesconocido = this.currentSearchType === 'veterinary_care' ? '#fca5a5' : '#86efac';
-
     // Una sola llamada a Firestore para todos los lugares
     const infoExtra = await runInInjectionContext(this.injector, () =>
       this.firestoreService.getLugaresInfo(elementos.map(e => String(e.id)))
@@ -317,17 +351,21 @@ export class HomePage implements OnInit, OnDestroy {
         userInfo:     infoExtra[String(el.id)],
       }));
 
-    this.marcadoresEnMapa.forEach(m => {
-      const fillColor  = m.isOpen === true ? colorAbierto : m.isOpen === false ? colorCerrado : colorDesconocido;
-      const marker = L.circleMarker([m.lat, m.lng], {
-        radius:      m.isOpen === true ? 10 : 8,
-        fillColor,
-        color:       '#fff',
-        weight:      2,
-        fillOpacity: m.isOpen === false ? 0.45 : 0.9,
-      }).addTo(this.markersLayer);
+    // Ordenamos por cercanía real para que "Siguiente / Anterior" tenga sentido
+    if (this.userPositionMarker) {
+      const { lat: ulat, lng: ulng } = this.userPositionMarker;
+      this.marcadoresEnMapa.forEach(m => {
+        m.distanciaM = this.distanciaMetros(ulat, ulng, m.lat, m.lng);
+      });
+      this.marcadoresEnMapa.sort((a, b) => (a.distanciaM ?? Infinity) - (b.distanciaM ?? Infinity));
+    }
 
+    this.markerRefs.clear();
+    this.marcadoresEnMapa.forEach(m => {
+      const marker = L.marker([m.lat, m.lng], { icon: this.crearIcono(m.tipo, m.isOpen) })
+        .addTo(this.markersLayer);
       marker.on('click', () => this.seleccionarMarcador(m));
+      if (m.placeId) this.markerRefs.set(m.placeId, marker);
     });
 
     const abiertos = this.marcadoresEnMapa.filter(m => m.isOpen === true).length;
@@ -339,14 +377,80 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   // ── Panel de info ────────────────────────────────────
-  seleccionarMarcador(m: Marcador) {
+  seleccionarMarcador(m: Marcador, centrarMapa = false) {
     this.marcadorSeleccionado = m;
     this.modoEdicion = false;
     this.editForm    = { ...m.userInfo };
     this.mostrarPanel = true;
+    this.resaltarMarcadorEnMapa(m.placeId);
+
+    if (centrarMapa && this.map) {
+      this.map.flyTo([m.lat, m.lng], Math.max(this.map.getZoom(), 15), { duration: 0.5 });
+    }
+
     setTimeout(() => {
       document.getElementById('panel-info')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  }
+
+  // ── Navegación entre resultados con flechas ───────────
+  get indiceMarcadorActual(): number {
+    if (!this.marcadorSeleccionado) return 0;
+    return this.marcadoresEnMapa.findIndex(m => m.placeId === this.marcadorSeleccionado!.placeId) + 1;
+  }
+
+  irMarcadorAnterior() { this.navegarMarcador(-1); }
+  irMarcadorSiguiente() { this.navegarMarcador(1); }
+
+  private navegarMarcador(delta: number) {
+    const total = this.marcadoresEnMapa.length;
+    if (!total) return;
+    const actual = this.marcadorSeleccionado
+      ? this.marcadoresEnMapa.findIndex(m => m.placeId === this.marcadorSeleccionado!.placeId)
+      : -1;
+    const siguiente = ((actual === -1 ? 0 : actual) + delta + total) % total;
+    this.seleccionarMarcador(this.marcadoresEnMapa[siguiente], true);
+  }
+
+  private resaltarMarcadorEnMapa(placeId?: string) {
+    this.markerRefs.forEach((marker, id) => {
+      const pin = marker.getElement()?.querySelector('.marker-badge');
+      pin?.classList.toggle('marker-badge--selected', id === placeId);
+    });
+  }
+
+  formatearDistancia(m?: number): string {
+    if (m == null) return '';
+    return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
+  }
+
+  private distanciaMetros(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371000;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  // ── Icono personalizado del marcador ──────────────────
+  private crearIcono(tipo: 'veterinary_care' | 'pet_store', isOpen: boolean | null | undefined): L.DivIcon {
+    const colorAbierto     = tipo === 'veterinary_care' ? '#dc2626' : '#16a34a';
+    const colorCerrado     = '#6b7280';
+    const colorDesconocido = tipo === 'veterinary_care' ? '#fca5a5' : '#86efac';
+    const color  = isOpen === true ? colorAbierto : isOpen === false ? colorCerrado : colorDesconocido;
+    const tamano = isOpen === true ? 38 : 32;
+    const nombreIcono = tipo === 'veterinary_care' ? 'paw' : 'bag';
+
+    return L.divIcon({
+      className: 'marker-divicon-wrapper',
+      html: `<div class="marker-badge" style="width:${tamano}px;height:${tamano}px;background:${color};">
+               <ion-icon name="${nombreIcono}"></ion-icon>
+             </div>`,
+      iconSize: [tamano, tamano],
+      iconAnchor: [tamano / 2, tamano / 2],
+    });
   }
 
   cerrarPanel() {
@@ -397,6 +501,18 @@ export class HomePage implements OnInit, OnDestroy {
     if (!user) { this.presentToast('Debes iniciar sesión para guardar favoritos.', 'warning'); return; }
 
     const m = this.marcadorSeleccionado;
+    const yaEsFavorita = this.buscarFavoritaPorPlaceId(m.placeId);
+
+    if (yaEsFavorita) {
+      // Ya está en favoritos → la quitamos
+      await runInInjectionContext(this.injector, () =>
+        this.firestoreService.deleteVeterinariaFavorita(user.uid, yaEsFavorita.id!)
+      );
+      this.veterinariasFavoritas = this.veterinariasFavoritas.filter(v => v.id !== yaEsFavorita.id);
+      this.presentToast('Veterinaria quitada de favoritos', 'success');
+      return;
+    }
+
     const vet: VeterinariaFavoritaInput = {
       placeId:  m.placeId || '',
       nombre:   m.title,
@@ -406,8 +522,15 @@ export class HomePage implements OnInit, OnDestroy {
       rating:   m.rating,
       tipos:    [],
     };
-    await this.firestoreService.addVeterinariaFavorita(user.uid, vet);
+    const docRef = await runInInjectionContext(this.injector, () =>
+      this.firestoreService.addVeterinariaFavorita(user.uid, vet)
+    );
     this.presentToast('Veterinaria añadida a favoritos', 'success');
+    // Actualizamos el estado local para que el corazón se rellene de inmediato
+    this.veterinariasFavoritas = [
+      ...this.veterinariasFavoritas,
+      { ...vet, id: docRef?.id, uidUsuario: user.uid }
+    ];
   }
 
   // ── Helpers ──────────────────────────────────────────

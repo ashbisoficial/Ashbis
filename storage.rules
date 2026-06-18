@@ -1,37 +1,61 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Funciones auxiliares
-    function isSignedIn() {
+
+    function isAuth() {
       return request.auth != null;
     }
 
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
+    function isUser(uid) {
+      return request.auth != null && request.auth.uid == uid;
     }
 
-    function validImageType() {
-      return request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
+    function isImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
     }
 
-    function validSize() {
-      return request.resource.size < 5 * 1024 * 1024;  // 5MB máximo
+    function isPDF() {
+      return request.resource.contentType == 'application/pdf';
     }
 
-    function hasValidAppCheck() {
-      return request.auth.token.app_check != null;
+    function isImageOrPDF() {
+      return isImage() || isPDF();
     }
 
-    // Mascotas - Solo propias, solo imágenes válidas + App Check
-    match /mascotas/{uid}/{allPaths=**} {
-      allow read, delete: if isOwner(uid) && hasValidAppCheck();
-      allow create, update: if isOwner(uid) && hasValidAppCheck()
-        && validImageType() && validSize();
+    function maxSize(mb) {
+      return request.resource.size <= mb * 1024 * 1024;
     }
 
-    // Rechazar todo acceso no autorizado
+    match /mascotas/{uid}/{petId}/foto/{filename} {
+      allow read:          if true;
+      allow create, update: if isUser(uid) && isImage() && maxSize(10);
+      allow delete:        if isUser(uid);
+    }
+
+    match /mascotas/{uid}/{petId}/galeria/{filename} {
+      allow read:          if true;
+      allow create, update: if isUser(uid) && isImage() && maxSize(10);
+      allow delete:        if isUser(uid);
+    }
+
+    match /mascotas/{uid}/{petId}/examenes/{examenId}/{filename} {
+      allow read:          if isUser(uid);
+      allow create, update: if isUser(uid) && isImageOrPDF() && maxSize(20);
+      allow delete:        if isUser(uid);
+    }
+
+    match /mascotas/{uid}/{petId}/documentos/{filename} {
+      allow read:          if isUser(uid);
+      allow create, update: if isUser(uid) && isImageOrPDF() && maxSize(20);
+      allow delete:        if isUser(uid);
+    }
+
+    match /usuarios/{uid}/foto/{filename} {
+      allow read:          if isAuth();
+      allow create, update: if isUser(uid) && isImage() && maxSize(5);
+      allow delete:        if isUser(uid);
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

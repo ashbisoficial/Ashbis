@@ -1,41 +1,22 @@
 import { Component, inject, OnDestroy, OnInit, ViewChild, ElementRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, combineLatest, takeUntil } from 'rxjs';
-import { FormsModule } from '@angular/forms'; // 🔥 IMPORTANTE
+import { FormsModule } from '@angular/forms';
 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { QRCodeComponent } from 'angularx-qrcode';
 
 import {
-  IonHeader,
-  IonToolbar,
-  IonButtons,
-  IonBackButton,
-  IonTitle,
-  IonContent,
-  IonSpinner,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonButton,
-  IonIcon,
-  IonList,
-  IonItem,
-  IonLabel,
-  IonAvatar,
-  IonSelect,
-  IonSelectOption,
-  IonNote,
-
-  // 🔥 ESTOS SON LOS QUE TE FALTABAN
-  IonSegment,
-  IonSegmentButton
-
+  IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
+  IonSpinner, IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle,
+  IonCardContent, IonButton, IonIcon, IonItem, IonLabel,
+  IonSelect, IonSelectOption, IonSegment, IonSegmentButton
 } from '@ionic/angular/standalone';
+
+import { addIcons } from 'ionicons';
+import { downloadOutline, shareOutline } from 'ionicons/icons';
 
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService, Mascota } from '../firebase/firestore';
@@ -47,35 +28,18 @@ import { Models } from '../models/models';
   styleUrls: ['./mascota-qr.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
-  FormsModule,
-  RouterLink,
-  IonHeader,
-  IonToolbar,
-  IonButtons,
-  IonBackButton,
-  IonTitle,
-  IonContent,
-  IonSpinner,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonButton,
-  IonItem,
-  IonLabel,
-  IonAvatar,
-  IonSelect,
-  IonSelectOption,
-  IonSegment,
-  IonSegmentButton,
-  QRCodeComponent
+    CommonModule, FormsModule,
+    IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
+    IonSpinner, IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle,
+    IonCardContent, IonButton, IonIcon, IonItem, IonLabel,
+    IonSelect, IonSelectOption, IonSegment, IonSegmentButton,
+    QRCodeComponent
   ]
 })
 export class MascotaQrComponent implements OnInit, OnDestroy {
 
-  @ViewChild('qrContainer') qrContainer!: ElementRef;
+  @ViewChild('qrMedicoEl')    qrMedicoEl!: ElementRef;
+  @ViewChild('qrEmergenciaEl') qrEmergenciaEl!: ElementRef;
 
   private destroy$ = new Subject<void>();
   private route = inject(ActivatedRoute);
@@ -83,41 +47,41 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
   authenticationService = inject(AuthenticationService);
   firestoreService = inject(FirestoreService);
 
-  /* ===========================
-     ESTADO
-  =========================== */
+  // ── Estado ──────────────────────────────────────────────────────────────
   cargando = signal(true);
   descargandoPDF = false;
 
-  /* ===========================
-     DATOS
-  =========================== */
+  // ── Datos ───────────────────────────────────────────────────────────────
   userProfile: Models.Auth.UserProfile | null = null;
-
   misMascotas = signal<Mascota[]>([]);
   mascotaSeleccionada = signal<Mascota | null>(null);
 
   private targetMascotaId: string | null = null;
 
-  /* ===========================
-     🧠 TIPOS DE QR
-  =========================== */
+  // ── Tipo de QR activo ───────────────────────────────────────────────────
   tipoQR: 'medico' | 'emergencia' = 'medico';
-
-  qrFichaMedica = '';
-  qrEmergencia = '';
+  qrFichaMedica  = '';
+  qrEmergencia   = '';
 
   get qrActivo() {
-    return this.tipoQR === 'medico'
-      ? this.qrFichaMedica
-      : this.qrEmergencia;
+    return this.tipoQR === 'medico' ? this.qrFichaMedica : this.qrEmergencia;
   }
 
-  /* ===========================
-     INIT
-  =========================== */
-  ngOnInit() {
+  get tituloQR() {
+    return this.tipoQR === 'medico' ? '🏥 Ficha Médica' : '🚨 QR de Emergencia';
+  }
 
+  get descripcionQR() {
+    return this.tipoQR === 'medico'
+      ? 'Escanea para ver el historial veterinario completo'
+      : 'Si pierdo a mi mascota, escanea para contactar al dueño';
+  }
+
+  constructor() {
+    addIcons({ downloadOutline, shareOutline });
+  }
+
+  ngOnInit() {
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
@@ -135,54 +99,38 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /* ===========================
-     CARGAR DATOS
-  =========================== */
   cargarDatos() {
     this.cargando.set(true);
 
     this.authenticationService.authState$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
-
-        if (!user) {
-          this.cargando.set(false);
-          return;
-        }
+        if (!user) { this.cargando.set(false); return; }
 
         const perfil$ = this.firestoreService.getDocumentChanges<Models.Auth.UserProfile>(
           `${Models.Auth.PathUsers}/${user.uid}`
         );
-
         const mascotas$ = this.firestoreService.getUserPets(user.uid);
 
         combineLatest([perfil$, mascotas$])
           .pipe(takeUntil(this.destroy$))
           .subscribe(([perfil, mascotas]) => {
-
             this.userProfile = perfil || null;
             this.misMascotas.set(mascotas || []);
-
             this.intentarSeleccionarMascota();
-
             this.cargando.set(false);
           });
       });
   }
 
-  /* ===========================
-     SELECCIÓN
-  =========================== */
   intentarSeleccionarMascota() {
     const mascotas = this.misMascotas();
     if (!mascotas.length) return;
 
     if (this.targetMascotaId) {
       const encontrada = mascotas.find(m => m.id === this.targetMascotaId);
-      if (encontrada) {
-        if (this.mascotaSeleccionada()?.id !== encontrada.id) {
-          this.seleccionarMascota(encontrada);
-        }
+      if (encontrada && this.mascotaSeleccionada()?.id !== encontrada.id) {
+        this.seleccionarMascota(encontrada);
         return;
       }
     }
@@ -200,79 +148,71 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
   onMascotaChange(event: any) {
     const id = event.detail.value;
     const m = this.misMascotas().find(p => p.id === id);
-
-    if (m) {
-      this.targetMascotaId = id;
-      this.seleccionarMascota(m);
-    }
+    if (m) { this.targetMascotaId = id; this.seleccionarMascota(m); }
   }
 
-  /* ===========================
-     🔥 GENERAR QRs
-  =========================== */
+  // ── Generar QRs ────────────────────────────────────────────────────────
   generarQRs(mascota: Mascota) {
-
     if (!this.userProfile) return;
 
     const user = this.userProfile;
     const m: any = mascota;
-
     const telefono = user.telefono || '';
-
-    if (!telefono) {
-      this.qrFichaMedica = '';
-      this.qrEmergencia = '';
-      return;
-    }
-
     const nombreDueno = `${user.nombre || ''} ${user.apellido || ''}`.trim();
 
-    /* 🏥 QR MÉDICO */
-    this.qrFichaMedica = `https://ashbis.app/carnet/${mascota.id}`;
+    // QR Médico: URL al carnet público
+    const baseUrl = window.location.origin;
+    this.qrFichaMedica = `${baseUrl}/carnet/${mascota.id}`;
 
-    /* 🚨 QR EMERGENCIA */
-    this.qrEmergencia = `
-🚨 MASCOTA PERDIDA
+    // QR Emergencia: texto plano con info de contacto y cuidados
+    const indicadores = (m.indicadores || []).join(', ') || 'Sin indicadores especiales';
+    const cuidados = m.medicamentos?.length
+      ? `Está en tratamiento con medicamentos.`
+      : '';
 
-🐾 ${m.nombre}
-📞 ${telefono}
-🔢 Chip: ${m.numeroChip || 'No registrado'}
-
-⚠️ ${(m.indicadores || []).join(', ') || 'Sin información'}
-
-👤 ${nombreDueno}
-`.trim();
+    this.qrEmergencia = [
+      `MASCOTA PERDIDA`,
+      ``,
+      `Nombre: ${m.nombre}`,
+      `Especie: ${m.especie} - ${m.raza}`,
+      `Chip: ${m.numeroChip || 'No registrado'}`,
+      ``,
+      `CONTACTAR A:`,
+      `Dueño/a: ${nombreDueno}`,
+      `Teléfono: ${telefono || 'No disponible'}`,
+      ``,
+      `CUIDADOS ESPECIALES:`,
+      indicadores,
+      cuidados
+    ].filter(Boolean).join('\n').trim();
   }
 
-  /* ===========================
-     PDF
-  =========================== */
+  // ── Descargar PDF ───────────────────────────────────────────────────────
   async descargarPDF() {
-
     this.descargandoPDF = true;
-
     try {
-      const element = document.getElementById('qrCardElement');
-      if (!element) throw new Error('QR no encontrado');
+      const elementId = this.tipoQR === 'medico' ? 'qrMedicoCard' : 'qrEmergenciaCard';
+      const element = document.getElementById(elementId);
+      if (!element) throw new Error('Elemento QR no encontrado');
 
-      const canvas = await html2canvas(element, { scale: 3 });
+      const canvas = await html2canvas(element, { scale: 3, useCORS: true });
       const imgData = canvas.toDataURL('image/png');
 
       const pdf = new jsPDF('p', 'mm', 'a4');
-
       const width = pdf.internal.pageSize.getWidth();
       const imgWidth = 120;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const nombre = this.mascotaSeleccionada()?.nombre || 'mascota';
+      const tipo = this.tipoQR === 'medico' ? 'Ficha Medica' : 'Emergencia';
 
-      pdf.text(`QR de ${this.mascotaSeleccionada()?.nombre}`, width / 2, 20, { align: 'center' });
+      pdf.setFontSize(14);
+      pdf.text(`QR ${tipo} - ${nombre}`, width / 2, 20, { align: 'center' });
       pdf.addImage(imgData, 'PNG', (width - imgWidth) / 2, 30, imgWidth, imgHeight);
-
-      pdf.save(`QR-${this.mascotaSeleccionada()?.nombre}.pdf`);
-
+      pdf.save(`QR-${tipo}-${nombre}.pdf`);
     } catch (error) {
-      console.error(error);
+      console.error('Error generando PDF:', error);
+    } finally {
+      this.descargandoPDF = false;
     }
-
-    this.descargandoPDF = false;
   }
 }

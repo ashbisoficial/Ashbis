@@ -1,22 +1,38 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './guards/auth.guard';
+import { authGuard, publicGuard } from './guards/auth.guard';
 import { TabsComponent } from './tabs/tabs.component';
 
 export const routes: Routes = [
+  // ── Rutas públicas (no autenticado) ─────────────────────────────────────
   {
     path: 'login',
+    canActivate: [publicGuard],
     loadComponent: () =>
       import('./auth/pages/login/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'registro',
+    canActivate: [publicGuard],
     loadComponent: () =>
       import('./auth/pages/registro/registro.component').then((m) => m.RegistroComponent),
   },
   {
     path: 'forgot-password',
-    loadComponent: () => import('./auth/pages/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
+    canActivate: [publicGuard],
+    loadComponent: () =>
+      import('./auth/pages/forgot-password/forgot-password.component').then(
+        (m) => m.ForgotPasswordComponent
+      ),
   },
+
+  // ── Carnet público (se accede vía QR, sin login) ────────────────────────
+  {
+    path: 'carnet/:id',
+    loadComponent: () =>
+      import('./carnet-mascota/carnet-mascota.page').then((m) => m.CarnetMascotaPage),
+  },
+
+  // ── Rutas protegidas (con tabs) ──────────────────────────────────────────
   {
     path: 'tabs',
     component: TabsComponent,
@@ -24,36 +40,59 @@ export const routes: Routes = [
     children: [
       {
         path: 'home',
-        loadComponent: () => import('./home/home.component').then((m) => m.HomePage),
+        loadComponent: () =>
+          import('./home/home.component').then((m) => m.HomePage),
       },
       {
         path: 'listar-mascotas',
-        loadComponent: () => import('./listar-mascotas/listar-mascotas.component').then((m) => m.ListarMascotasComponent),
+        loadComponent: () =>
+          import('./listar-mascotas/listar-mascotas.component').then(
+            (m) => m.ListarMascotasComponent
+          ),
       },
       {
         path: 'crear-mascotas',
-        loadComponent: () => import('./crear-mascotas/crear-mascotas.component').then((m) => m.CrearMascotasComponent),
+        loadComponent: () =>
+          import('./crear-mascotas/crear-mascotas.component').then(
+            (m) => m.CrearMascotasComponent
+          ),
       },
       {
         path: 'mascota-qr',
-        loadComponent: () => import('./mascota-qr/mascota-qr.component').then(m => m.MascotaQrComponent)
+        loadComponent: () =>
+          import('./mascota-qr/mascota-qr.component').then((m) => m.MascotaQrComponent),
       },
       {
         path: 'perfil',
-        loadComponent: () => import('./perfil/perfil.component').then((m) => m.PerfilComponent),
+        loadComponent: () =>
+          import('./perfil/perfil.component').then((m) => m.PerfilComponent),
       },
       {
         path: 'perfil-mascota/:id',
-        loadComponent: () => import('./perfil-mascota/perfil-mascota.component').then((m) => m.MascotaPerfilComponent),
+        loadComponent: () =>
+          import('./perfil-mascota/perfil-mascota.component').then(
+            (m) => m.MascotaPerfilComponent
+          ),
       },
       {
         path: 'mascota-editar/:id/editar',
-        loadComponent: () => import('./mascota-editar/mascota-editar.component').then((m) => m.MascotaEditarComponent),
+        loadComponent: () =>
+          import('./mascota-editar/mascota-editar.component').then(
+            (m) => m.MascotaEditarComponent
+          ),
       },
       {
-        path: 'mascota-detalle/:id', // :id es el parámetro dinámico
-        loadComponent: () => import('./pages/mascota-detalle/mascota-detalle.component')
-          .then(m => m.MascotaDetalleComponent)
+        path: 'mascota-detalle/:id',
+        loadComponent: () =>
+          import('./pages/mascota-detalle/mascota-detalle.component').then(
+            (m) => m.MascotaDetalleComponent
+          ),
+      },
+      // ── Chat IA dentro de tabs (mantiene navbar) ─────────────────────────
+      {
+        path: 'chat-ia',
+        loadComponent: () =>
+          import('./chat-ia/chat-ia.component').then((m) => m.ChatIaComponent),
       },
       {
         path: '',
@@ -62,26 +101,15 @@ export const routes: Routes = [
       },
     ],
   },
-  {
-    path: 'chat-ia',
-    loadComponent: () => 
-      import('./chat-ia/chat-ia.component')
-    .then(m => m.ChatIaComponent)
-  },
-  {
-    path: 'carnet/:id',
-    loadComponent: () => 
-      import('./carnet-mascota/carnet-mascota.page')
-      .then(m => m.CarnetMascotaPage)
-  },
+
+  // ── Fallbacks ─────────────────────────────────────────────────────────────
   {
     path: '',
     redirectTo: 'login',
     pathMatch: 'full',
   },
- 
   {
     path: '**',
     redirectTo: 'login',
-  }
+  },
 ];

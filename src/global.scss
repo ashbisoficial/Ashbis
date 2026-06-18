@@ -43,3 +43,48 @@
   --ion-color-danger-shade: #7a0707;
   --ion-color-danger-tint: #9c1f1f;
 }
+
+/* ===========================================================
+   MARCADORES PERSONALIZADOS DEL MAPA (Leaflet, home.component)
+   Estas reglas viven en global.scss a propósito: Leaflet inserta
+   este HTML directamente vía innerHTML, fuera del árbol que
+   Angular conoce, así que la encapsulación de estilos del
+   componente nunca llegaría a aplicarse aquí.
+   =========================================================== */
+.marker-divicon-wrapper {
+  background: transparent !important;
+  border: none !important;
+}
+
+.marker-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.marker-badge ion-icon {
+  width: 60%;
+  height: 60%;
+  color: #fff;
+}
+
+.marker-badge:hover {
+  transform: scale(1.12);
+}
+
+.marker-badge--selected {
+  animation: ashbis-marcador-pulso 1.4s ease-out 1;
+  transform: scale(1.18);
+}
+
+@keyframes ashbis-marcador-pulso {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55), 0 2px 8px rgba(0, 0, 0, 0.5); }
+  70%  { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0), 0 2px 8px rgba(0, 0, 0, 0.5); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0), 0 2px 8px rgba(0, 0, 0, 0.5); }
+}

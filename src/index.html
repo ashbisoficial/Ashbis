@@ -11,10 +11,16 @@
   <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="msapplication-tap-highlight" content="no" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.google.com https://www.gstatic.com https://www.googleapis.com; connect-src 'self' ws://localhost:8100 ws://127.0.0.1:8100 http://localhost:8100 http://127.0.0.1:8100 https://apis.google.com https://www.googleapis.com https://www.google.com https://www.gstatic.com https://accounts.google.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://firebaseappcheck.googleapis.com https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app https://*.firebasestorage.app https://*.firebaseapp.com https://*.web.app; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data: https:; frame-src 'self' https://accounts.google.com https://*.google.com https://*.gstatic.com https://*.firebaseapp.com https://*.web.app; worker-src 'self' blob:;">
 
   <link rel="icon" type="image/png" href="assets/icon/favicon.png" />
-
+  <meta http-equiv="Content-Security-Policy" content="
+  default-src 'self' https: data:;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://apis.google.com https://www.google.com https://www.gstatic.com;
+  style-src 'self' 'unsafe-inline';
+  frame-src 'self' https://accounts.google.com https://*.google.com https://*.gstatic.com https://*.firebaseapp.com https://*.web.app https://apis.google.com https://www.google.com;
+  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://content-firebaseappcheck.googleapis.com https://overpass-api.de https://overpass.kumi.systems https://maps.mail.ru;
+  img-src 'self' data: https:;
+">
   <!-- add to homescreen for ios -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
@@ -22,9 +28,7 @@
 
 <body>
   <app-root></app-root>
-  <script
-  src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY">
-</script>
+  
 </body>
 
 </html>

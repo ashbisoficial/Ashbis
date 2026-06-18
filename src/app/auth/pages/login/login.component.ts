@@ -74,11 +74,61 @@ export class LoginComponent implements OnInit, OnDestroy {
       password: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(6)])
     });
 
-    this.authenticationService.authState$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((user) => {
-        if (user) this.router.navigate(['tabs/home'], { replaceUrl: true });
-      });
+    // Si venimos de un redirect de Google, procesamos antes de dejar
+    // que la suscripción de authState dispare la navegación por su cuenta.
+    this.procesarRedirectGoogle().finally(() => {
+      this.authenticationService.authState$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((user) => {
+          if (user) this.router.navigate(['tabs/home'], { replaceUrl: true });
+        });
+    });
+  }
+
+  private async procesarRedirectGoogle(): Promise<void> {
+    try {
+      const cred = await this.authenticationService.getGoogleRedirectResult();
+      if (!cred?.user) return; // No venimos de un redirect de Google
+
+      const user = cred.user;
+      const fullName = user.displayName || '';
+      const parts = fullName.split(' ');
+      const nombre = this.security.sanitizeText(parts[0] || '');
+      const apellido = this.security.sanitizeText(parts.slice(1).join(' ') || '');
+
+      const datosUser = {
+        uid: user.uid,
+        nombre,
+        apellido,
+        email: this.security.sanitizeText(user.email || ''),
+        telefono: this.security.sanitizeText(user.phoneNumber || ''),
+        foto: this.security.sanitizeText(user.photoURL || ''),
+        provider: 'google'
+      };
+
+      const userExistente = await this.firestoreService.getDocument(`usuarios/${user.uid}`);
+      if (!userExistente) {
+        await this.firestoreService.createDocument('usuarios', datosUser, user.uid);
+      } else {
+        await this.firestoreService.updateDocument(`usuarios/${user.uid}`, {
+          nombre,
+          apellido,
+          foto: this.security.sanitizeText(user.photoURL || '')
+        });
+      }
+
+      this.router.navigate(['tabs/home'], { replaceUrl: true });
+    } catch (error: any) {
+      console.error('================================');
+      console.error('ERROR GOOGLE LOGIN (redirect)');
+      console.error('CODE:', error?.code);
+      console.error('MESSAGE:', error?.message);
+      console.error('FULL ERROR:', error);
+      console.error('================================');
+
+      this.loginError =
+        `${error?.code || 'sin-codigo'} - ${error?.message || 'sin-mensaje'}`;
+    }
   }
 
   ngOnDestroy(): void {
@@ -123,41 +173,19 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.loginError = null;
     this.cargando = true;
     try {
-      const cred = await this.authenticationService.loginWithGoogle();
-      const user = cred.user;
-      if (!user) throw new Error('No se obtuvo usuario');
+      // Esto redirige la página a Google; el resultado se procesa
+      // en procesarRedirectGoogle() cuando el usuario vuelve.
+      await this.authenticationService.loginWithGoogle();
+    } catch (error: any) {
+      console.error('================================');
+      console.error('ERROR GOOGLE LOGIN');
+      console.error('CODE:', error?.code);
+      console.error('MESSAGE:', error?.message);
+      console.error('FULL ERROR:', error);
+      console.error('================================');
 
-      const fullName = user.displayName || '';
-      const parts = fullName.split(' ');
-      const nombre = this.security.sanitizeText(parts[0] || '');
-      const apellido = this.security.sanitizeText(parts.slice(1).join(' ') || '');
-
-      const datosUser = {
-        id: user.uid,
-        nombre,
-        apellido,
-        email: this.security.sanitizeText(user.email || ''),
-        telefono: this.security.sanitizeText(user.phoneNumber || ''),
-        foto: this.security.sanitizeText(user.photoURL || ''),
-        provider: 'google'
-      };
-
-      const userExistente = await this.firestoreService.getDocument(`usuarios/${user.uid}`);
-      if (!userExistente) {
-        await this.firestoreService.createDocument('usuarios', datosUser, user.uid);
-      } else {
-        await this.firestoreService.updateDocument(`usuarios/${user.uid}`, {
-          nombre,
-          apellido,
-          foto: this.security.sanitizeText(user.photoURL || '')
-        });
-      }
-
-      this.router.navigate(['tabs/home'], { replaceUrl: true });
-    } catch (error) {
-      console.error(error);
-      this.loginError = 'No se pudo iniciar sesion con Google.';
-    } finally {
+      this.loginError =
+        `${error?.code || 'sin-codigo'} - ${error?.message || 'sin-mensaje'}`;
       this.cargando = false;
     }
   }

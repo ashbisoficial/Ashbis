@@ -157,6 +157,9 @@
                 <ion-note color="danger" *ngIf="f.confirmPassword.touched && f.confirmPassword.hasError('required')">Debes confirmar la contraseña</ion-note>
                 <ion-note color="danger" *ngIf="datosForm.touched && datosForm.hasError('passwordMismatch')">Las contraseñas no coinciden</ion-note>
               </ion-list>
+              <ion-note color="danger" *ngIf="errorRegistro" class="error-registro">
+                {{ errorRegistro }}
+              </ion-note>
               <ion-button
                 type="submit"
                 expand="block"

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonBackButton,
@@ -9,15 +9,21 @@ import {
   IonHeader,
   IonIcon,
   IonInput,
-  IonItem,
-  IonList,
   IonSpinner,
   IonTitle,
-  IonToolbar
+  IonToolbar,
+  IonChip,
+  IonLabel
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { sendOutline } from 'ionicons/icons';
+import { sendOutline, refreshOutline, pawOutline } from 'ionicons/icons';
 import { AiProxyService } from 'src/app/services/ai-proxy.service';
+
+interface Mensaje {
+  autor: 'Tu' | 'Ashbis IA';
+  texto: string;
+  hora: string;
+}
 
 @Component({
   selector: 'app-chat-ia',
@@ -32,88 +38,123 @@ import { AiProxyService } from 'src/app/services/ai-proxy.service';
     IonTitle,
     IonToolbar,
     IonButton,
-    IonList,
-    IonItem,
     IonInput,
     IonSpinner,
     IonButtons,
     IonBackButton,
-    IonIcon
+    IonIcon,
+    IonChip,
+    IonLabel
   ]
 })
-export class ChatIaComponent {
+export class ChatIaComponent implements OnInit {
+
+  @ViewChild('scrollContainer') scrollContainer!: ElementRef;
+
   private readonly aiProxy = inject(AiProxyService);
 
+  // ── Estado de pasos ─────────────────────────────────────────────────────
   pasoActual = 1;
   categoriaSeleccionada = '';
   mascotaSeleccionada = '';
   mensaje = '';
   cargando = false;
 
-  mensajes: { autor: string; texto: string; hora: string }[] = [];
+  mensajes: Mensaje[] = [];
+
+  readonly categorias = [
+    { id: 'salud', label: '🏥 Salud' },
+    { id: 'alimentacion', label: '🍖 Alimentación' },
+    { id: 'emergencias', label: '🚨 Emergencias' },
+    { id: 'comportamiento', label: '🐾 Comportamiento' },
+    { id: 'cuidados', label: '✂️ Cuidados generales' },
+    { id: 'vacunas', label: '💉 Vacunas y medicina' },
+  ];
+
+  readonly tiposMascota = [
+    { id: 'perro', label: '🐶 Perro' },
+    { id: 'gato', label: '🐱 Gato' },
+    { id: 'conejo', label: '🐰 Conejo' },
+    { id: 'ave', label: '🐦 Ave' },
+    { id: 'hamster', label: '🐹 Hámster' },
+    { id: 'otro', label: '🐾 Otro' },
+  ];
 
   constructor() {
-    addIcons({ sendOutline });
+    addIcons({ sendOutline, refreshOutline, pawOutline });
+  }
+
+  ngOnInit(): void {
+    this.agregarMensaje('Ashbis IA',
+      'Hola 👋 Soy Ashbis IA, tu asistente veterinario. ¿Sobre qué tema quieres consultar hoy?'
+    );
   }
 
   private obtenerHora(): string {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  private agregarMensaje(autor: string, texto: string): void {
+  private agregarMensaje(autor: 'Tu' | 'Ashbis IA', texto: string): void {
     this.mensajes.push({ autor, texto, hora: this.obtenerHora() });
+    setTimeout(() => this.scrollToBottom(), 100);
   }
 
-  async enviarMensajeIA(prompt: string): Promise<void> {
-    this.cargando = true;
+  private scrollToBottom(): void {
     try {
-      const promptFormateado = `
-Eres Ashbis IA, un asistente veterinario para perros y gatos.
-Reglas de respuesta:
-- Responde en espanol.
-- Usa texto plano.
-- Maximo 8 a 10 lineas.
-- Frases cortas.
-Pregunta:
-${prompt}`.trim();
-
-      const resp = await this.aiProxy.sendMessage(
-        promptFormateado,
-        this.categoriaSeleccionada,
-        this.mascotaSeleccionada
-      );
-      this.agregarMensaje('Ashbis IA', resp?.text || 'No se obtuvo respuesta.');
-    } catch (error) {
-      console.error(error);
-      this.agregarMensaje('Ashbis IA', 'Error al procesar tu mensaje.');
-    } finally {
-      this.cargando = false;
-    }
+      const el = this.scrollContainer?.nativeElement;
+      if (el) el.scrollTop = el.scrollHeight;
+    } catch {}
   }
 
-  seleccionarCategoria(categoria: string): void {
-    this.categoriaSeleccionada = categoria;
-    this.agregarMensaje('Ashbis IA', 'Perfecto. Que tipo de mascota tienes?');
+  seleccionarCategoria(categoria: { id: string; label: string }): void {
+    this.categoriaSeleccionada = categoria.id;
+    this.agregarMensaje('Tu', categoria.label);
+    this.agregarMensaje('Ashbis IA', '¿Qué tipo de mascota tienes?');
     this.pasoActual = 2;
   }
 
-  seleccionarMascota(tipo: string): void {
-    this.mascotaSeleccionada = tipo;
+  seleccionarMascota(tipo: { id: string; label: string }): void {
+    this.mascotaSeleccionada = tipo.id;
+    this.agregarMensaje('Tu', tipo.label);
     this.agregarMensaje(
       'Ashbis IA',
-      `Excelente. Escribe tu pregunta sobre ${this.categoriaSeleccionada} de tu ${this.mascotaSeleccionada}.`
+      `Perfecto. Escribe tu pregunta sobre ${this.categoriaSeleccionada} de tu ${tipo.id} y te ayudaré. 🐾`
     );
     this.pasoActual = 3;
   }
 
   async enviarPregunta(): Promise<void> {
-    if (!this.mensaje.trim()) return;
-    const textoUsuario = this.mensaje.trim();
-    this.agregarMensaje('Tu', textoUsuario);
+    const texto = this.mensaje.trim();
+    if (!texto || this.cargando) return;
+
+    this.agregarMensaje('Tu', texto);
     this.mensaje = '';
-    const preguntaFinal = `Tema: ${this.categoriaSeleccionada}, Mascota: ${this.mascotaSeleccionada}. Pregunta: ${textoUsuario}`;
-    await this.enviarMensajeIA(preguntaFinal);
+    this.cargando = true;
+
+    const systemPrompt = `
+Eres Ashbis IA, un asistente veterinario especializado ÚNICAMENTE en mascotas.
+Solo puedes responder preguntas sobre: salud animal, alimentación, vacunas, medicamentos,
+comportamiento, cuidados, emergencias veterinarias y bienestar animal.
+Si te preguntan algo fuera de ese ámbito, responde amablemente que solo puedes ayudar con temas de mascotas.
+Responde en español, en texto plano sin asteriscos ni markdown.
+Sé conciso (máximo 10 líneas) pero informativo.
+Siempre recomienda visitar a un veterinario ante síntomas graves.
+Contexto: Tema=${this.categoriaSeleccionada}, Mascota=${this.mascotaSeleccionada}.
+`.trim();
+
+    try {
+      const resp = await this.aiProxy.sendMessage(
+        `${systemPrompt}\n\nPregunta del usuario: ${texto}`,
+        this.categoriaSeleccionada,
+        this.mascotaSeleccionada
+      );
+      this.agregarMensaje('Ashbis IA', resp?.text || 'No obtuve respuesta, intenta nuevamente.');
+    } catch (error) {
+      console.error(error);
+      this.agregarMensaje('Ashbis IA', 'Hubo un error al procesar tu pregunta. Intenta de nuevo.');
+    } finally {
+      this.cargando = false;
+    }
   }
 
   reiniciarChat(): void {
@@ -125,7 +166,9 @@ ${prompt}`.trim();
     this.ngOnInit();
   }
 
-  ngOnInit(): void {
-    this.agregarMensaje('Ashbis IA', 'Hola, soy Ashbis IA. Sobre que quieres aprender hoy?');
+  // Permite seguir preguntando sin resetear el flujo
+  nuevaPregunta(): void {
+    this.mensaje = '';
+    // pasoActual se mantiene en 3 para seguir chateando
   }
 }

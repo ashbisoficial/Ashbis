@@ -1,125 +1,106 @@
-<ion-header class="header">
-  <ion-toolbar class="header">
+<ion-header translucent="true">
+  <ion-toolbar>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/tabs/listar-mascotas"></ion-back-button>
     </ion-buttons>
-    <ion-title>QR de Mascota</ion-title>
+    <ion-title>Código QR</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
+<ion-content [fullscreen]="true" class="ion-padding">
 
-  <!-- LOADING -->
-  <div *ngIf="cargando()" class="ion-text-center ion-padding-top">
+  <!-- Cargando -->
+  <div *ngIf="cargando()" class="loading-center">
     <ion-spinner name="crescent"></ion-spinner>
-    <p>Cargando información...</p>
   </div>
 
-  <div *ngIf="!cargando()">
+  <ng-container *ngIf="!cargando()">
 
-    <!-- SIN MASCOTAS -->
-    <ion-card *ngIf="misMascotas().length === 0" color="warning" class="ion-text-center">
-      <ion-card-header>
-        <ion-card-title>Sin Mascotas</ion-card-title>
-      </ion-card-header>
-      <ion-card-content>
-        <p>No tienes mascotas registradas.</p>
-        <ion-button fill="outline" [routerLink]="['/tabs/crear-mascotas']">
-          Registrar Mascota
-        </ion-button>
-      </ion-card-content>
-    </ion-card>
+    <!-- Sin mascotas -->
+    <div *ngIf="misMascotas().length === 0" class="empty-state">
+      <p>Aún no tienes mascotas registradas.</p>
+    </div>
 
-    <!-- CON MASCOTAS -->
-    <div *ngIf="misMascotas().length > 0">
+    <ng-container *ngIf="misMascotas().length > 0">
 
-      <!-- SELECTOR MASCOTA -->
-      <ion-item lines="none" class="mascota-selector ion-margin-bottom">
-        <ion-avatar slot="start">
-          <img [src]="mascotaSeleccionada()?.fotoUrl || 'assets/img/logo_ashbis.jpeg'">
-        </ion-avatar>
-
-        <ion-label position="stacked" class="rojo-label">
-          Selecciona tu mascota
-        </ion-label>
-
-        <ion-select 
+      <!-- Selector de mascota -->
+      <ion-item>
+        <ion-label>Mascota</ion-label>
+        <ion-select
           [value]="mascotaSeleccionada()?.id"
           (ionChange)="onMascotaChange($event)"
-          interface="popover"
-          placeholder="Elegir mascota"
-          class="select-rojo">
-
+          placeholder="Selecciona una mascota"
+        >
           <ion-select-option *ngFor="let m of misMascotas()" [value]="m.id">
             {{ m.nombre }}
           </ion-select-option>
-
         </ion-select>
       </ion-item>
 
-      <!-- SWITCH QR -->
-      <ion-segment [(ngModel)]="tipoQR" class="qr-switch ion-margin-bottom">
-        <ion-segment-button value="medico">
-          🏥 Ficha médica
-        </ion-segment-button>
-        <ion-segment-button value="emergencia">
-          🚨 Emergencia
-        </ion-segment-button>
-      </ion-segment>
-
-      <!-- QR -->
-      <div *ngIf="qrActivo; else faltanDatos" class="fade-in">
-
-        <ion-card class="ion-text-center qr-card" id="qrCardElement">
-
-          <ion-card-header>
-            <ion-card-title class="titulo-qr">
-              {{ mascotaSeleccionada()?.nombre }}
-            </ion-card-title>
-            <ion-card-subtitle>
-              {{ mascotaSeleccionada()?.especie }}
-            </ion-card-subtitle>
-          </ion-card-header>
-
-          <ion-card-content class="qr-content">
-
-            <div class="qr-code-wrapper">
-              <qrcode 
-                [qrdata]="qrActivo"
-                [width]="260"
-                [margin]="2">
-              </qrcode>
-            </div>
-
-            <p class="instruccion">
-              {{ tipoQR === 'medico'
-                ? 'Escanea para ver ficha médica completa'
-                : 'Escanea para contactar al dueño rápidamente' }}
-            </p>
-
-          </ion-card-content>
-        </ion-card>
-
-        <!-- BOTONES -->
-        <div class="acciones ion-padding-top">
-
-          <ion-button expand="block" color="danger" (click)="descargarPDF()">
-            Descargar PDF
-          </ion-button>
-
-        </div>
-
+      <!-- Sin teléfono: aviso -->
+      <div *ngIf="mascotaSeleccionada() && !userProfile?.telefono" class="aviso-telefono">
+        ⚠️ Agrega tu teléfono en <strong>Perfil</strong> para generar el QR de emergencia correctamente.
       </div>
 
-      <!-- ERROR DATOS -->
-      <ng-template #faltanDatos>
-        <ion-card color="danger">
-          <ion-card-content>
-            Falta teléfono en tu perfil para generar QR.
-          </ion-card-content>
-        </ion-card>
-      </ng-template>
+      <!-- Selector tipo QR -->
+      <ion-segment [(ngModel)]="tipoQR" class="ion-margin-vertical">
+        <ion-segment-button value="medico">🏥 Ficha Médica</ion-segment-button>
+        <ion-segment-button value="emergencia">🚨 Emergencia</ion-segment-button>
+      </ion-segment>
 
-    </div>
-  </div>
+      <!-- Tarjeta QR Médico -->
+      <ion-card *ngIf="tipoQR === 'medico'" id="qrMedicoCard" #qrMedicoEl>
+        <ion-card-header>
+          <ion-card-title>{{ mascotaSeleccionada()?.nombre }}</ion-card-title>
+          <ion-card-subtitle>Ficha Veterinaria Completa</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content class="qr-content">
+          <qrcode
+            *ngIf="qrFichaMedica"
+            [qrdata]="qrFichaMedica"
+            [width]="220"
+            errorCorrectionLevel="M"
+          ></qrcode>
+          <p class="qr-desc">Escanea para ver el historial veterinario completo</p>
+          <p class="qr-url">{{ qrFichaMedica }}</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Tarjeta QR Emergencia -->
+      <ion-card *ngIf="tipoQR === 'emergencia'" id="qrEmergenciaCard" #qrEmergenciaEl>
+        <ion-card-header>
+          <ion-card-title>🚨 {{ mascotaSeleccionada()?.nombre }}</ion-card-title>
+          <ion-card-subtitle>Mascota perdida - Contactar dueño</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content class="qr-content">
+          <qrcode
+            *ngIf="qrEmergencia"
+            [qrdata]="qrEmergencia"
+            [width]="220"
+            errorCorrectionLevel="H"
+          ></qrcode>
+          <p class="qr-desc">Contiene datos de contacto del dueño y cuidados especiales</p>
+
+          <!-- Vista previa del contenido del QR de emergencia -->
+          <div class="qr-preview">
+            <p *ngIf="userProfile?.telefono">📞 {{ userProfile?.telefono }}</p>
+            <p *ngIf="userProfile?.nombre">👤 {{ userProfile?.nombre }} {{ userProfile?.apellido }}</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Botón descargar PDF -->
+      <ion-button
+        expand="block"
+        class="ion-margin-top"
+        (click)="descargarPDF()"
+        [disabled]="descargandoPDF || !qrActivo"
+      >
+        <ion-icon name="download-outline" slot="start"></ion-icon>
+        {{ descargandoPDF ? 'Generando PDF...' : 'Descargar PDF' }}
+      </ion-button>
+
+    </ng-container>
+  </ng-container>
+
 </ion-content>

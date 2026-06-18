@@ -1,22 +1,28 @@
 export const environment = {
   production: true,
+
   firebase: {
-    apiKey: "AIzaSyAhVl-d7fikWwNB4gNPLV6ZcO6mg-CSoEg",
-    authDomain: "ashbis-ae5b2.firebaseapp.com",
-    projectId: "ashbis-ae5b2",
-    storageBucket: "ashbis-ae5b2.firebasestorage.app",
-    messagingSenderId: "691736988474",
-    appId: "1:691736988474:web:8fb6e043aa8e0b0c779e03",
-    measurementId: "G-8P1SNJ4TL3"
+    apiKey:            'AIzaSyAhVl-d7fikWwNB4gNPLV6ZcO6mg-CSoEg',
+    authDomain:        'ashbis-ae5b2.firebaseapp.com',
+    projectId:         'ashbis-ae5b2',
+    storageBucket:     'ashbis-ae5b2.firebasestorage.app',
+    messagingSenderId: '691736988474',
+    appId:             '1:691736988474:web:8fb6e043aa8e0b0c779e03',
+    measurementId:     'G-8P1SNJ4TL3',
   },
-  aiProxyUrl: "/api/ai-proxy",
-  appCheckSiteKey: "6LdcheUsAAAAAFPlmx2tqObzif4QvGLHr6deQhSS",
-  appCheckDebug: false,
-  appCheckDebugToken: '',
+
+  aiProxyUrl: '/api/ai-proxy',
+
+  appCheckSiteKey: '6LdcheUsAAAAAIup4YqAAxTuwnXiRqEJ7dYf7XD6',
+
   authAuthorizedDomains: [
-    'ashbis-ae5b2.firebaseapp.com',
     'ashbis-ae5b2.web.app',
-    'ashbis.app',
-    '*.ashbis.app'
-  ]
+    'ashbis-ae5b2.firebaseapp.com',
+    // 'ashbis.app',
+  ],
+
+  maxImageSizeMb:    10,
+  maxDocumentSizeMb: 20,
+  allowedImageTypes:    ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+  allowedDocumentTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
 };

@@ -248,6 +248,28 @@ ion-button[color="danger"] {
   border-radius: 16px;
   padding: 14px 16px;
   border-left: 4px solid #8b0808;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+/* ===== NAVEGACION ENTRE RESULTADOS ===== */
+.panel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+.panel-nav-contador {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  min-width: 44px;
+  text-align: center;
+}
+.panel-distancia {
+  color: #8b0808;
+  font-weight: 600;
+  white-space: nowrap;
 }
 .panel-header {
   display: flex;

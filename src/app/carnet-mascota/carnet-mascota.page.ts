@@ -1,13 +1,22 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { IonContent, IonButton } from '@ionic/angular/standalone';
+import { CommonModule, DatePipe } from '@angular/common';
+import {
+  IonContent,
+  IonSpinner,
+  IonBadge
+} from '@ionic/angular/standalone';
 import { QRCodeComponent } from 'angularx-qrcode';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
-import { Storage } from '@ionic/storage-angular';
-import { FirestoreService } from '../firebase/firestore';
+import {
+  Firestore,
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  query,
+  orderBy
+} from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-carnet-mascota',
@@ -15,185 +24,89 @@ import { FirestoreService } from '../firebase/firestore';
   styleUrls: ['./carnet-mascota.page.scss'],
   standalone: true,
   imports: [
-  CommonModule,
-  IonContent,
-  QRCodeComponent]
+    CommonModule,
+    DatePipe,
+    IonContent,
+    IonSpinner,
+    IonBadge,
+    QRCodeComponent
+  ],
+  providers: [DatePipe]
 })
 export class CarnetMascotaPage implements OnInit {
 
-  /* ===========================
-     INYECCIONES
-  =========================== */
   private route = inject(ActivatedRoute);
-  private firestore = inject(FirestoreService);
-  private storage = inject(Storage);
+  private firestore = inject(Firestore);
 
-  /* ===========================
-     ESTADO
-  =========================== */
   mascota: any = null;
   dueno: any = null;
+  vacunas: any[] = [];
+  medicamentos: any[] = [];
+  examenes: any[] = [];
+  citas: any[] = [];
 
   cargando = true;
-  modoOffline = false;
+  error = false;
+  qrUrl = '';
 
-  /* 🔐 QR seguro */
-  qrSeguro: string = '';
-
-  /* ===========================
-     INIT
-  =========================== */
   async ngOnInit() {
-
-    await this.storage.create();
-
     const id = this.route.snapshot.paramMap.get('id');
-
     if (!id) {
-      console.error('❌ ID no encontrado en la ruta');
+      this.error = true;
       this.cargando = false;
       return;
     }
 
-    await this.cargarMascota(id);
-  }
-
-  /* ===========================
-     🔄 CARGA (ONLINE + OFFLINE)
-  =========================== */
-  async cargarMascota(id: string) {
-
     try {
-      /* 🔥 INTENTO ONLINE */
-      const mascota = await this.firestore.getDocument(`mascotas/${id}`);
-
-      if (!mascota) throw new Error('Mascota no existe en Firestore');
-
-      this.mascota = mascota;
-
-      if (mascota.uidUsuario) {
-        this.dueno = await this.firestore.getDocument(`users/${mascota.uidUsuario}`);
-      }
-
-      /* 💾 GUARDAR OFFLINE */
-      await this.guardarOffline(id, {
-        mascota: this.mascota,
-        dueno: this.dueno
-      });
-
-      this.modoOffline = false;
-
-    } catch (error) {
-
-      console.warn('📴 Sin conexión → usando modo offline');
-
-      /* 🔥 OFFLINE */
-      const offline = await this.storage.get(`mascota_${id}`);
-
-      if (offline) {
-        this.mascota = offline.mascota;
-        this.dueno = offline.dueno;
-        this.modoOffline = true;
-      } else {
-        console.error('❌ No hay datos offline disponibles');
-      }
-    }
-
-    /* 🔐 GENERAR QR */
-    if (this.mascota?.id) {
-      await this.generarQRSeguro(this.mascota.id);
-    }
-
-    this.cargando = false;
-  }
-
-  /* ===========================
-     💾 STORAGE OFFLINE
-  =========================== */
-  async guardarOffline(id: string, data: any) {
-    try {
-      await this.storage.set(`mascota_${id}`, data);
-    } catch (error) {
-      console.warn('Error guardando offline', error);
+      await this.cargarMascota(id);
+    } catch (e) {
+      console.error('Error cargando carnet:', e);
+      this.error = true;
+    } finally {
+      this.cargando = false;
     }
   }
 
-  /* ===========================
-     🔐 QR ANTIFALSIFICACIÓN PRO
-  =========================== */
-  async generarQRSeguro(id: string) {
-
-    try {
-      const timestamp = Date.now();
-      const base = `${id}_${timestamp}`;
-
-      /* 🔒 HASH SHA-256 */
-      if (window.crypto?.subtle) {
-
-        const hashBuffer = await crypto.subtle.digest(
-          'SHA-256',
-          new TextEncoder().encode(base)
-        );
-
-        const token = Array.from(new Uint8Array(hashBuffer))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-
-        this.qrSeguro = `https://ashbis.com/carnet/${id}?token=${token}&ts=${timestamp}&v=1`;
-
-      } else {
-        throw new Error('Crypto no soportado');
-      }
-
-    } catch (error) {
-
-      console.warn('⚠️ Fallback QR (menos seguro)');
-
-      const token = btoa(`${id}_${Date.now()}`);
-
-      this.qrSeguro = `https://ashbis.com/carnet/${id}?token=${token}&v=1`;
+  private async cargarMascota(id: string): Promise<void> {
+    // 1. Datos de la mascota (Firestore reglas permiten leer carnet/{id} público)
+    const mascotaSnap = await getDoc(doc(this.firestore, `mascotas/${id}`));
+    if (!mascotaSnap.exists()) {
+      this.error = true;
+      return;
     }
-  }
 
-  /* ===========================
-     📄 GENERAR PDF PRO
-  =========================== */
-  async descargarPDF() {
+    this.mascota = mascotaSnap.data();
+    this.qrUrl = `${window.location.origin}/carnet/${id}`;
 
-    try {
-      const element = document.getElementById('carnet');
-
-      if (!element) {
-        console.error('❌ Elemento carnet no encontrado');
-        return;
+    // 2. Datos del dueño (solo nombre/teléfono para carnet)
+    if (this.mascota?.uidUsuario) {
+      const duenoSnap = await getDoc(
+        doc(this.firestore, `usuarios/${this.mascota.uidUsuario}`)
+      );
+      if (duenoSnap.exists()) {
+        const d = duenoSnap.data();
+        // Exponemos solo lo necesario para el carnet
+        this.dueno = {
+          nombre: d['nombre'] ?? '',
+          apellido: d['apellido'] ?? '',
+          telefono: d['telefono'] ?? ''
+        };
       }
-
-      const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true
-      });
-
-      const img = canvas.toDataURL('image/png');
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-
-      const width = pdf.internal.pageSize.getWidth();
-      const imgWidth = 170;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      const x = (width - imgWidth) / 2;
-      const y = 20;
-
-      pdf.addImage(img, 'PNG', x, y, imgWidth, imgHeight);
-
-      /* Footer PRO */
-      pdf.setFontSize(10);
-      pdf.text('Ashbis • Identificación digital de mascotas', width / 2, y + imgHeight + 10, { align: 'center' });
-
-      pdf.save(`Carnet-${this.mascota?.nombre || 'Mascota'}.pdf`);
-
-    } catch (error) {
-      console.error('❌ Error generando PDF', error);
     }
+
+    // 3. Subcolecciones médicas
+    const basePath = `mascotas/${id}`;
+
+    const [vacSnap, medSnap, exSnap, citaSnap] = await Promise.all([
+      getDocs(query(collection(this.firestore, `${basePath}/vacunas`), orderBy('fechaAplicacion', 'desc'))),
+      getDocs(query(collection(this.firestore, `${basePath}/medicamentos`), orderBy('fechaInicio', 'desc'))),
+      getDocs(query(collection(this.firestore, `${basePath}/examenes`), orderBy('fechaProgramada', 'asc'))),
+      getDocs(query(collection(this.firestore, `${basePath}/citas`), orderBy('fechaInicio', 'asc')))
+    ]);
+
+    this.vacunas     = vacSnap.docs.map(d => d.data());
+    this.medicamentos = medSnap.docs.map(d => d.data());
+    this.examenes    = exSnap.docs.map(d => d.data());
+    this.citas       = citaSnap.docs.map(d => d.data());
   }
 }

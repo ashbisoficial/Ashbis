@@ -13,7 +13,7 @@
       pagination="true"
       autoplay-delay="3500"
       autoplay-disable-on-interaction="false"
-      loop="true"
+      loop="false"
     >
       <swiper-slide *ngFor="let img of imagenesCarrusel">
         <div class="slide-content">
@@ -23,13 +23,13 @@
     </swiper-container>
   </div>
 
-  <!-- BOTÓN CHAT IA -->
+  <!-- BOTÓN CHAT IA 
   <div class="ion-text-center ion-margin-top chat-ia-button">
     <ion-button class="btn-ashbis" expand="block" shape="round" (click)="irAlChatIA()">
       <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
       Chat con Ashbis IA
     </ion-button>
-  </div>
+  </div> -->
 
   <!-- SECCIÓN MAPA -->
   <ion-card class="map-card-container ion-no-margin">
@@ -106,8 +106,23 @@
         </ion-button>
       </div>
 
+      <div class="panel-nav" *ngIf="marcadoresEnMapa.length > 1">
+        <ion-button fill="clear" size="small" (click)="irMarcadorAnterior()">
+          <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+        <span class="panel-nav-contador">{{ indiceMarcadorActual }} / {{ marcadoresEnMapa.length }}</span>
+        <ion-button fill="clear" size="small" (click)="irMarcadorSiguiente()">
+          <ion-icon name="chevron-forward-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+
       <h3 class="panel-nombre">{{ marcadorSeleccionado.title }}</h3>
-      <p class="panel-direccion">{{ marcadorSeleccionado.address }}</p>
+      <p class="panel-direccion">
+        {{ marcadorSeleccionado.address }}
+        <span class="panel-distancia" *ngIf="marcadorSeleccionado.distanciaM != null">
+          · {{ formatearDistancia(marcadorSeleccionado.distanciaM) }}
+        </span>
+      </p>
 
       <!-- INFO PÚBLICA -->
       <div class="panel-info-grid" *ngIf="!modoEdicion">
@@ -164,10 +179,12 @@
             Editar info
           </ion-button>
           <ion-button *ngIf="marcadorSeleccionado.tipo === 'veterinary_care'"
-            class="btn-ashbis-outline" fill="outline" size="small" shape="round"
+            [class]="esFavorita(marcadorSeleccionado.placeId) ? 'btn-ashbis' : 'btn-ashbis-outline'"
+            [fill]="esFavorita(marcadorSeleccionado.placeId) ? 'solid' : 'outline'"
+            size="small" shape="round"
             (click)="guardarVeterinariaFavorita()">
-            <ion-icon name="heart-outline" slot="start"></ion-icon>
-            Favorita
+            <ion-icon [name]="esFavorita(marcadorSeleccionado.placeId) ? 'heart' : 'heart-outline'" slot="start"></ion-icon>
+            {{ esFavorita(marcadorSeleccionado.placeId) ? 'En favoritos' : 'Favorita' }}
           </ion-button>
         </ng-container>
         <ng-container *ngIf="modoEdicion">

@@ -1,16 +1,20 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector, runInInjectionContext } from '@angular/core';
 import {
   Auth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   sendPasswordResetEmail,
   user
 } from '@angular/fire/auth';
 import { Observable } from 'rxjs';
-import { User } from 'firebase/auth';
+import type {
+  User,
+  UserCredential
+} from 'firebase/auth';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -19,27 +23,65 @@ import { environment } from 'src/environments/environment';
 export class AuthenticationService {
 
   private auth = inject(Auth);
+  private injector = inject(Injector);
 
-  // ✅ forma correcta (sin conflictos con Angular signals)
   authState$: Observable<User | null> = user(this.auth);
 
-  constructor() {}
+  constructor() {
+
+    
+
+  }
 
   // ✅ REGISTRO
   async createUser(email: string, password: string) {
-    return await createUserWithEmailAndPassword(this.auth, email, password);
+    return await createUserWithEmailAndPassword(
+      this.auth,
+      email,
+      password
+    );
   }
 
   // ✅ LOGIN EMAIL
   async login(email: string, password: string) {
-    return await signInWithEmailAndPassword(this.auth, email, password);
+    return await signInWithEmailAndPassword(
+      this.auth,
+      email,
+      password
+    );
   }
 
-  // 🔵 LOGIN GOOGLE
-  async loginWithGoogle() {
+  // 🔵 LOGIN GOOGLE (REDIRECT)
+  // Usamos redirect en vez de popup: signInWithPopup tiene un bug intermitente
+  // (auth/internal-error en el manejo del iframe de gapi) en varios proyectos.
+  // El flujo de redirect recarga la página y el resultado se recoge con
+  // getGoogleRedirectResult() al volver.
+  async loginWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    return await signInWithPopup(this.auth, provider);
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    await runInInjectionContext(this.injector, () =>
+      signInWithRedirect(this.auth, provider)
+    );
+    // La página se recarga aquí; el resultado se obtiene después con
+    // getGoogleRedirectResult() (normalmente llamado en ngOnInit del login).
+  }
+
+  // 🔵 Recoge el resultado tras volver del redirect de Google
+  async getGoogleRedirectResult(): Promise<UserCredential | null> {
+    try {
+      const result = await runInInjectionContext(this.injector, () =>
+        getRedirectResult(this.auth)
+      );
+      return result;
+    } catch (error: any) {
+      console.error('AUTH REDIRECT ERROR');
+      console.error('CODE:', error?.code);
+      console.error('MESSAGE:', error?.message);
+      console.error(error);
+      throw error;
+    }
   }
 
   getAuthConfigStatus() {
@@ -51,7 +93,10 @@ export class AuthenticationService {
 
   // 🔐 RESET PASSWORD
   async resetPassword(email: string) {
-    return await sendPasswordResetEmail(this.auth, email);
+    return await sendPasswordResetEmail(
+      this.auth,
+      email
+    );
   }
 
   // 🚪 LOGOUT
@@ -64,9 +109,10 @@ export class AuthenticationService {
     return this.auth.currentUser;
   }
 
-  // ✅ obtener usuario una vez
+  // ✅ OBTENER USUARIO
   getUser(): Promise<User | null> {
     return new Promise((resolve, reject) => {
+
       const sub = this.authState$.subscribe({
         next: (user) => {
           sub.unsubscribe();
@@ -74,6 +120,7 @@ export class AuthenticationService {
         },
         error: reject
       });
+
     });
   }
 }

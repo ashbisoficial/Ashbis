@@ -1,19 +1,25 @@
 import { registerLocaleData } from '@angular/common';
 import localeEsCl from '@angular/common/locales/es-CL';
+
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
+
 import { provideIonicAngular, IonicRouteStrategy } from '@ionic/angular/standalone';
-import { provideFirebaseApp, initializeApp, getApp } from '@angular/fire/app';
+
+import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import {
   provideAuth,
-  initializeAuth,
-  browserLocalPersistence,
-  browserPopupRedirectResolver
+  getAuth
 } from '@angular/fire/auth';
+import {
+  provideAppCheck,
+  initializeAppCheck,
+  ReCaptchaV3Provider
+} from '@angular/fire/app-check';
+
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 import { provideStorage, getStorage } from '@angular/fire/storage';
-import { provideAppCheck, initializeAppCheck, ReCaptchaV3Provider } from '@angular/fire/app-check';
 
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
@@ -22,33 +28,43 @@ import { environment } from './environments/environment';
 
 registerLocaleData(localeEsCl);
 
-if (!environment.production && environment.appCheckDebug) {
-  (self as Window & typeof globalThis & { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean })
-    .FIREBASE_APPCHECK_DEBUG_TOKEN = environment.appCheckDebugToken || true;
+// ── App Check en modo debug para desarrollo local ───────────────────────────
+// En localhost, reCAPTCHA v3 no puede verificar el dominio real, así que
+// usamos un "debug token". IMPORTANTE: usamos un token FIJO (no `true`) para
+// que funcione en cualquier navegador/perfil/máquina que abras en localhost.
+// Si se deja en `true`, Firebase genera un token ALEATORIO distinto por cada
+// navegador/perfil, y solo el que hayas registrado en la consola funcionará
+// (por eso fallaba el login en otro navegador).
+// Este token ya debe estar registrado en:
+// Firebase Console > Build > App Check > Apps > (tu app web) > ⋮ > Administrar
+// tokens de depuración > Agregar token de depuración.
+if (!environment.production) {
+  (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = '851c0fdb-5c66-4e26-b1f2-c23abd32e8aa';
 }
 
 bootstrapApplication(AppComponent, {
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+
     provideIonicAngular(),
+
     provideRouter(routes, withPreloading(PreloadAllModules)),
+
     provideHttpClient(withInterceptors([authInterceptor])),
+
     provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideAuth(() =>
-      initializeAuth(getApp(), {
-        persistence: browserLocalPersistence,
-        popupRedirectResolver: browserPopupRedirectResolver
-      })
-    ),
-    provideFirestore(() => getFirestore()),
-    provideStorage(() => getStorage()),
+
+    provideAuth(() => getAuth()),
+
     provideAppCheck(() =>
-      initializeAppCheck(getApp(), {
-        provider: new ReCaptchaV3Provider(
-          environment.appCheckSiteKey
-        ),
+      initializeAppCheck(undefined, {
+        provider: new ReCaptchaV3Provider(environment.appCheckSiteKey),
         isTokenAutoRefreshEnabled: true
       })
-    )
+    ),
+
+    provideFirestore(() => getFirestore()),
+
+    provideStorage(() => getStorage())
   ]
-}).catch((err) => console.error(err));
+}).catch(err => console.error(err));

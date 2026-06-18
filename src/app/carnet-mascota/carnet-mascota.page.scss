@@ -1,75 +1,168 @@
+// ── Fondo ────────────────────────────────────────────────────────────────────
 .wallet-bg {
-  --background: #000;
+  --background: #f0f4f8;
+}
+
+// ── Centrado loading/error ───────────────────────────────────────────────────
+.loading-center,
+.error-center {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 12px;
+  color: var(--ion-color-medium);
 }
 
+// ── Tarjeta principal ────────────────────────────────────────────────────────
 .wallet-card {
-  width: 95%;
-  max-width: 420px;
-  background: linear-gradient(135deg, #0a0a0a, #111);
-  border-radius: 24px;
-  padding: 20px;
-  color: #fff;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  max-width: 480px;
+  margin: 20px auto;
+  padding: 0 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-/* HEADER */
+// ── Header ───────────────────────────────────────────────────────────────────
 .wallet-header {
+  background: var(--ion-color-primary);
+  color: white;
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 
   h2 {
-    margin: 0;
+    margin: 0 0 4px;
     font-size: 1.4rem;
+    font-weight: 700;
   }
-
-  p {
-    color: #aaa;
-    font-size: 0.9rem;
-  }
+  p { margin: 0; opacity: 0.85; font-size: 0.9rem; }
 
   img {
-    width: 60px;
-    height: 60px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     object-fit: cover;
+    border: 3px solid rgba(255,255,255,0.6);
   }
 }
 
-/* BODY */
+// ── Cuerpo datos básicos ─────────────────────────────────────────────────────
 .wallet-body {
-  margin-top: 15px;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 
   .row {
     display: flex;
     justify-content: space-between;
-    padding: 6px 0;
-    border-bottom: 1px solid #222;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.92rem;
+
+    &:last-child { border-bottom: none; }
+
+    span { color: var(--ion-color-medium); }
+    strong { font-weight: 600; }
   }
 }
 
-/* OWNER */
-.wallet-owner {
-  margin-top: 12px;
-  font-size: 0.9rem;
-  color: #ccc;
+// ── Alerta indicadores ───────────────────────────────────────────────────────
+.wallet-alert {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.88rem;
+
+  strong { display: block; margin-bottom: 8px; }
 }
 
-/* QR */
-.wallet-qr {
-  margin-top: 20px;
+.badge-indicador {
+  display: inline-block;
+  background: #ffc107;
+  color: #000;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  margin: 3px;
+}
+
+// ── Dueño ────────────────────────────────────────────────────────────────────
+.wallet-owner {
+  background: #e8f4fd;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  p { margin: 4px 0; }
+}
+
+// ── Secciones médicas ────────────────────────────────────────────────────────
+.seccion {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+
+  h3 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ion-color-primary);
+  }
+}
+
+.item-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 0.88rem;
+
+  &:last-child { border-bottom: none; }
+
+  strong { font-size: 0.92rem; color: #333; }
+  span { color: var(--ion-color-medium); }
+}
+
+.proxima {
+  color: var(--ion-color-warning) !important;
+  font-weight: 500;
+}
+
+.nota {
+  font-style: italic;
+  font-size: 0.82rem !important;
+}
+
+// ── Sin registros ────────────────────────────────────────────────────────────
+.sin-registros {
   text-align: center;
-  background: #fff;
-  padding: 10px;
-  border-radius: 16px;
+  color: var(--ion-color-medium);
+  padding: 20px;
+  font-size: 0.9rem;
+}
+
+// ── QR ───────────────────────────────────────────────────────────────────────
+.wallet-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .scan-text {
-  text-align: center;
   font-size: 0.8rem;
-  color: #888;
-  margin-top: 8px;
+  color: var(--ion-color-medium);
+  margin: 0;
 }

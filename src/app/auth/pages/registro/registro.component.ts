@@ -80,6 +80,7 @@ export class RegistroComponent implements OnInit {
   mostrarPass = false;
   mostrarPass2 = false;
   cargando = false;
+  errorRegistro: string | null = null;
 
   nombreRegex = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
   telefonoRegex = /^\+569\d{8}$/;
@@ -135,6 +136,7 @@ export class RegistroComponent implements OnInit {
 
   async registrarse(): Promise<void> {
     this.cargando = true;
+    this.errorRegistro = null;
     if (!this.datosForm.valid) {
       this.cargando = false;
       return;
@@ -155,9 +157,18 @@ export class RegistroComponent implements OnInit {
       };
 
       await this.firestoreService.createDocument(Models.Auth.PathUsers, datosUser, respuesta.user.uid);
-      this.router.navigate(['/login']);
-    } catch (error) {
+      // El usuario ya queda autenticado tras createUserWithEmailAndPassword,
+      // así que navegamos directo a home (no a /login, que lo rebotaría por publicGuard).
+      await this.router.navigate(['/tabs/home'], { replaceUrl: true });
+    } catch (error: any) {
       console.error('Error registrando', error);
+      if (error?.code === 'auth/email-already-in-use') {
+        this.errorRegistro = 'Ese correo ya está registrado. Intenta iniciar sesión.';
+      } else if (error?.code === 'auth/weak-password') {
+        this.errorRegistro = 'La contraseña es demasiado débil.';
+      } else {
+        this.errorRegistro = 'No se pudo completar el registro. Intenta nuevamente.';
+      }
     } finally {
       this.cargando = false;
     }

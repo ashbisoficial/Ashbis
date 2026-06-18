@@ -106,19 +106,19 @@ export class CrearMascotasComponent implements OnInit {
 
   ngOnInit(): void {
     this.mascotaForm = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      numeroChip: [''],
-      edad: ['', [Validators.required]],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(40)]],
+      numeroChip: ['', [Validators.pattern(/^\d{15}$/)]],
+      edad: ['', [Validators.required, Validators.min(0), Validators.max(40)]],
       sexo: ['', Validators.required],
-      fechaNacimiento: [''],
+      fechaNacimiento: ['', Validators.required],
       especie: ['', Validators.required],
       tamano: ['', Validators.required],
-      peso: ['', Validators.required],
-      color: ['', [Validators.required]],
-      raza: ['', Validators.required],
+      peso: ['', [Validators.required, Validators.min(0.1), Validators.max(200)]],
+      color: ['', [Validators.required, Validators.minLength(3)]],
+      raza: ['', [Validators.required, Validators.minLength(2)]],
       castrado: ['', Validators.required],
       procedencia: ['', Validators.required],
-      senas: ['', Validators.required],
+      senas: ['', [Validators.required, Validators.minLength(3)]],
       notas: [''],
       fotoUrl: ['']
     });
@@ -212,7 +212,7 @@ export class CrearMascotasComponent implements OnInit {
       let galeriaUrls: string[] = [];
 
       if (this.imagenFile) {
-        const refPrincipal = ref(this.storage, `mascotas/${user.uid}/${id}/principal-${Date.now()}-${this.imagenFile.name}`);
+        const refPrincipal = ref(this.storage, `mascotas/${user.uid}/${id}/foto/${Date.now()}-${this.imagenFile.name}`);
         await uploadBytes(refPrincipal, this.imagenFile);
         fotoUrl = await getDownloadURL(refPrincipal);
       }
@@ -280,6 +280,10 @@ export class CrearMascotasComponent implements OnInit {
   abrirCalendario(): void {
     this.fechaTemp = this.mascotaForm.get('fechaNacimiento')?.value || null;
     this.mostrarCalendario = true;
+  }
+
+  onFechaTempChange(event: any): void {
+    this.fechaTemp = event.detail.value;
   }
 
   cancelarFecha(): void {
