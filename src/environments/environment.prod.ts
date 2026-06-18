@@ -15,6 +15,9 @@ export const environment = {
 
   appCheckSiteKey: '6LdcheUsAAAAAIup4YqAAxTuwnXiRqEJ7dYf7XD6',
 
+  // Mismo Web Client ID que en environment.ts (es público, no es un secreto)
+  googleWebClientId: '691736988474-1k8beq55v07k8tsbj3d1rsle52q5s12l.apps.googleusercontent.com',
+
   authAuthorizedDomains: [
     'ashbis-ae5b2.web.app',
     'ashbis-ae5b2.firebaseapp.com',

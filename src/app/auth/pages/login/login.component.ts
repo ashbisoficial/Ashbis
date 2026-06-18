@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, inject, AfterViewInit, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -26,6 +26,13 @@ import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
 import { SecurityService } from 'src/app/services/security.service';
+import { environment } from 'src/environments/environment';
+import type { User } from 'firebase/auth';
+
+// El script de Google Identity Services (cargado en index.html) define este
+// objeto global; no hay un paquete de tipos oficial liviano para él, así que
+// lo tratamos como `any` y nos apoyamos en los nombres de la documentación de Google.
+declare const google: any;
 
 @Component({
   selector: 'app-login',
@@ -47,7 +54,7 @@ import { SecurityService } from 'src/app/services/security.service';
     IonImg
   ]
 })
-export class LoginComponent implements OnInit, OnDestroy {
+export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authenticationService = inject(AuthenticationService);
   private readonly router = inject(Router);
@@ -63,6 +70,11 @@ export class LoginComponent implements OnInit, OnDestroy {
   cargando = false;
   showPass = false;
   loginError: string | null = null;
+  googleNoDisponible = false;
+
+  @ViewChild('googleBtn') private googleBtnRef?: ElementRef<HTMLDivElement>;
+  private googleBotonRenderizado = false;
+  private googleRetryTimeoutId?: ReturnType<typeof setTimeout>;
 
   constructor() {
     addIcons({ eye, eyeOff, logoGoogle });
@@ -74,53 +86,67 @@ export class LoginComponent implements OnInit, OnDestroy {
       password: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(6)])
     });
 
-    // Si venimos de un redirect de Google, procesamos antes de dejar
-    // que la suscripción de authState dispare la navegación por su cuenta.
-    this.procesarRedirectGoogle().finally(() => {
-      this.authenticationService.authState$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe((user) => {
-          if (user) this.router.navigate(['tabs/home'], { replaceUrl: true });
-        });
-    });
+    this.authenticationService.authState$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((user) => {
+        if (user) this.router.navigate(['tabs/home'], { replaceUrl: true });
+      });
   }
 
-  private async procesarRedirectGoogle(): Promise<void> {
-    try {
-      const cred = await this.authenticationService.getGoogleRedirectResult();
-      if (!cred?.user) return; // No venimos de un redirect de Google
+  ngAfterViewInit(): void {
+    this.inicializarBotonGoogle();
+  }
 
-      const user = cred.user;
-      const fullName = user.displayName || '';
-      const parts = fullName.split(' ');
-      const nombre = this.security.sanitizeText(parts[0] || '');
-      const apellido = this.security.sanitizeText(parts.slice(1).join(' ') || '');
+  // 🔵 Dibuja el botón oficial de Google (Google Identity Services) en vez de
+  // usar signInWithPopup/signInWithRedirect de Firebase. Esto evita el
+  // auth/internal-error que ocurre en Chrome cuando las cookies de terceros
+  // están bloqueadas: GIS usa su propio mecanismo (FedCM cuando está
+  // disponible) en vez de depender del iframe puente de Firebase.
+  // Reintenta unas cuantas veces por si el script de Google (cargado en
+  // index.html) todavía no terminó de descargarse.
+  private inicializarBotonGoogle(intentos = 0): void {
+    if (this.googleBotonRenderizado) return;
 
-      const datosUser = {
-        uid: user.uid,
-        nombre,
-        apellido,
-        email: this.security.sanitizeText(user.email || ''),
-        telefono: this.security.sanitizeText(user.phoneNumber || ''),
-        foto: this.security.sanitizeText(user.photoURL || ''),
-        provider: 'google'
-      };
-
-      const userExistente = await this.firestoreService.getDocument(`usuarios/${user.uid}`);
-      if (!userExistente) {
-        await this.firestoreService.createDocument('usuarios', datosUser, user.uid);
+    if (typeof google === 'undefined' || !google?.accounts?.id || !this.googleBtnRef) {
+      if (intentos < 20) {
+        this.googleRetryTimeoutId = setTimeout(() => this.inicializarBotonGoogle(intentos + 1), 150);
       } else {
-        await this.firestoreService.updateDocument(`usuarios/${user.uid}`, {
-          nombre,
-          apellido,
-          foto: this.security.sanitizeText(user.photoURL || '')
-        });
+        console.warn('No se pudo cargar Google Identity Services (script bloqueado o sin red).');
+        this.googleNoDisponible = true;
       }
+      return;
+    }
 
+    google.accounts.id.initialize({
+      client_id: environment.googleWebClientId,
+      callback: (response: { credential: string }) => this.onGoogleCredential(response)
+    });
+
+    google.accounts.id.renderButton(this.googleBtnRef.nativeElement, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      shape: 'pill',
+      text: 'continue_with',
+      logo_alignment: 'left',
+      width: 320
+    });
+
+    this.googleBotonRenderizado = true;
+  }
+
+  // 🔵 Google nos entrega un ID token (JWT) ya validado; lo intercambiamos
+  // por una sesión de Firebase Auth con signInWithCredential.
+  private async onGoogleCredential(response: { credential: string }): Promise<void> {
+    this.loginError = null;
+    this.cargando = true;
+    try {
+      const cred = await this.authenticationService.signInWithGoogleIdToken(response.credential);
+      await this.sincronizarPerfilGoogle(cred.user);
       this.router.navigate(['tabs/home'], { replaceUrl: true });
     } catch (error: any) {
       console.error('================================');
-      console.error('ERROR GOOGLE LOGIN (redirect)');
+      console.error('ERROR GOOGLE LOGIN (GIS)');
       console.error('CODE:', error?.code);
       console.error('MESSAGE:', error?.message);
       console.error('FULL ERROR:', error);
@@ -128,10 +154,46 @@ export class LoginComponent implements OnInit, OnDestroy {
 
       this.loginError =
         `${error?.code || 'sin-codigo'} - ${error?.message || 'sin-mensaje'}`;
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  // Crea o actualiza el documento de perfil en Firestore tras un login con Google.
+  private async sincronizarPerfilGoogle(user: User): Promise<void> {
+    const fullName = user.displayName || '';
+    const parts = fullName.split(' ');
+    const nombre = this.security.sanitizeText(parts[0] || '');
+    const apellido = this.security.sanitizeText(parts.slice(1).join(' ') || '');
+
+    const datosUser = {
+      uid: user.uid,
+      nombre,
+      apellido,
+      email: this.security.sanitizeText(user.email || ''),
+      telefono: this.security.sanitizeText(user.phoneNumber || ''),
+      foto: this.security.sanitizeText(user.photoURL || ''),
+      fotoOrigen: 'google' as const,
+      provider: 'google',
+      fechaRegistro: new Date().toISOString()
+    };
+
+    const userExistente = await this.firestoreService.getDocument(`usuarios/${user.uid}`);
+    if (!userExistente) {
+      await this.firestoreService.createDocument('usuarios', datosUser, user.uid);
+    } else {
+      const actualizacion: any = { nombre, apellido };
+      // Si el usuario ya eligió una foto propia, no la pisamos con la de Google en cada login.
+      if ((userExistente as any)?.fotoOrigen !== 'custom') {
+        actualizacion.foto = this.security.sanitizeText(user.photoURL || '');
+        actualizacion.fotoOrigen = 'google';
+      }
+      await this.firestoreService.updateDocument(`usuarios/${user.uid}`, actualizacion);
     }
   }
 
   ngOnDestroy(): void {
+    if (this.googleRetryTimeoutId) clearTimeout(this.googleRetryTimeoutId);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -165,27 +227,6 @@ export class LoginComponent implements OnInit, OnDestroy {
       console.error(err);
       this.loginError = 'Credenciales incorrectas.';
     } finally {
-      this.cargando = false;
-    }
-  }
-
-  async loginGoogle(): Promise<void> {
-    this.loginError = null;
-    this.cargando = true;
-    try {
-      // Esto redirige la página a Google; el resultado se procesa
-      // en procesarRedirectGoogle() cuando el usuario vuelve.
-      await this.authenticationService.loginWithGoogle();
-    } catch (error: any) {
-      console.error('================================');
-      console.error('ERROR GOOGLE LOGIN');
-      console.error('CODE:', error?.code);
-      console.error('MESSAGE:', error?.message);
-      console.error('FULL ERROR:', error);
-      console.error('================================');
-
-      this.loginError =
-        `${error?.code || 'sin-codigo'} - ${error?.message || 'sin-mensaje'}`;
       this.cargando = false;
     }
   }

@@ -5,6 +5,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   GoogleAuthProvider,
+  signInWithCredential,
   signInWithRedirect,
   getRedirectResult,
   sendPasswordResetEmail,
@@ -51,11 +52,25 @@ export class AuthenticationService {
     );
   }
 
-  // 🔵 LOGIN GOOGLE (REDIRECT)
-  // Usamos redirect en vez de popup: signInWithPopup tiene un bug intermitente
-  // (auth/internal-error en el manejo del iframe de gapi) en varios proyectos.
-  // El flujo de redirect recarga la página y el resultado se recoge con
-  // getGoogleRedirectResult() al volver.
+  // 🔵 LOGIN GOOGLE — Google Identity Services (recomendado, en uso actualmente)
+  // El componente de login obtiene un ID token con el botón oficial de GIS
+  // (window.google.accounts.id) y lo intercambia aquí por una sesión de
+  // Firebase Auth. A diferencia de signInWithPopup/signInWithRedirect, esto
+  // no depende del iframe puente de Firebase ni de cookies de terceros entre
+  // tu dominio y *.firebaseapp.com, así que funciona aunque Chrome las bloquee.
+  async signInWithGoogleIdToken(idToken: string): Promise<UserCredential> {
+    const credential = GoogleAuthProvider.credential(idToken);
+    return await runInInjectionContext(this.injector, () =>
+      signInWithCredential(this.auth, credential)
+    );
+  }
+
+  // 🔵 LOGIN GOOGLE (REDIRECT) — LEGADO, ya no se usa desde el componente de login.
+  // Se deja aquí por si en el futuro se necesita para apps nativas con
+  // Capacitor (donde GIS web no aplica igual y se usaría un plugin nativo
+  // en su lugar). En navegador de escritorio/móvil, este flujo es el que
+  // fallaba con auth/internal-error cuando Chrome bloquea cookies de
+  // terceros en localhost; por eso se reemplazó por signInWithGoogleIdToken.
   async loginWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
@@ -68,7 +83,7 @@ export class AuthenticationService {
     // getGoogleRedirectResult() (normalmente llamado en ngOnInit del login).
   }
 
-  // 🔵 Recoge el resultado tras volver del redirect de Google
+  // 🔵 Recoge el resultado tras volver del redirect de Google (legado, ver nota arriba)
   async getGoogleRedirectResult(): Promise<UserCredential | null> {
     try {
       const result = await runInInjectionContext(this.injector, () =>

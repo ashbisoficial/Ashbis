@@ -153,7 +153,9 @@ export class RegistroComponent implements OnInit {
         telefono: this.security.sanitizeText(data.telefono!),
         direccion: this.security.sanitizeText(data.direccion!),
         region: this.security.sanitizeText(data.region!),
-        email: cleanEmail
+        email: cleanEmail,
+        provider: 'password',
+        fechaRegistro: new Date().toISOString()
       };
 
       await this.firestoreService.createDocument(Models.Auth.PathUsers, datosUser, respuesta.user.uid);

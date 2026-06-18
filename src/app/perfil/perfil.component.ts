@@ -98,6 +98,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   user: UsuarioActual | null = null;
   user_profile: Models.Auth.UserProfile | undefined;
+  private readonly datePipe = inject(DatePipe);
 
   cargando = true;
   cargaFallida = false;
@@ -229,6 +230,12 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   get descripcionLength(): number {
     return (this.profileForm.get('descripcion')?.value ?? '').length;
+  }
+
+  get miembroDesde(): string | null {
+    const fecha = this.user_profile?.fechaRegistro;
+    if (!fecha) return null;
+    return this.datePipe.transform(fecha, 'MMMM yyyy', undefined, 'es-CL');
   }
 
   /** Abre el selector de archivos nativo (oculto) para elegir una foto nueva. */

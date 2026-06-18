@@ -36,6 +36,12 @@ export const environment = {
   // Actívalo en Firebase Console → App Check → Registrar app
   appCheckSiteKey: '6LdcheUsAAAAAIup4YqAAxTuwnXiRqEJ7dYf7XD6',
 
+  // Web Client ID de OAuth para "Sign in with Google" (Google Identity Services).
+  // Sácalo de: Firebase Console → Authentication → Sign-in method → Google →
+  // "Web SDK configuration" → "Web client ID" (termina en .apps.googleusercontent.com).
+  // ⚠️ Reemplaza este placeholder o el botón de Google no funcionará.
+  googleWebClientId: '691736988474-1k8beq55v07k8tsbj3d1rsle52q5s12l.apps.googleusercontent.com',
+
   // Dominios autorizados para OAuth de Google (añadir el dominio de producción)
   authAuthorizedDomains: [
     'localhost',

@@ -29,7 +29,8 @@ service cloud.firestore {
           (!('titulo'    in data) || data.titulo.size()    <= 500) &&
           (!('lugar'     in data) || data.lugar.size()     <= 500) &&
           (!('tipo'      in data) || data.tipo.size()      <= 200) &&
-          (!('direccion' in data) || data.direccion.size() <= 500)
+          (!('direccion' in data) || data.direccion.size() <= 500) &&
+          (!('descripcion' in data) || data.descripcion.size() <= 1000)
         );
     }
 

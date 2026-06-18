@@ -13,12 +13,13 @@
   <meta name="msapplication-tap-highlight" content="no" />
 
   <link rel="icon" type="image/png" href="assets/icon/favicon.png" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <meta http-equiv="Content-Security-Policy" content="
   default-src 'self' https: data:;
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://apis.google.com https://www.google.com https://www.gstatic.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://apis.google.com https://www.google.com https://www.gstatic.com https://accounts.google.com;
   style-src 'self' 'unsafe-inline';
   frame-src 'self' https://accounts.google.com https://*.google.com https://*.gstatic.com https://*.firebaseapp.com https://*.web.app https://apis.google.com https://www.google.com;
-  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://content-firebaseappcheck.googleapis.com https://overpass-api.de https://overpass.kumi.systems https://maps.mail.ru;
+  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://content-firebaseappcheck.googleapis.com https://overpass-api.de https://overpass.kumi.systems https://maps.mail.ru https://accounts.google.com;
   img-src 'self' data: https:;
 ">
   <!-- add to homescreen for ios -->

@@ -64,6 +64,7 @@
 
         <h1 class="perfil-nombre">{{ user_profile.nombre }} {{ user_profile.apellido }}</h1>
         <p class="perfil-email">{{ user_profile.email }}</p>
+        <p class="perfil-miembro-desde" *ngIf="miembroDesde">Miembro desde {{ miembroDesde }}</p>
 
         <div class="perfil-badges" *ngIf="esCuentaGoogle">
           <ion-badge color="medium">

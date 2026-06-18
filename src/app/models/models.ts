@@ -11,10 +11,17 @@ export namespace Models {
       apellido: string;
       email: string;
       telefono?: string;
+      fechaNacimiento?: string;
       region?: string;
+      comuna?: string;
       direccion?: string;
+      descripcion?: string;
       foto?: string;
+      /** Origen de la foto actual: 'google' (viene de la cuenta de Google) o 'custom' (subida por el usuario). */
+      fotoOrigen?: 'google' | 'custom';
       provider?: string;
+      /** Fecha ISO de creación de la cuenta, usada para mostrar "Miembro desde". */
+      fechaRegistro?: string;
     }
   }
 

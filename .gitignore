@@ -68,3 +68,9 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Firebase
+functions/.env
+functions/node_modules/
+functions/lib/
+.firebase/

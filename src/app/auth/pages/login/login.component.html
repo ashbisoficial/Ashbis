@@ -59,11 +59,14 @@
           INGRESAR
         </ion-button>
 
-        <!-- BOTÓN GOOGLE -->
-        <button type="button" class="google-btn" (click)="loginGoogle()">
-          <img src="assets/icon/google_logo.png" alt="Google logo" />
-          <span>Sign in with Google</span>
-        </button>
+        <!-- BOTÓN GOOGLE (renderizado por Google Identity Services) -->
+        <div class="google-btn-container">
+          <div #googleBtn></div>
+          <p class="google-btn-fallback" *ngIf="googleNoDisponible">
+            No se pudo cargar el inicio de sesión con Google. Verifica tu conexión o
+            desactiva temporalmente algún bloqueador de anuncios/cookies y recarga la página.
+          </p>
+        </div>
 
         <!-- OLVIDO CONTRASEÑA -->
         <ion-button fill="clear" class="btn-olvido" (click)="irARecuperarPassword()">

@@ -434,8 +434,8 @@ export class FirestoreService {
     const r = ref(this.storage, path);
     await uploadBytes(r, file);
     const url = await getDownloadURL(r);
-    // Guardamos la URL en el perfil del usuario
-    await updateDoc(doc(this.firestore, `usuarios/${uid}`), { foto: url, updatedAt: serverTimestamp() });
+    // Guardamos la URL en el perfil del usuario, marcando que ahora el origen es una foto propia
+    await updateDoc(doc(this.firestore, `usuarios/${uid}`), { foto: url, fotoOrigen: 'custom', updatedAt: serverTimestamp() });
     return url;
   }
 
