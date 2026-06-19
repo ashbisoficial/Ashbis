@@ -51,6 +51,15 @@ service cloud.firestore {
         allow update: if isUser(uid) && noLongStrings(request.resource.data);
         allow delete: if isUser(uid);
       }
+
+      // Copia mínima y pública de los datos de contacto (nombre, apellido,
+      // teléfono), usada por la ficha pública del carnet de mascota perdida.
+      // El documento de usuario completo (usuarios/{uid}) sigue siendo
+      // privado: email, dirección, fecha de nacimiento, etc. nunca se exponen.
+      match /publico/{docId} {
+        allow read:   if true;
+        allow write:  if isUser(uid) && noLongStrings(request.resource.data);
+      }
     }
 
     match /mascotas/{petId} {
@@ -88,7 +97,7 @@ service cloud.firestore {
       }
 
       match /citas/{citaId} {
-        allow read:   if ownsPet(petId);
+        allow read:   if true;
         allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow delete: if ownsPet(petId);

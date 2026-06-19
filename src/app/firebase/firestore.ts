@@ -427,6 +427,22 @@ export class FirestoreService {
 
   // ── Foto de perfil de usuario ──────────────────────────────────────────────
 
+  /**
+   * Mantiene una copia mínima y pública de los datos de contacto del usuario
+   * (nombre, apellido, teléfono) en usuarios/{uid}/publico/contacto, separada
+   * del documento de perfil completo (que es privado). La usa la ficha
+   * pública del carnet de mascota perdida para mostrar a quién contactar
+   * sin exponer el email, la dirección o la fecha de nacimiento del dueño.
+   */
+  async setPublicContact(uid: string, datos: { nombre: string; apellido: string; telefono?: string }): Promise<void> {
+    const clean = this.security.sanitizeFirestoreObject(datos);
+    await setDoc(
+      doc(this.firestore, `usuarios/${uid}/publico/contacto`),
+      { ...clean, actualizadoEn: serverTimestamp() },
+      { merge: true }
+    );
+  }
+
   async uploadProfilePhoto(uid: string, file: File): Promise<string> {
     this.assertAuthenticated();
     const safeFilename = this.sanitizeFilename(file.name);

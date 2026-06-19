@@ -305,6 +305,11 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
     try {
       await this.firestoreService.updateDocument(`${Models.Auth.PathUsers}/${this.user.uid}`, payload);
+      await this.firestoreService.setPublicContact(this.user.uid, {
+        nombre: payload.nombre,
+        apellido: payload.apellido,
+        telefono: payload.telefono
+      });
       this.editMode = false;
       this.showToast('Perfil actualizado correctamente.', 'success');
     } catch (err) {

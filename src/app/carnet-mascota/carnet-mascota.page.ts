@@ -78,35 +78,48 @@ export class CarnetMascotaPage implements OnInit {
     this.mascota = mascotaSnap.data();
     this.qrUrl = `${window.location.origin}/carnet/${id}`;
 
-    // 2. Datos del dueño (solo nombre/teléfono para carnet)
+    // 2. Datos de contacto del dueño: leemos la copia pública y mínima
+    // (usuarios/{uid}/publico/contacto), nunca el perfil privado completo.
     if (this.mascota?.uidUsuario) {
-      const duenoSnap = await getDoc(
-        doc(this.firestore, `usuarios/${this.mascota.uidUsuario}`)
-      );
-      if (duenoSnap.exists()) {
-        const d = duenoSnap.data();
-        // Exponemos solo lo necesario para el carnet
-        this.dueno = {
-          nombre: d['nombre'] ?? '',
-          apellido: d['apellido'] ?? '',
-          telefono: d['telefono'] ?? ''
-        };
+      try {
+        const contactoSnap = await getDoc(
+          doc(this.firestore, `usuarios/${this.mascota.uidUsuario}/publico/contacto`)
+        );
+        if (contactoSnap.exists()) {
+          const d = contactoSnap.data();
+          this.dueno = {
+            nombre: d['nombre'] ?? '',
+            apellido: d['apellido'] ?? '',
+            telefono: d['telefono'] ?? ''
+          };
+        }
+      } catch (e) {
+        console.warn('No se pudo cargar el contacto del dueño:', e);
       }
     }
 
-    // 3. Subcolecciones médicas
     const basePath = `mascotas/${id}`;
 
-    const [vacSnap, medSnap, exSnap, citaSnap] = await Promise.all([
-      getDocs(query(collection(this.firestore, `${basePath}/vacunas`), orderBy('fechaAplicacion', 'desc'))),
-      getDocs(query(collection(this.firestore, `${basePath}/medicamentos`), orderBy('fechaInicio', 'desc'))),
-      getDocs(query(collection(this.firestore, `${basePath}/examenes`), orderBy('fechaProgramada', 'asc'))),
-      getDocs(query(collection(this.firestore, `${basePath}/citas`), orderBy('fechaInicio', 'asc')))
-    ]);
+    const cargarSubcoleccion = async (
+      nombre: string,
+      ruta: string,
+      campoOrden: string,
+      direccion: 'asc' | 'desc'
+    ): Promise<any[]> => {
+      try {
+        const snap = await getDocs(query(collection(this.firestore, ruta), orderBy(campoOrden, direccion)));
+        return snap.docs.map(d => d.data());
+      } catch (e) {
+        console.warn(`No se pudo cargar "${nombre}" en el carnet público:`, e);
+        return [];
+      }
+    };
 
-    this.vacunas     = vacSnap.docs.map(d => d.data());
-    this.medicamentos = medSnap.docs.map(d => d.data());
-    this.examenes    = exSnap.docs.map(d => d.data());
-    this.citas       = citaSnap.docs.map(d => d.data());
+    [this.vacunas, this.medicamentos, this.examenes, this.citas] = await Promise.all([
+      cargarSubcoleccion('vacunas', `${basePath}/vacunas`, 'fechaAplicacion', 'desc'),
+      cargarSubcoleccion('medicamentos', `${basePath}/medicamentos`, 'fechaInicio', 'desc'),
+      cargarSubcoleccion('examenes', `${basePath}/examenes`, 'fechaProgramada', 'asc'),
+      cargarSubcoleccion('citas', `${basePath}/citas`, 'fechaInicio', 'asc')
+    ]);
   }
 }

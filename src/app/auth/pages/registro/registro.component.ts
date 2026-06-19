@@ -159,6 +159,11 @@ export class RegistroComponent implements OnInit {
       };
 
       await this.firestoreService.createDocument(Models.Auth.PathUsers, datosUser, respuesta.user.uid);
+      await this.firestoreService.setPublicContact(respuesta.user.uid, {
+        nombre: datosUser.nombre,
+        apellido: datosUser.apellido,
+        telefono: datosUser.telefono
+      });
       // El usuario ya queda autenticado tras createUserWithEmailAndPassword,
       // así que navegamos directo a home (no a /login, que lo rebotaría por publicGuard).
       await this.router.navigate(['/tabs/home'], { replaceUrl: true });

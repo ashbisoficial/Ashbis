@@ -1,11 +1,11 @@
-import { Component, inject, OnDestroy, OnInit, ViewChild, ElementRef, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { Subject, combineLatest, takeUntil } from 'rxjs';
+import { Subject, Subscription, combineLatest, takeUntil } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import QRCode from 'qrcode';
 import { QRCodeComponent } from 'angularx-qrcode';
 
 import {
@@ -19,7 +19,7 @@ import { addIcons } from 'ionicons';
 import { downloadOutline, shareOutline } from 'ionicons/icons';
 
 import { AuthenticationService } from '../firebase/authentication';
-import { FirestoreService, Mascota } from '../firebase/firestore';
+import { FirestoreService, Mascota, Medicamento } from '../firebase/firestore';
 import { Models } from '../models/models';
 
 @Component({
@@ -38,9 +38,6 @@ import { Models } from '../models/models';
 })
 export class MascotaQrComponent implements OnInit, OnDestroy {
 
-  @ViewChild('qrMedicoEl')    qrMedicoEl!: ElementRef;
-  @ViewChild('qrEmergenciaEl') qrEmergenciaEl!: ElementRef;
-
   private destroy$ = new Subject<void>();
   private route = inject(ActivatedRoute);
 
@@ -57,11 +54,17 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
   mascotaSeleccionada = signal<Mascota | null>(null);
 
   private targetMascotaId: string | null = null;
+  private medicamentosSub?: Subscription;
 
   // ── Tipo de QR activo ───────────────────────────────────────────────────
   tipoQR: 'medico' | 'emergencia' = 'medico';
   qrFichaMedica  = '';
   qrEmergencia   = '';
+  cuidadosEspecialesTexto = 'Sin indicadores especiales';
+
+  // Logo de Ashbis, precargado como data URL para poder insertarlo en el PDF.
+  private logoDataUrl: string | null = null;
+  private static readonly LOGO_RATIO = 582 / 890;
 
   get qrActivo() {
     return this.tipoQR === 'medico' ? this.qrFichaMedica : this.qrEmergencia;
@@ -82,6 +85,8 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.cargarLogo();
+
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
@@ -142,7 +147,16 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
 
   seleccionarMascota(m: Mascota) {
     this.mascotaSeleccionada.set(m);
-    this.generarQRs(m);
+    this.medicamentosSub?.unsubscribe();
+
+    if (!m.id) {
+      this.generarQRs(m, []);
+      return;
+    }
+
+    this.medicamentosSub = this.firestoreService.getMedicamentosByMascota(m.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(medicamentos => this.generarQRs(m, medicamentos));
   }
 
   onMascotaChange(event: any) {
@@ -151,8 +165,21 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     if (m) { this.targetMascotaId = id; this.seleccionarMascota(m); }
   }
 
+  // Mapa de valores internos de indicadores → texto legible para el QR
+  private static readonly INDICADORES_LABEL: Record<string, string> = {
+    cuidado_otros_animales: 'Cuidado con otros animales',
+    cuidado_mujeres:        'Cuidado con mujeres',
+    cuidado_hombres:        'Cuidado con hombres',
+    cuidado_ninos:          'Cuidado con niños',
+    cuidado_misma_especie:  'Cuidado con su misma especie',
+    necesita_compania:      'Necesita compañía constante',
+    temeroso:               'Es temeroso/a',
+    agresivo:               'Es agresivo/a',
+    ninguno:                ''
+  };
+
   // ── Generar QRs ────────────────────────────────────────────────────────
-  generarQRs(mascota: Mascota) {
+  generarQRs(mascota: Mascota, medicamentos: Medicamento[] = []) {
     if (!this.userProfile) return;
 
     const user = this.userProfile;
@@ -160,55 +187,387 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     const telefono = user.telefono || '';
     const nombreDueno = `${user.nombre || ''} ${user.apellido || ''}`.trim();
 
-    // QR Médico: URL al carnet público
+    // QR Médico: URL al carnet público completo
     const baseUrl = window.location.origin;
     this.qrFichaMedica = `${baseUrl}/carnet/${mascota.id}`;
 
-    // QR Emergencia: texto plano con info de contacto y cuidados
-    const indicadores = (m.indicadores || []).join(', ') || 'Sin indicadores especiales';
-    const cuidados = m.medicamentos?.length
-      ? `Está en tratamiento con medicamentos.`
-      : '';
+    // ── QR Emergencia: texto estructurado y legible al escanearlo ──────────
+    const hoy = new Date().toISOString().slice(0, 10);
+    const medicamentosActivos = medicamentos.filter(med => !med.fechaFin || med.fechaFin >= hoy);
 
-    this.qrEmergencia = [
-      `MASCOTA PERDIDA`,
-      ``,
+    // Indicadores de comportamiento → etiquetas legibles
+    const rawIndicadores: string[] = m.indicadores ?? [];
+    const comportamientoLegible = rawIndicadores
+      .map(v => MascotaQrComponent.INDICADORES_LABEL[v] ?? v)
+      .filter(Boolean);
+
+    // Medicación activa con dosis y notas
+    const medicacionLineas = medicamentosActivos.map(med => {
+      let linea = `• ${med.nombre} ${med.mg} mg`;
+      if (med.notas) linea += ` (${med.notas})`;
+      return linea;
+    });
+
+    // Descripción física para identificar a la mascota
+    const descripcionFisica = [
+      m.especie,
+      m.raza,
+      m.color   ? `color ${m.color}` : '',
+      m.peso    ? `${m.peso} kg`     : '',
+      m.castrado && m.castrado !== 'No' ? 'castrado/a' : '',
+    ].filter(Boolean).join(', ');
+
+    const lineas = [
+      '══ MASCOTA PERDIDA ══',
+      '',
       `Nombre: ${m.nombre}`,
-      `Especie: ${m.especie} - ${m.raza}`,
-      `Chip: ${m.numeroChip || 'No registrado'}`,
-      ``,
-      `CONTACTAR A:`,
+      `Descripción: ${descripcionFisica}`,
+      m.senas ? `Señas: ${m.senas}` : '',
+      `Microchip: ${m.numeroChip || 'No registrado'}`,
+      '',
+      '── CONTACTAR A ──',
       `Dueño/a: ${nombreDueno}`,
       `Teléfono: ${telefono || 'No disponible'}`,
-      ``,
-      `CUIDADOS ESPECIALES:`,
-      indicadores,
-      cuidados
-    ].filter(Boolean).join('\n').trim();
+      '',
+    ];
+
+    if (comportamientoLegible.length) {
+      lineas.push('── COMPORTAMIENTO ──');
+      comportamientoLegible.forEach(c => lineas.push(`• ${c}`));
+      lineas.push('');
+    }
+
+    if (medicacionLineas.length) {
+      lineas.push('── MEDICACIÓN ACTIVA ──');
+      lineas.push('⚠ Esta mascota necesita medicación:');
+      medicacionLineas.forEach(l => lineas.push(l));
+      lineas.push('');
+    }
+
+    if (m.notas) {
+      lineas.push('── CUIDADOS Y NOTAS ──');
+      lineas.push(m.notas);
+      lineas.push('');
+    }
+
+    lineas.push('══════════════════════');
+
+    this.qrEmergencia = lineas.filter(l => l !== null && l !== undefined).join('\n').trim();
+
+    // Texto plano para el PDF (sin caracteres de borde)
+    this.cuidadosEspecialesTexto = [
+      comportamientoLegible.join(', ') || 'Sin indicadores de comportamiento especiales',
+      medicamentosActivos.length
+        ? `Medicación: ${medicamentosActivos.map(med => `${med.nombre} ${med.mg} mg`).join(', ')}`
+        : '',
+      m.notas ? `Notas del dueño: ${m.notas}` : ''
+    ].filter(Boolean).join(' · ');
+  }
+
+  // ── Logo de Ashbis (precargado como data URL para el PDF) ────────────────
+  private async cargarLogo(): Promise<void> {
+    try {
+      const resp = await fetch('assets/img/logo_ashbis_pdf.png');
+      const blob = await resp.blob();
+      this.logoDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('No se pudo cargar el logo de Ashbis para el PDF:', e);
+    }
+  }
+
+  // ── Encabezado de marca, común a ambas plantillas de PDF ─────────────────
+  private dibujarEncabezado(pdf: jsPDF, tituloDerecha: string): number {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const marginX = 20;
+    const rojo: [number, number, number] = [139, 8, 8];
+    const gris: [number, number, number] = [110, 110, 110];
+    let y = 18;
+
+    if (this.logoDataUrl) {
+      const logoW = 24;
+      const logoH = logoW * MascotaQrComponent.LOGO_RATIO;
+      pdf.addImage(this.logoDataUrl, 'PNG', marginX, y - 7, logoW, logoH);
+    }
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
+    pdf.setTextColor(...rojo);
+    pdf.text(tituloDerecha, pageWidth - marginX, y, { align: 'right' });
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(...gris);
+    pdf.text('Generado con Ashbis', pageWidth - marginX, y + 6, { align: 'right' });
+
+    y += 18;
+    pdf.setDrawColor(...rojo);
+    pdf.setLineWidth(0.8);
+    pdf.line(marginX, y, pageWidth - marginX, y);
+    return y + 12;
+  }
+
+  private dibujarPiePagina(pdf: jsPDF): void {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const marginX = 20;
+    const footerY = pageHeight - 15;
+
+    pdf.setDrawColor(225, 225, 225);
+    pdf.setLineWidth(0.3);
+    pdf.line(marginX, footerY - 7, pageWidth - marginX, footerY - 7);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(140, 140, 140);
+    pdf.text(`Generado el ${new Date().toLocaleDateString('es-CL')}`, marginX, footerY);
+    pdf.text('Ashbis', pageWidth - marginX, footerY, { align: 'right' });
+  }
+
+  // ── PDF: Ficha Médica ─────────────────────────────────────────────────
+  private async generarPdfFichaMedica(mascota: Mascota): Promise<void> {
+    const m: any = mascota;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const marginX = 20;
+    const rojo: [number, number, number] = [139, 8, 8];
+
+    let y = this.dibujarEncabezado(pdf, 'Ficha Veterinaria');
+
+    pdf.setTextColor(25, 25, 25);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(22);
+    pdf.text(m.nombre || 'Mascota', marginX, y);
+    y += 12;
+
+    const detalles: [string, string][] = [
+      ['Especie', m.especie || '-'],
+      ['Raza', m.raza || '-'],
+      ['Sexo', m.sexo || '-'],
+      ['Color', m.color || '-'],
+      ['Número de chip', m.numeroChip || 'No registrado']
+    ];
+    pdf.setFontSize(11);
+    for (const [label, valor] of detalles) {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(70, 70, 70);
+      pdf.text(`${label}:`, marginX, y);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(40, 40, 40);
+      pdf.text(String(valor), marginX + 45, y);
+      y += 7;
+    }
+
+    y += 8;
+
+    // QR generado directamente desde el texto, sin depender del DOM
+    try {
+      const qrDataUrl = await QRCode.toDataURL(this.qrFichaMedica, { errorCorrectionLevel: 'M', width: 300, margin: 2 });
+      const qrSize = 60;
+      pdf.addImage(qrDataUrl, 'PNG', (pageWidth - qrSize) / 2, y, qrSize, qrSize);
+      y += qrSize + 8;
+    } catch { /* si falla la generación del QR, se omite del PDF */ }
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(90, 90, 90);
+    pdf.text('Escanea para ver el historial veterinario completo', pageWidth / 2, y, { align: 'center' });
+    y += 6;
+    pdf.setFontSize(8);
+    pdf.setTextColor(130, 130, 130);
+    pdf.text(this.qrFichaMedica, pageWidth / 2, y, { align: 'center' });
+
+    const nombreDueno = `${this.userProfile?.nombre || ''} ${this.userProfile?.apellido || ''}`.trim();
+    if (nombreDueno) {
+      y += 14;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(...rojo);
+      pdf.text('Dueño/a:', marginX, y);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(40, 40, 40);
+      pdf.text(nombreDueno, marginX + 22, y);
+    }
+
+    this.dibujarPiePagina(pdf);
+    pdf.save(`Ficha-Medica-${m.nombre || 'mascota'}.pdf`);
+  }
+
+  // ── PDF: QR de Emergencia ─────────────────────────────────────────────
+  private async generarPdfEmergencia(mascota: Mascota): Promise<void> {
+    const m: any = mascota;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const marginX = 20;
+    const rojo: [number, number, number] = [139, 8, 8];
+    const grisOscuro: [number, number, number] = [40, 40, 40];
+    const gris: [number, number, number] = [80, 80, 80];
+
+    let y = this.dibujarEncabezado(pdf, 'Ficha de emergencia');
+
+    // Banda roja de alerta
+    pdf.setFillColor(...rojo);
+    pdf.rect(0, y - 2, pageWidth, 12, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('🐾  SI ENCONTRASTE A ESTA MASCOTA, POR FAVOR CONTÁCTAME', pageWidth / 2, y + 7, { align: 'center' });
+    y += 20;
+
+    // Nombre grande
+    pdf.setTextColor(...rojo);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(26);
+    pdf.text(m.nombre || 'Mascota', marginX, y);
+    y += 10;
+
+    // Descripción física
+    const descripcion = [
+      m.especie,
+      m.raza,
+      m.color   ? `Color: ${m.color}`  : '',
+      m.peso    ? `Peso: ${m.peso} kg` : '',
+      m.castrado && m.castrado !== 'No' ? 'Castrado/a' : '',
+    ].filter(Boolean).join('  ·  ');
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(...gris);
+    pdf.text(descripcion, marginX, y);
+    y += 7;
+
+    if (m.senas) {
+      const lineasSenas: string[] = pdf.splitTextToSize(`Señas: ${m.senas}`, pageWidth - marginX * 2);
+      pdf.text(lineasSenas, marginX, y);
+      y += lineasSenas.length * 5.5;
+    }
+
+    if (m.numeroChip) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Microchip: ${m.numeroChip}`, marginX, y);
+      y += 8;
+    } else {
+      y += 4;
+    }
+
+    // Sección de contacto
+    y += 4;
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.3);
+    pdf.line(marginX, y, pageWidth - marginX, y);
+    y += 8;
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(...rojo);
+    pdf.text('CONTACTAR A:', marginX, y);
+    y += 7;
+
+    const nombreDueno = `${this.userProfile?.nombre || ''} ${this.userProfile?.apellido || ''}`.trim() || 'Sin nombre';
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(13);
+    pdf.setTextColor(...grisOscuro);
+    pdf.text(nombreDueno, marginX, y);
+    y += 8;
+
+    // Teléfono grande y destacado
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(20);
+    pdf.setTextColor(...rojo);
+    pdf.text(this.userProfile?.telefono || 'Teléfono no disponible', marginX, y);
+    y += 14;
+
+    // Comportamiento
+    const rawIndicadores: string[] = m.indicadores ?? [];
+    const comportLegible = rawIndicadores
+      .map((v: string) => MascotaQrComponent.INDICADORES_LABEL[v] ?? v)
+      .filter(Boolean);
+
+    if (comportLegible.length) {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(...rojo);
+      pdf.text('COMPORTAMIENTO:', marginX, y);
+      y += 7;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(...grisOscuro);
+      comportLegible.forEach((c: string) => {
+        pdf.text(`• ${c}`, marginX + 3, y);
+        y += 6;
+      });
+      y += 4;
+    }
+
+    // Medicación activa
+    const hoy = new Date().toISOString().slice(0, 10);
+    // Reconstruct from the stored cuidadosEspecialesTexto to get medication info
+    // We parse from the QR text since we don't store medicamentos separately here
+    const hayMedicacion = this.qrEmergencia.includes('MEDICACIÓN ACTIVA');
+    if (hayMedicacion) {
+      pdf.setFillColor(255, 245, 245);
+      pdf.rect(marginX - 2, y - 4, pageWidth - marginX * 2 + 4, 8, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(...rojo);
+      pdf.text('⚠  NECESITA MEDICACIÓN — VER INFORMACIÓN DE CONTACTO', marginX, y + 2);
+      y += 12;
+    }
+
+    if (m.notas) {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(...rojo);
+      pdf.text('CUIDADOS ESPECIALES:', marginX, y);
+      y += 7;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(...grisOscuro);
+      const lineasNotas: string[] = pdf.splitTextToSize(m.notas, pageWidth - marginX * 2 - 3);
+      pdf.text(lineasNotas, marginX + 3, y);
+      y += lineasNotas.length * 5.5 + 6;
+    }
+
+    // QR centrado
+    y += 4;
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.3);
+    pdf.line(marginX, y, pageWidth - marginX, y);
+    y += 8;
+
+    try {
+      const qrDataUrl = await QRCode.toDataURL(this.qrEmergencia, { errorCorrectionLevel: 'H', width: 300, margin: 2 });
+      const qrSize = 50;
+      const qrX = (pageWidth - qrSize) / 2;
+      pdf.addImage(qrDataUrl, 'PNG', qrX, y, qrSize, qrSize);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(110, 110, 110);
+      pdf.text('Escanea para ver todos los datos de esta mascota', pageWidth / 2, y + qrSize + 6, { align: 'center' });
+    } catch { /* no hay QR en el PDF, pero el resto sí aparece */ }
+
+    this.dibujarPiePagina(pdf);
+    pdf.save(`Emergencia-${m.nombre || 'mascota'}.pdf`);
   }
 
   // ── Descargar PDF ───────────────────────────────────────────────────────
   async descargarPDF() {
+    const mascota = this.mascotaSeleccionada();
+    if (!mascota) return;
+
     this.descargandoPDF = true;
     try {
-      const elementId = this.tipoQR === 'medico' ? 'qrMedicoCard' : 'qrEmergenciaCard';
-      const element = document.getElementById(elementId);
-      if (!element) throw new Error('Elemento QR no encontrado');
-
-      const canvas = await html2canvas(element, { scale: 3, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const width = pdf.internal.pageSize.getWidth();
-      const imgWidth = 120;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const nombre = this.mascotaSeleccionada()?.nombre || 'mascota';
-      const tipo = this.tipoQR === 'medico' ? 'Ficha Medica' : 'Emergencia';
-
-      pdf.setFontSize(14);
-      pdf.text(`QR ${tipo} - ${nombre}`, width / 2, 20, { align: 'center' });
-      pdf.addImage(imgData, 'PNG', (width - imgWidth) / 2, 30, imgWidth, imgHeight);
-      pdf.save(`QR-${tipo}-${nombre}.pdf`);
+      if (this.tipoQR === 'medico') {
+        await this.generarPdfFichaMedica(mascota);
+      } else {
+        await this.generarPdfEmergencia(mascota);
+      }
     } catch (error) {
       console.error('Error generando PDF:', error);
     } finally {

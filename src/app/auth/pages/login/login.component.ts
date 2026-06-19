@@ -190,6 +190,11 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       await this.firestoreService.updateDocument(`usuarios/${user.uid}`, actualizacion);
     }
+
+    // El teléfono de Google Auth casi siempre viene vacío; si el usuario ya
+    // tenía uno guardado en su perfil, lo conservamos en la copia pública.
+    const telefonoActual = userExistente ? ((userExistente as any)?.telefono ?? '') : datosUser.telefono;
+    await this.firestoreService.setPublicContact(user.uid, { nombre, apellido, telefono: telefonoActual });
   }
 
   ngOnDestroy(): void {
