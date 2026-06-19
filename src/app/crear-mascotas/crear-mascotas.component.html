@@ -79,43 +79,16 @@
               </ion-item>
 
               <!-- Fecha nacimiento -->
-            <ion-item [class.is-invalid]="isInvalid('fechaNacimiento')">
-              <ion-label position="stacked">Fecha de nacimiento <span class="req">*</span></ion-label>
-                
-              <ion-button expand="block" fill="outline" (click)="abrirCalendario()">
-                {{ fechaFormateada || 'Seleccionar fecha' }}
-              </ion-button>
-              <ion-note color="danger" *ngIf="isInvalid('fechaNacimiento')">Selecciona la fecha de nacimiento.</ion-note>
+            <ion-item>
+              <ion-label position="stacked">
+                Fecha de nacimiento
+              </ion-label>
 
-              <ion-modal [isOpen]="mostrarCalendario" class="custom-calendar-modal">
-                <ng-template>
-
-                  <ion-content class="calendar-content">
-
-                    <!-- Calendario tipo wheel -->
-                    <ion-datetime
-                      presentation="date"
-                      preferWheel="true"
-                      [max]="fechaActual"
-                      [value]="fechaTemp"
-                      (ionChange)="onFechaTempChange($event)">
-                    </ion-datetime>
-
-                    <!-- Botones -->
-                    <div class="calendar-actions">
-                      <ion-button fill="clear" (click)="cancelarFecha()">
-                        Cancelar
-                      </ion-button>
-
-                      <ion-button color="danger" (click)="confirmarFecha()">
-                        Definir
-                      </ion-button>
-                    </div>
-
-                  </ion-content>
-
-                </ng-template>
-              </ion-modal>
+              <ion-datetime
+                presentation="date"
+                [max]="fechaActual"
+                formControlName="fechaNacimiento">
+              </ion-datetime>
             </ion-item>
 
               <!-- Edad -->

@@ -1,9 +1,24 @@
-// ── Fondo ────────────────────────────────────────────────────────────────────
-.wallet-bg {
-  --background: #f0f4f8;
+:host {
+  --ashbis-primary: #8b0000;
+  --ashbis-secondary: #a11212;
+  --ashbis-dark: #1d1d1d;
+  --ashbis-card: #2b2b2b;
+  --ashbis-text: #f5f5f5;
+  --ashbis-muted: #bdbdbd;
 }
 
-// ── Centrado loading/error ───────────────────────────────────────────────────
+/* ───────────────────────────────────────── */
+/* Fondo general */
+/* ───────────────────────────────────────── */
+
+.wallet-bg {
+  --background: #121212;
+}
+
+/* ───────────────────────────────────────── */
+/* Loading y error */
+/* ───────────────────────────────────────── */
+
 .loading-center,
 .error-center {
   display: flex;
@@ -12,12 +27,16 @@
   justify-content: center;
   height: 60vh;
   gap: 12px;
-  color: var(--ion-color-medium);
+  color: white;
+  text-align: center;
 }
 
-// ── Tarjeta principal ────────────────────────────────────────────────────────
+/* ───────────────────────────────────────── */
+/* Contenedor principal */
+/* ───────────────────────────────────────── */
+
 .wallet-card {
-  max-width: 480px;
+  max-width: 520px;
   margin: 20px auto;
   padding: 0 16px 32px;
   display: flex;
@@ -25,144 +44,320 @@
   gap: 16px;
 }
 
-// ── Header ───────────────────────────────────────────────────────────────────
+/* ───────────────────────────────────────── */
+/* Header */
+/* ───────────────────────────────────────── */
+
 .wallet-header {
-  background: var(--ion-color-primary);
+  background: linear-gradient(
+    135deg,
+    #8b0000 0%,
+    #a11212 100%
+  );
+
   color: white;
+  border-radius: 24px;
+  padding: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  box-shadow:
+    0 12px 30px rgba(139, 0, 0, .35);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ashbis-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.brand-name {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.pet-info {
+  flex: 1;
+  padding: 0 16px;
+}
+
+.pet-info h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.pet-info p {
+  margin: 4px 0 0;
+  opacity: .9;
+}
+
+.pet-photo {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid rgba(255,255,255,.7);
+}
+
+/* ───────────────────────────────────────── */
+/* ID Mascota */
+/* ───────────────────────────────────────── */
+
+.pet-id {
+  background: var(--ashbis-primary);
+  color: white;
+
+  width: fit-content;
+
+  margin: -8px auto 4px;
+
+  padding: 6px 18px;
+
+  border-radius: 999px;
+
+  font-size: .8rem;
+  font-weight: 600;
+
+  box-shadow: 0 5px 15px rgba(139,0,0,.25);
+}
+
+/* ───────────────────────────────────────── */
+/* Tarjetas base */
+/* ───────────────────────────────────────── */
+
+.wallet-body,
+.seccion,
+.wallet-owner,
+.wallet-qr {
+  background: #222;
+  color: white;
+
   border-radius: 16px;
-  padding: 20px;
+
+  box-shadow:
+    0 6px 20px rgba(0,0,0,.25);
+
+  border: 1px solid rgba(255,255,255,.05);
+}
+
+/* ───────────────────────────────────────── */
+/* Datos básicos */
+/* ───────────────────────────────────────── */
+
+.wallet-body {
+  padding: 18px;
+}
+
+.wallet-body .row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 
-  h2 {
-    margin: 0 0 4px;
-    font-size: 1.4rem;
-    font-weight: 700;
-  }
-  p { margin: 0; opacity: 0.85; font-size: 0.9rem; }
+  padding: 12px 0;
 
-  img {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid rgba(255,255,255,0.6);
-  }
+  border-bottom: 1px solid rgba(255,255,255,.08);
 }
 
-// ── Cuerpo datos básicos ─────────────────────────────────────────────────────
-.wallet-body {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-
-  .row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 0.92rem;
-
-    &:last-child { border-bottom: none; }
-
-    span { color: var(--ion-color-medium); }
-    strong { font-weight: 600; }
-  }
+.wallet-body .row:last-child {
+  border-bottom: none;
 }
 
-// ── Alerta indicadores ───────────────────────────────────────────────────────
+.wallet-body span {
+  color: var(--ashbis-muted);
+}
+
+.wallet-body strong {
+  color: white;
+  font-weight: 600;
+}
+
+/* ───────────────────────────────────────── */
+/* Indicadores */
+/* ───────────────────────────────────────── */
+
 .wallet-alert {
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 0.88rem;
+  background: rgba(139,0,0,.15);
 
-  strong { display: block; margin-bottom: 8px; }
+  border: 1px solid rgba(139,0,0,.5);
+
+  color: white;
+
+  border-radius: 16px;
+
+  padding: 16px;
+}
+
+.wallet-alert strong {
+  display: block;
+  margin-bottom: 10px;
 }
 
 .badge-indicador {
+  background: var(--ashbis-primary);
+
+  color: white;
+
+  padding: 6px 12px;
+
+  border-radius: 999px;
+
   display: inline-block;
-  background: #ffc107;
-  color: #000;
-  border-radius: 12px;
-  padding: 2px 10px;
-  font-size: 0.8rem;
-  margin: 3px;
+
+  margin: 4px;
+
+  font-size: .8rem;
+  font-weight: 500;
 }
 
-// ── Dueño ────────────────────────────────────────────────────────────────────
+/* ───────────────────────────────────────── */
+/* Dueño */
+/* ───────────────────────────────────────── */
+
 .wallet-owner {
-  background: #e8f4fd;
-  border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 0.9rem;
-  p { margin: 4px 0; }
-}
-
-// ── Secciones médicas ────────────────────────────────────────────────────────
-.seccion {
-  background: white;
-  border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 
-  h3 {
-    margin: 0 0 12px;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--ion-color-primary);
-  }
+  border-left: 4px solid var(--ashbis-primary);
 }
+
+.wallet-owner p {
+  margin: 6px 0;
+  color: white;
+}
+
+/* ───────────────────────────────────────── */
+/* Secciones */
+/* ───────────────────────────────────────── */
+
+.seccion {
+  padding: 18px;
+}
+
+.seccion h3 {
+  margin: 0 0 16px;
+
+  color: #ff6b6b;
+
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ───────────────────────────────────────── */
+/* Cards internas */
+/* ───────────────────────────────────────── */
 
 .item-card {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f5f5f5;
-  font-size: 0.88rem;
 
-  &:last-child { border-bottom: none; }
+  gap: 5px;
 
-  strong { font-size: 0.92rem; color: #333; }
-  span { color: var(--ion-color-medium); }
+  padding: 12px 0;
+
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.item-card:last-child {
+  border-bottom: none;
+}
+
+.item-card strong {
+  color: white;
+  font-size: .95rem;
+}
+
+.item-card span {
+  color: #d0d0d0;
+  font-size: .88rem;
 }
 
 .proxima {
-  color: var(--ion-color-warning) !important;
-  font-weight: 500;
+  color: #ffd54f !important;
+  font-weight: 600;
 }
 
 .nota {
+  color: #bdbdbd !important;
   font-style: italic;
-  font-size: 0.82rem !important;
 }
 
-// ── Sin registros ────────────────────────────────────────────────────────────
+/* ───────────────────────────────────────── */
+/* Sin registros */
+/* ───────────────────────────────────────── */
+
 .sin-registros {
   text-align: center;
-  color: var(--ion-color-medium);
-  padding: 20px;
-  font-size: 0.9rem;
+
+  padding: 24px;
+
+  color: #bdbdbd;
 }
 
-// ── QR ───────────────────────────────────────────────────────────────────────
+/* ───────────────────────────────────────── */
+/* QR */
+/* ───────────────────────────────────────── */
+
 .wallet-qr {
+  padding: 20px;
+
   display: flex;
   flex-direction: column;
+
   align-items: center;
-  gap: 8px;
-  padding: 16px;
+
+  gap: 12px;
+}
+
+.qr-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.wallet-qr qrcode {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 12px;
+  border-radius: 16px;
 }
 
 .scan-text {
-  font-size: 0.8rem;
-  color: var(--ion-color-medium);
+  color: #d0d0d0;
   margin: 0;
+  font-size: .85rem;
+  text-align: center;
+}
+
+/* ───────────────────────────────────────── */
+/* Responsive */
+/* ───────────────────────────────────────── */
+
+@media (max-width: 480px) {
+
+  .wallet-header {
+    padding: 18px;
+  }
+
+  .pet-photo {
+    width: 70px;
+    height: 70px;
+  }
+
+  .pet-info h2 {
+    font-size: 1.3rem;
+  }
+
+  .wallet-card {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 }

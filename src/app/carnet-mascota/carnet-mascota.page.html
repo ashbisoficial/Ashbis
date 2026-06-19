@@ -14,15 +14,36 @@
   <!-- Carnet -->
   <div *ngIf="!cargando && !error && mascota" class="wallet-card">
 
-    <!-- Header -->
-    <div class="wallet-header">
-      <div>
-        <h2>{{ mascota?.nombre }}</h2>
-        <p>{{ mascota?.especie }} • {{ mascota?.raza }}</p>
-      </div>
-      <img [src]="mascota?.fotoUrl || 'assets/img/logo_ashbis.jpeg'" alt="foto mascota" />
+      <!-- Header -->
+      <div class="wallet-header">
+
+    <div class="brand">
+      <img
+        src="assets\img\ashbis.png"
+        class="ashbis-logo"
+        alt="Ashbis"
+      >
+
+      <span class="brand-name">
+        ASHBIS
+      </span>
     </div>
 
+    <div class="pet-info">
+      <h2>{{ mascota?.nombre }}</h2>
+      <p>{{ mascota?.especie }} • {{ mascota?.raza }}</p>
+    </div>
+
+    <img
+      [src]="mascota?.fotoUrl || 'assets/img/logo_ashbis.jpeg'"
+      alt="foto mascota"
+      class="pet-photo"
+    />
+
+  </div>
+  <div class="pet-id">
+    ID {{ mascota?.id }}
+  </div>
     <!-- Info básica -->
     <div class="wallet-body">
       <div class="row"><span>Edad</span><strong>{{ mascota?.edad ?? '—' }} años</strong></div>
@@ -35,7 +56,12 @@
     <!-- Indicadores de cuidado especial -->
     <div *ngIf="mascota?.indicadores?.length" class="wallet-alert">
       <strong>⚠️ Cuidados especiales:</strong>
-      <span *ngFor="let ind of mascota.indicadores" class="badge-indicador">{{ ind }}</span>
+      <span
+        *ngFor="let ind of mascota.indicadores"
+        class="badge-indicador"
+      >
+        {{ traducirIndicador(ind) }}
+      </span>
     </div>
 
     <!-- Dueño -->
@@ -97,8 +123,21 @@
 
     <!-- QR para compartir esta ficha -->
     <div class="wallet-qr">
-      <qrcode [qrdata]="qrUrl" [width]="160"></qrcode>
-      <p class="scan-text">Escanea para ver esta ficha</p>
+
+      <img
+        src="assets\img\ashbis.png"
+        class="qr-logo"
+      >
+
+      <qrcode
+        [qrdata]="qrUrl"
+        [width]="160">
+      </qrcode>
+
+      <p class="scan-text">
+        Escanea para abrir esta ficha veterinaria
+      </p>
+
     </div>
 
   </div>

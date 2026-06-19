@@ -189,7 +189,19 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
 
     // QR Médico: URL al carnet público completo
     const baseUrl = window.location.origin;
-    this.qrFichaMedica = `${baseUrl}/carnet/${mascota.id}`;
+
+    console.log('MASCOTA COMPLETA:', m);
+    console.log('TOKEN CARNET:', m.qrCarnetToken);
+    console.log('TOKEN PERDIDA:', m.qrPerdidaToken);
+
+    if (m.qrCarnetToken) {
+      this.qrFichaMedica =
+        `${baseUrl}/carnet/${m.qrCarnetToken}`;
+        console.log('QR MEDICO:', this.qrFichaMedica);
+    } else {
+      this.qrFichaMedica =
+        `${baseUrl}/carnet/${mascota.id}`;
+    }
 
     // ── QR Emergencia: texto estructurado y legible al escanearlo ──────────
     const hoy = new Date().toISOString().slice(0, 10);
@@ -252,8 +264,20 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
 
     lineas.push('══════════════════════');
 
-    this.qrEmergencia = lineas.filter(l => l !== null && l !== undefined).join('\n').trim();
+    console.log('TOKEN PERDIDA:', m.qrPerdidaToken);
+    if (m.qrPerdidaToken) {
 
+        this.qrEmergencia =
+          `${baseUrl}/perdida/${m.qrPerdidaToken}`;
+
+      } else {
+
+        this.qrEmergencia = lineas
+          .filter(l => l !== null && l !== undefined)
+          .join('\n')
+          .trim();
+
+      }
     // Texto plano para el PDF (sin caracteres de borde)
     this.cuidadosEspecialesTexto = [
       comportamientoLegible.join(', ') || 'Sin indicadores de comportamiento especiales',
@@ -262,6 +286,8 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
         : '',
       m.notas ? `Notas del dueño: ${m.notas}` : ''
     ].filter(Boolean).join(' · ');
+    console.log('QR MEDICO:', this.qrFichaMedica);
+    console.log('QR PERDIDA:', this.qrEmergencia);
   }
 
   // ── Logo de Ashbis (precargado como data URL para el PDF) ────────────────

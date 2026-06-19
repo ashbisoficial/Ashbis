@@ -48,6 +48,35 @@ export namespace Models {
       peso?: number;           // en kg
       numeroChip?: string;
       indicadores?: string[];  // cuidados especiales: 'Alérgico', 'Agresivo', etc.
+      // ── QR Público ──────────────────────────
+      qrCarnetToken?: string;
+      qrPerdidaToken?: string;
+
+      // Estado
+      estado?: 'normal' | 'perdida';
+
+      // Identificación visual
+      senasParticulares?: string;
+
+      // Salud crítica
+      alergias?: string[];
+      enfermedadesCronicas?: string[];
+      medicamentosPermanentes?: string[];
+
+      // Rescate
+      observacionesRescate?: string;
+
+      // Compatibilidad
+      seLlevaConPerros?: boolean;
+      seLlevaConGatos?: boolean;
+      seLlevaConNinos?: boolean;
+
+      // Riesgo
+      esAgresivo?: boolean;
+
+      // Contacto extra
+      contactoEmergencia?: string;
+      telefonoEmergencia?: string;
     }
 
     // Subcoleción: vacunas

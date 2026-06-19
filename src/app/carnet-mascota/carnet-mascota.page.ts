@@ -7,7 +7,7 @@ import {
   IonBadge
 } from '@ionic/angular/standalone';
 import { QRCodeComponent } from 'angularx-qrcode';
-
+import { PublicQrService } from '../services/public-qr.service';
 import {
   Firestore,
   doc,
@@ -37,7 +37,7 @@ export class CarnetMascotaPage implements OnInit {
 
   private route = inject(ActivatedRoute);
   private firestore = inject(Firestore);
-
+  private publicQrService = inject(PublicQrService);
   mascota: any = null;
   dueno: any = null;
   vacunas: any[] = [];
@@ -50,32 +50,79 @@ export class CarnetMascotaPage implements OnInit {
   qrUrl = '';
 
   async ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.error = true;
-      this.cargando = false;
-      return;
-    }
 
-    try {
-      await this.cargarMascota(id);
-    } catch (e) {
-      console.error('Error cargando carnet:', e);
-      this.error = true;
-    } finally {
-      this.cargando = false;
-    }
+  const tokenOrId =
+    this.route.snapshot.paramMap.get('id');
+
+  console.log('TOKEN RECIBIDO:', tokenOrId);
+
+  if (!tokenOrId) {
+    this.error = true;
+    this.cargando = false;
+    return;
   }
 
-  private async cargarMascota(id: string): Promise<void> {
-    // 1. Datos de la mascota (Firestore reglas permiten leer carnet/{id} público)
-    const mascotaSnap = await getDoc(doc(this.firestore, `mascotas/${id}`));
-    if (!mascotaSnap.exists()) {
-      this.error = true;
-      return;
+  try {
+
+    const qrData =
+      await this.publicQrService.getQrToken(
+        'carnet',
+        tokenOrId
+      );
+
+    console.log('QR DATA:', qrData);
+
+    if (qrData?.mascotaId) {
+
+      await this.cargarMascota(
+        qrData.mascotaId
+      );
+
+    } else {
+
+      // compatibilidad mascotas antiguas
+      await this.cargarMascota(
+        tokenOrId
+      );
+
     }
 
-    this.mascota = mascotaSnap.data();
+  } catch (e) {
+
+    console.error(
+      'Error cargando carnet:',
+      e
+    );
+
+    this.error = true;
+
+  } finally {
+
+    this.cargando = false;
+
+  }
+}
+
+  private async cargarMascota(id: string): Promise<void> {
+
+  console.log('CARGANDO MASCOTA ID:', id);
+
+  const mascotaSnap = await getDoc(
+    doc(this.firestore, `mascotas/${id}`)
+  );
+
+  console.log('EXISTE MASCOTA:', mascotaSnap.exists());
+
+  if (mascotaSnap.exists()) {
+    console.log('DATOS MASCOTA:', mascotaSnap.data());
+  }
+
+  if (!mascotaSnap.exists()) {
+    this.error = true;
+    return;
+  }
+
+  this.mascota = mascotaSnap.data();
     this.qrUrl = `${window.location.origin}/carnet/${id}`;
 
     // 2. Datos de contacto del dueño: leemos la copia pública y mínima
@@ -122,4 +169,24 @@ export class CarnetMascotaPage implements OnInit {
       cargarSubcoleccion('citas', `${basePath}/citas`, 'fechaInicio', 'asc')
     ]);
   }
+  traducirIndicador(valor: string): string {
+
+  const mapa: Record<string,string> = {
+
+    cuidado_otros_animales: '⚠️ Otros animales',
+    cuidado_mujeres: '⚠️ Mujeres',
+    cuidado_hombres: '⚠️ Hombres',
+    cuidado_ninos: '⚠️ Niños',
+
+    cuidado_misma_especie: '⚠️ Misma especie',
+
+    necesita_compania: '❤️ Necesita compañía',
+
+    temeroso: '😟 Temeroso',
+
+    agresivo: '🚫 Agresivo'
+  };
+
+  return mapa[valor] || valor;
+}
 }
