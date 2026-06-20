@@ -1,0 +1,255 @@
+.perdida-bg {
+  --background: #1a1a1a;
+}
+
+// ── Estados de carga / error ──────────────────────────────────────────────
+.estado-centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #aaa;
+  .error-icono { font-size: 48px; margin: 0; }
+  .error-texto { font-size: 16px; text-align: center; padding: 0 24px; }
+}
+
+// ── Ficha principal ───────────────────────────────────────────────────────
+.ficha {
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 32px;
+}
+
+// Franja de alerta roja
+.franja-alerta {
+  background: #8b0808;
+  padding: 10px 16px;
+  text-align: center;
+
+  .alerta-texto {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+}
+
+// Header con foto
+.ficha-header {
+  background: #0f0f0f;
+  padding: 24px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .brand-logo { width: 28px; height: 28px; object-fit: contain; }
+  .brand-nombre { font-size: 13px; font-weight: 700; color: #e07070; letter-spacing: 2px; }
+}
+
+.mascota-foto {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #8b0808;
+  box-shadow: 0 4px 20px rgba(139, 8, 8, 0.5);
+  margin: 8px 0;
+}
+
+.mascota-nombre {
+  font-size: 32px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.mascota-descripcion {
+  font-size: 15px;
+  color: #ccc;
+  margin: 0;
+}
+
+// ── Secciones genéricas ───────────────────────────────────────────────────
+.seccion {
+  background: #0f0f0f;
+  margin: 8px 12px;
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 3px solid #8b0808;
+}
+
+.seccion-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e07070;
+  letter-spacing: 1px;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+// ── Alertas médicas ───────────────────────────────────────────────────────
+.alertas-seccion {
+  border-left-color: #dc2626;
+  background: #2d0d0d;
+}
+
+.alerta-titulo {
+  color: #f87171;
+  font-size: 13px;
+}
+
+.alerta-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.alerta-chip {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+
+  &.rojo    { background: rgba(220, 38, 38, 0.25); color: #fca5a5; border: 1px solid #dc2626; }
+  &.naranja { background: rgba(234, 88, 12, 0.25); color: #fdba74; border: 1px solid #ea580c; }
+  &.amarillo{ background: rgba(202, 138, 4, 0.25);  color: #fde047; border: 1px solid #ca8a04; }
+}
+
+// ── Contacto ──────────────────────────────────────────────────────────────
+.contacto-seccion {
+  background: #1a0a0a;
+  margin: 8px 12px;
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  border: 2px solid #8b0808;
+}
+
+.dueno-nombre {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 4px;
+}
+
+.dueno-tel {
+  font-size: 22px;
+  font-weight: 800;
+  color: #e07070;
+  margin: 0 0 20px;
+}
+
+.botones-contacto {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+
+  .btn-llamar {
+    --background: #16a34a;
+    --background-activated: #15803d;
+    --border-radius: 25px;
+    font-weight: 700;
+  }
+
+  .btn-whatsapp {
+    --background: #25d366;
+    --background-activated: #1fb855;
+    --color: #000;
+    --border-radius: 25px;
+    font-weight: 700;
+  }
+
+  .btn-compartir {
+    --color: #e07070;
+    --border-color: #8b0808;
+    --border-radius: 25px;
+  }
+}
+
+.contacto-extra {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #3a1a1a;
+
+  .contacto-extra-label {
+    font-size: 11px;
+    color: #888;
+    margin: 0 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  p { font-size: 14px; color: #ddd; margin: 2px 0; }
+  a { color: #e07070; text-decoration: none; }
+}
+
+// ── Señas ─────────────────────────────────────────────────────────────────
+.senas {
+  font-size: 14px;
+  color: #ddd;
+  line-height: 1.6;
+  margin: 0 0 8px;
+}
+
+.chip {
+  font-size: 13px;
+  color: #aaa;
+  margin: 0;
+}
+
+// ── Comportamiento ────────────────────────────────────────────────────────
+.indicadores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .indicador {
+    background: rgba(139, 8, 8, 0.25);
+    border: 1px solid #8b0808;
+    color: #fca5a5;
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+}
+
+.compatibilidad {
+  margin-top: 8px;
+  p { font-size: 13px; color: #ccc; margin: 4px 0; }
+}
+
+// ── Observaciones ─────────────────────────────────────────────────────────
+.observaciones {
+  font-size: 14px;
+  color: #ddd;
+  line-height: 1.6;
+  margin: 0;
+}
+
+// ── Footer ────────────────────────────────────────────────────────────────
+.ficha-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px 16px 16px;
+  text-align: center;
+
+  .footer-logo { width: 32px; height: 32px; object-fit: contain; opacity: 0.5; }
+  p { font-size: 12px; color: #666; margin: 0; }
+  .footer-url { color: #8b0808; font-size: 11px; }
+}

@@ -20,7 +20,6 @@ import {
   IonItem,
   IonLabel,
   IonList,
-  IonModal,
   IonNote,
   IonRow,
   IonSelect,
@@ -59,7 +58,6 @@ import { SecurityService } from 'src/app/services/security.service';
     IonNote,
     IonButton,
     IonImg,
-    IonModal,
     IonDatetime,
     IonIcon,
     IonSpinner

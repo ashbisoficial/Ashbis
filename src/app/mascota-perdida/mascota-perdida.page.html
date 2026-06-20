@@ -1,0 +1,157 @@
+<ion-content class="perdida-bg">
+
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="estado-centro">
+    <ion-spinner name="crescent" color="danger"></ion-spinner>
+    <p>Cargando información...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!cargando && error" class="estado-centro">
+    <p class="error-icono">🔍</p>
+    <p class="error-texto">No se encontró la ficha de esta mascota.</p>
+  </div>
+
+  <!-- Ficha -->
+  <div *ngIf="!cargando && !error && mascota" class="ficha">
+
+    <!-- Franja de alerta superior -->
+    <div class="franja-alerta">
+      <span class="alerta-texto">🐾 MASCOTA PERDIDA — POR FAVOR AYUDA A ENCONTRARLA</span>
+    </div>
+
+    <!-- Header con foto y datos principales -->
+    <div class="ficha-header">
+      <div class="header-brand">
+        <img src="assets/img/ashbis.png" class="brand-logo" alt="Ashbis" />
+        <span class="brand-nombre">ASHBIS</span>
+      </div>
+
+      <img
+        [src]="mascota.fotoUrl || 'assets/img/foto_avatar.jpg'"
+        class="mascota-foto"
+        alt="Foto de {{ mascota.nombre }}"
+      />
+
+      <h1 class="mascota-nombre">{{ mascota.nombre }}</h1>
+
+      <p class="mascota-descripcion">
+        {{ mascota.especie }}
+        <ng-container *ngIf="mascota.raza"> · {{ mascota.raza }}</ng-container>
+        <ng-container *ngIf="mascota.sexo"> · {{ mascota.sexo }}</ng-container>
+        <ng-container *ngIf="mascota.edad"> · {{ mascota.edad }} años</ng-container>
+      </p>
+
+      <p class="mascota-descripcion" *ngIf="mascota.color || mascota.peso">
+        <ng-container *ngIf="mascota.color">Color: {{ mascota.color }}</ng-container>
+        <ng-container *ngIf="mascota.color && mascota.peso"> · </ng-container>
+        <ng-container *ngIf="mascota.peso">{{ mascota.peso }} kg</ng-container>
+      </p>
+    </div>
+
+    <!-- Alertas médicas (lo más importante, va primero) -->
+    <div class="seccion alertas-seccion" *ngIf="tieneAlertasMedicas">
+      <h3 class="seccion-titulo alerta-titulo">⚠️ ALERTAS MÉDICAS IMPORTANTES</h3>
+
+      <div *ngIf="mascota.enfermedadesCronicas?.length" class="alerta-grupo">
+        <div class="alerta-chip rojo" *ngFor="let e of mascota.enfermedadesCronicas">
+          🔴 {{ e }}
+        </div>
+      </div>
+
+      <div *ngIf="mascota.alergias?.length" class="alerta-grupo">
+        <div class="alerta-chip naranja" *ngFor="let a of mascota.alergias">
+          🟠 Alergia: {{ a }}
+        </div>
+      </div>
+
+      <div *ngIf="mascota.medicamentosPermanentes?.length" class="alerta-grupo">
+        <div class="alerta-chip naranja" *ngFor="let mp of mascota.medicamentosPermanentes">
+          💊 Medicamento permanente: {{ mp }}
+        </div>
+      </div>
+
+      <div *ngIf="medicamentosActivos.length" class="alerta-grupo">
+        <div class="alerta-chip amarillo" *ngFor="let med of medicamentosActivos">
+          💊 Tomando: {{ med.nombre }} {{ med.mg }}mg
+          <span *ngIf="med.notas"> — {{ med.notas }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de contacto -->
+    <div class="contacto-seccion">
+      <h3 class="seccion-titulo">📞 CONTACTAR AL DUEÑO</h3>
+
+      <p class="dueno-nombre" *ngIf="dueno">
+        {{ dueno.nombre }} {{ dueno.apellido }}
+      </p>
+
+      <p class="dueno-tel" *ngIf="dueno?.telefono">{{ dueno.telefono }}</p>
+
+      <div class="botones-contacto">
+        <ion-button class="btn-llamar" expand="block" (click)="llamar()"
+                    *ngIf="dueno?.telefono || mascota?.telefonoEmergencia">
+          <ion-icon name="call-outline" slot="start"></ion-icon>
+          Llamar
+        </ion-button>
+
+        <ion-button class="btn-whatsapp" expand="block" (click)="whatsapp()"
+                    *ngIf="dueno?.telefono || mascota?.telefonoEmergencia">
+          <ion-icon name="logo-whatsapp" slot="start"></ion-icon>
+          WhatsApp
+        </ion-button>
+
+        <ion-button class="btn-compartir" fill="outline" expand="block" (click)="compartir()">
+          <ion-icon name="share-outline" slot="start"></ion-icon>
+          Compartir ficha
+        </ion-button>
+      </div>
+
+      <!-- Contacto de emergencia alternativo -->
+      <div class="contacto-extra" *ngIf="mascota.contactoEmergencia || mascota.telefonoEmergencia">
+        <p class="contacto-extra-label">Contacto alternativo:</p>
+        <p *ngIf="mascota.contactoEmergencia">{{ mascota.contactoEmergencia }}</p>
+        <p *ngIf="mascota.telefonoEmergencia">
+          <a [href]="'tel:' + mascota.telefonoEmergencia">{{ mascota.telefonoEmergencia }}</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Señas y descripción para identificar -->
+    <div class="seccion" *ngIf="mascota.senasParticulares || mascota.numeroChip">
+      <h3 class="seccion-titulo">🔍 CÓMO IDENTIFICARLA</h3>
+      <p *ngIf="mascota.senasParticulares" class="senas">{{ mascota.senasParticulares }}</p>
+      <p *ngIf="mascota.numeroChip" class="chip">🏷️ Microchip: {{ mascota.numeroChip }}</p>
+    </div>
+
+    <!-- Comportamiento -->
+    <div class="seccion" *ngIf="indicadoresLegibles.length || mascota.esAgresivo">
+      <h3 class="seccion-titulo">🐾 COMPORTAMIENTO</h3>
+      <div *ngIf="mascota.esAgresivo" class="alerta-chip rojo" style="margin-bottom:8px">
+        🚫 Esta mascota puede ser agresiva — tener precaución
+      </div>
+      <div class="indicadores">
+        <span class="indicador" *ngFor="let i of indicadoresLegibles">⚠️ {{ i }}</span>
+      </div>
+      <div class="compatibilidad" *ngIf="descripcionCompatibilidad.length">
+        <p *ngFor="let c of descripcionCompatibilidad">{{ c }}</p>
+      </div>
+    </div>
+
+    <!-- Observaciones de rescate -->
+    <div class="seccion" *ngIf="mascota.observacionesRescate">
+      <h3 class="seccion-titulo">📋 OBSERVACIONES PARA EL RESCATE</h3>
+      <p class="observaciones">{{ mascota.observacionesRescate }}</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="ficha-footer">
+      <img src="assets/img/ashbis.png" class="footer-logo" alt="Ashbis" />
+      <p>Ficha generada con <strong>Ashbis</strong></p>
+      <p class="footer-url">ashbis.app</p>
+    </div>
+
+  </div>
+
+</ion-content>

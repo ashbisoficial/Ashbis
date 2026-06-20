@@ -17,6 +17,7 @@ import { Models } from '../../app/models/models';
 import {
   IonHeader,
   IonToolbar,
+  IonButtons,
   IonBackButton,
   IonTitle,
   IonContent,
@@ -25,10 +26,7 @@ import {
   IonLabel,
   IonList,
   IonItem,
-  IonNote,
   IonSpinner,
-  IonCard,
-  IonCardContent,
   IonButton,        // 🔥 IMPORTANTE
   IonIcon           // 🔥 IMPORTANTE
 } from '@ionic/angular/standalone';
@@ -46,6 +44,7 @@ import { Router } from '@angular/router';
 
     IonHeader,
     IonToolbar,
+    IonButtons,
     IonBackButton,
     IonTitle,
     IonContent,
@@ -56,10 +55,7 @@ import { Router } from '@angular/router';
     IonLabel,
     IonList,
     IonItem,
-    IonNote,
     IonSpinner,
-    IonCard,
-    IonCardContent,
 
     IonButton,   // 🔥 NECESARIO
     IonIcon      // 🔥 NECESARIO (usas ion-icon en HTML)

@@ -16,8 +16,10 @@ import {
 } from '@ionic/angular/standalone';
 
 import { addIcons } from 'ionicons';
-import { downloadOutline, shareOutline } from 'ionicons/icons';
+import { downloadOutline, imageOutline, shareOutline } from 'ionicons/icons';
 
+import { Firestore, doc, updateDoc } from '@angular/fire/firestore';
+import { PublicQrService } from '../services/public-qr.service';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService, Mascota, Medicamento } from '../firebase/firestore';
 import { Models } from '../models/models';
@@ -43,6 +45,8 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
 
   authenticationService = inject(AuthenticationService);
   firestoreService = inject(FirestoreService);
+  private publicQrSvc = inject(PublicQrService);
+  private firestore   = inject(Firestore);
 
   // ── Estado ──────────────────────────────────────────────────────────────
   cargando = signal(true);
@@ -154,9 +158,44 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.medicamentosSub = this.firestoreService.getMedicamentosByMascota(m.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(medicamentos => this.generarQRs(m, medicamentos));
+    // Si la mascota aún no tiene tokens, los creamos ahora y actualizamos
+    // el documento en Firestore antes de generar las URLs.
+    this.ensureTokens(m).then(mConTokens => {
+      this.mascotaSeleccionada.set(mConTokens);
+      this.medicamentosSub = this.firestoreService.getMedicamentosByMascota(mConTokens.id!)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(medicamentos => this.generarQRs(mConTokens, medicamentos));
+    });
+  }
+
+  /** Garantiza que la mascota tenga ambos tokens. Si no los tiene, los crea. */
+  private async ensureTokens(m: Mascota): Promise<Mascota> {
+    const any = m as any;
+    let carnetToken: string  = any.qrCarnetToken;
+    let perdidaToken: string = any.qrPerdidaToken;
+    const uid = this.userProfile?.uid;
+
+    if (!uid || !m.id) return m;
+
+    const updates: Record<string, string> = {};
+
+    if (!carnetToken) {
+      carnetToken = this.publicQrSvc.generateToken();
+      await this.publicQrSvc.createQrToken(m.id, uid, 'carnet', carnetToken);
+      updates['qrCarnetToken'] = carnetToken;
+    }
+
+    if (!perdidaToken) {
+      perdidaToken = this.publicQrSvc.generateToken();
+      await this.publicQrSvc.createQrToken(m.id, uid, 'perdida', perdidaToken);
+      updates['qrPerdidaToken'] = perdidaToken;
+    }
+
+    if (Object.keys(updates).length) {
+      await updateDoc(doc(this.firestore, `mascotas/${m.id}`), updates);
+    }
+
+    return { ...m, ...updates } as Mascota;
   }
 
   onMascotaChange(event: any) {
@@ -190,17 +229,10 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     // QR Médico: URL al carnet público completo
     const baseUrl = window.location.origin;
 
-    console.log('MASCOTA COMPLETA:', m);
-    console.log('TOKEN CARNET:', m.qrCarnetToken);
-    console.log('TOKEN PERDIDA:', m.qrPerdidaToken);
-
     if (m.qrCarnetToken) {
-      this.qrFichaMedica =
-        `${baseUrl}/carnet/${m.qrCarnetToken}`;
-        console.log('QR MEDICO:', this.qrFichaMedica);
+      this.qrFichaMedica = `${baseUrl}/carnet/${m.qrCarnetToken}`;
     } else {
-      this.qrFichaMedica =
-        `${baseUrl}/carnet/${mascota.id}`;
+      this.qrFichaMedica = `${baseUrl}/carnet/${mascota.id}`;
     }
 
     // ── QR Emergencia: texto estructurado y legible al escanearlo ──────────
@@ -264,20 +296,15 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
 
     lineas.push('══════════════════════');
 
-    console.log('TOKEN PERDIDA:', m.qrPerdidaToken);
     if (m.qrPerdidaToken) {
+      this.qrEmergencia = `${baseUrl}/perdida/${m.qrPerdidaToken}`;
+    } else {
+      this.qrEmergencia = lineas
+        .filter(l => l !== null && l !== undefined)
+        .join('\n')
+        .trim();
+    }
 
-        this.qrEmergencia =
-          `${baseUrl}/perdida/${m.qrPerdidaToken}`;
-
-      } else {
-
-        this.qrEmergencia = lineas
-          .filter(l => l !== null && l !== undefined)
-          .join('\n')
-          .trim();
-
-      }
     // Texto plano para el PDF (sin caracteres de borde)
     this.cuidadosEspecialesTexto = [
       comportamientoLegible.join(', ') || 'Sin indicadores de comportamiento especiales',
@@ -286,24 +313,28 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
         : '',
       m.notas ? `Notas del dueño: ${m.notas}` : ''
     ].filter(Boolean).join(' · ');
-    console.log('QR MEDICO:', this.qrFichaMedica);
-    console.log('QR PERDIDA:', this.qrEmergencia);
   }
 
   // ── Logo de Ashbis (precargado como data URL para el PDF) ────────────────
   private async cargarLogo(): Promise<void> {
-    try {
-      const resp = await fetch('assets/img/logo_ashbis_pdf.png');
-      const blob = await resp.blob();
-      this.logoDataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-      });
-    } catch (e) {
-      console.warn('No se pudo cargar el logo de Ashbis para el PDF:', e);
-    }
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width  = img.naturalWidth  || 890;
+          canvas.height = img.naturalHeight || 582;
+          canvas.getContext('2d')!.drawImage(img, 0, 0);
+          this.logoDataUrl = canvas.toDataURL('image/png');
+        } catch (e) {
+          console.warn('Canvas tainted al cargar logo:', e);
+          this.logoDataUrl = null;
+        }
+        resolve();
+      };
+      img.onerror = () => { this.logoDataUrl = null; resolve(); };
+      img.src = 'assets/img/logo_ashbis_pdf.png';
+    });
   }
 
   // ── Encabezado de marca, común a ambas plantillas de PDF ─────────────────

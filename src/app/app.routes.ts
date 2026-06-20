@@ -32,6 +32,13 @@ export const routes: Routes = [
       import('./carnet-mascota/carnet-mascota.page').then((m) => m.CarnetMascotaPage),
   },
 
+  // ── Ficha pública de mascota perdida (se accede vía QR, sin login) ──────
+  {
+    path: 'perdida/:token',
+    loadComponent: () =>
+      import('./mascota-perdida/mascota-perdida.page').then((m) => m.MascotaPerdidaPage),
+  },
+
   // ── Rutas protegidas (con tabs) ──────────────────────────────────────────
   {
     path: 'tabs',
@@ -84,9 +91,8 @@ export const routes: Routes = [
       {
         path: 'mascota-detalle/:id',
         loadComponent: () =>
-          import('./pages/mascota-detalle/mascota-detalle.component').then(
-            (m) => m.MascotaDetalleComponent
-          ),
+          import('./mascota-detalle/mascota-detalle.component')
+            .then(m => m.MascotaDetalleComponent),
       },
       // ── Chat IA dentro de tabs (mantiene navbar) ─────────────────────────
       {
