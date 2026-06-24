@@ -20,7 +20,6 @@ import {
   IonItem,
   IonLabel,
   IonList,
-  IonModal,
   IonNote,
   IonRow,
   IonSelect,
@@ -31,6 +30,7 @@ import { addIcons } from 'ionicons';
 import { addOutline, cameraOutline, cloudUploadOutline, closeCircle, imageOutline, imagesOutline, trashOutline } from 'ionicons/icons';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
+import { Firestore, doc, getDoc, getDocs, collection, query, where, increment, updateDoc } from '@angular/fire/firestore';
 import { Models } from 'src/app/models/models';
 import { SecurityService } from 'src/app/services/security.service';
 
@@ -59,7 +59,6 @@ import { SecurityService } from 'src/app/services/security.service';
     IonNote,
     IonButton,
     IonImg,
-    IonModal,
     IonDatetime,
     IonIcon,
     IonSpinner
@@ -68,6 +67,7 @@ import { SecurityService } from 'src/app/services/security.service';
 export class CrearMascotasComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly firestoreService = inject(FirestoreService);
+  private readonly firestore = inject(Firestore);
   private readonly authService = inject(AuthenticationService);
   private readonly storage = inject(Storage);
   private readonly router = inject(Router);
@@ -215,6 +215,25 @@ export class CrearMascotasComponent implements OnInit {
       throw new Error('Usuario no autenticado');
     }
 
+    // Verificar límite de mascotas
+    const userSnap = await getDoc(doc(this.firestore, `usuarios/${user.uid}`));
+    const userData = userSnap.data() as any;
+    const maxPets = userData?.maxPets ?? 2;
+
+    const mascotasSnap = await getDocs(
+      query(collection(this.firestore, 'mascotas'), where('uidUsuario', '==', user.uid))
+    );
+
+    if (mascotasSnap.size >= maxPets) {
+      await this.alertCtrl.create({
+        header: 'Límite alcanzado',
+        message: `Tu plan actual permite hasta ${maxPets} mascotas. Actualiza a Premium para agregar más.`,
+        buttons: ['Entendido']
+      }).then(a => a.present());
+      this.cargando = false;
+      return;
+    }
+
     const id = this.firestoreService.createId();
 
     console.log('ID MASCOTA:', id);
@@ -303,6 +322,11 @@ export class CrearMascotasComponent implements OnInit {
       mascota,
       id
     );
+
+    // Incrementar contador de mascotas del usuario
+    await updateDoc(doc(this.firestore, `usuarios/${user.uid}`), {
+      petCount: increment(1)
+    });
 
     console.log('DOCUMENTO MASCOTA CREADO');
 

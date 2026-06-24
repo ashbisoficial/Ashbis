@@ -31,19 +31,21 @@ import {
   IonSpinner,
   IonTextarea
 } from '@ionic/angular/standalone';
-import { LoadingController, ToastController } from '@ionic/angular';
+import { AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
   cameraOutline, createOutline, logoGoogle, closeOutline,
   checkmarkOutline, logOutOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-  documentTextOutline, refreshOutline
+  documentTextOutline, refreshOutline, trashOutline
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
+
+const CF_BASE = 'https://us-central1-ashbis-ae5b2.cloudfunctions.net';
 
 interface UsuarioActual {
   uid: string;
@@ -88,6 +90,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
+  private readonly alertCtrl = inject(AlertController);
   private readonly security = inject(SecurityService);
 
   authenticationService: AuthenticationService = inject(AuthenticationService);
@@ -131,7 +134,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
       cameraOutline, createOutline, logoGoogle, closeOutline,
       checkmarkOutline, logOutOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-      documentTextOutline, refreshOutline
+      documentTextOutline, refreshOutline, trashOutline
     });
 
     this.cargando = true;
@@ -410,4 +413,42 @@ export class PerfilComponent implements OnInit, OnDestroy {
     await this.auth.logout();
     this.router.navigate(['/login'], { replaceUrl: true });
   }
+  async eliminarCuenta(): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Eliminar cuenta',
+      message: 'Esta acción eliminará permanentemente tu cuenta y todos los datos de tus mascotas. No se puede deshacer.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              const user = this.auth.getCurrentUser();
+              if (!user) return;
+              const token = await user.getIdToken();
+              const res = await fetch(`${CF_BASE}/eliminarCuenta`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+              if (res.ok) {
+                await this.auth.logout();
+                await this.router.navigate(['/login'], { replaceUrl: true });
+              } else {
+                const err = await res.json();
+                console.error('Error al eliminar cuenta:', err);
+              }
+            } catch (e) {
+              console.error('Error al eliminar cuenta:', e);
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
 }

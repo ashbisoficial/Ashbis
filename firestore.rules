@@ -52,10 +52,6 @@ service cloud.firestore {
         allow delete: if isUser(uid);
       }
 
-      // Copia mínima y pública de los datos de contacto (nombre, apellido,
-      // teléfono), usada por la ficha pública del carnet de mascota perdida.
-      // El documento de usuario completo (usuarios/{uid}) sigue siendo
-      // privado: email, dirección, fecha de nacimiento, etc. nunca se exponen.
       match /publico/{docId} {
         allow read:   if true;
         allow write:  if isUser(uid) && noLongStrings(request.resource.data);
@@ -63,48 +59,43 @@ service cloud.firestore {
     }
 
     match /mascotas/{petId} {
-      allow read: if true;
-
+      // Solo el dueño puede leer/escribir su mascota.
+      // Las páginas públicas del QR deben usar Cloud Function con Admin SDK.
+      allow read: if isAuth() && resource.data.uidUsuario == request.auth.uid;
       allow create: if ownsData() && noLongStrings(request.resource.data);
-
       allow update: if isAuth()
                     && resource.data.uidUsuario == request.auth.uid
                     && request.resource.data.get('uidUsuario', request.auth.uid)
                        == request.auth.uid
                     && noLongStrings(request.resource.data);
-
       allow delete: if isAuth() && resource.data.uidUsuario == request.auth.uid;
 
       match /vacunas/{vacunaId} {
-        allow read:   if true;
+        allow read, write: if ownsPet(petId);
         allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow delete: if ownsPet(petId);
       }
-
       match /medicamentos/{medId} {
-        allow read:   if true;
+        allow read: if ownsPet(petId);
         allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow delete: if ownsPet(petId);
       }
-
       match /examenes/{examenId} {
-        allow read:   if true;
+        allow read: if ownsPet(petId);
         allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow delete: if ownsPet(petId);
       }
-
       match /citas/{citaId} {
-        allow read:   if true;
+        allow read: if ownsPet(petId);
         allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow delete: if ownsPet(petId);
       }
-
       match /documentos/{docId} {
-        allow read:   if ownsPet(petId);
+        allow read: if ownsPet(petId);
         allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
         allow delete: if ownsPet(petId);
@@ -114,6 +105,15 @@ service cloud.firestore {
     match /lugares/{placeId} {
       allow read:  if isAuth();
       allow write: if isAuth() && noLongStrings(request.resource.data);
+    }
+
+    match /public_qr/{tipo}/tokens/{token} {
+      allow read:   if true;
+      allow create: if isAuth()
+                    && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAuth()
+                    && resource.data.ownerId == request.auth.uid;
+      allow delete: if false;
     }
 
     match /{document=**} {

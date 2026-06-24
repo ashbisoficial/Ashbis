@@ -30,7 +30,8 @@ import {
   IonSelect,
   IonSelectOption,
   IonSpinner,
-  IonThumbnail
+  IonThumbnail,
+  IonCheckbox
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { eye, eyeOff } from 'ionicons/icons';
@@ -65,7 +66,8 @@ import { SecurityService } from 'src/app/services/security.service';
     IonImg,
     IonNote,
     IonSpinner,
-    IonThumbnail
+    IonThumbnail,
+    IonCheckbox
   ],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
@@ -98,7 +100,8 @@ export class RegistroComponent implements OnInit {
       region: ['', Validators.required],
       email: ['', [Validators.required, Validators.pattern(this.gmailRegex)]],
       password: ['', [Validators.required, Validators.pattern(this.passwordRegex)]],
-      confirmPassword: ['', Validators.required]
+      confirmPassword: ['', Validators.required],
+      consentimiento: [false, [Validators.requiredTrue]]
     },
     { validators: this.passwordsIgualesValidator() }
   );
@@ -155,8 +158,11 @@ export class RegistroComponent implements OnInit {
         region: this.security.sanitizeText(data.region!),
         email: cleanEmail,
         provider: 'password',
-        fechaRegistro: new Date().toISOString()
-      };
+        fechaRegistro: new Date().toISOString(),
+        consentGiven: true,
+        consentDate: new Date().toISOString(),
+        consentVersion: '1.0'
+      } as any;
 
       await this.firestoreService.createDocument(Models.Auth.PathUsers, datosUser, respuesta.user.uid);
       await this.firestoreService.setPublicContact(respuesta.user.uid, {
