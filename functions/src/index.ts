@@ -274,6 +274,16 @@ export const getCarnetPublico = onRequest(
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
+    // Rate limit por IP para función pública
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim()
+               || req.socket.remoteAddress
+               || 'unknown';
+    const ipKey = `qr_${ip}`;
+    if (hitRateLimit(ipKey)) {
+      res.status(429).json({ error: 'Demasiadas solicitudes. Intenta más tarde.' });
+      return;
+    }
+
     const token = req.query['token'] as string;
     const tipo  = req.query['tipo'] as string;  // 'carnet' | 'perdida'
 

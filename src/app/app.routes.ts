@@ -39,6 +39,18 @@ export const routes: Routes = [
       import('./mascota-perdida/mascota-perdida.page').then((m) => m.MascotaPerdidaPage),
   },
 
+  // ── Términos y privacidad (públicas, enlazadas desde el registro) ───────
+  {
+    path: 'terminos',
+    loadComponent: () =>
+      import('./terminos/terminos.component').then((m) => m.TerminosComponent),
+  },
+  {
+    path: 'privacidad',
+    loadComponent: () =>
+      import('./privacidad/privacidad.component').then((m) => m.PrivacidadComponent),
+  },
+
   // ── Rutas protegidas (con tabs) ──────────────────────────────────────────
   {
     path: 'tabs',
