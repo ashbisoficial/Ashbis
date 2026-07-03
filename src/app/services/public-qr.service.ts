@@ -45,16 +45,13 @@ export class PublicQrService {
   const path =
     `public_qr/${tipo}/tokens/${token}`;
 
-  console.log('BUSCANDO TOKEN EN:', path);
 
   const snap = await getDoc(
     doc(this.firestore, path)
   );
 
-  console.log('TOKEN EXISTE:', snap.exists());
 
   if (snap.exists()) {
-    console.log('TOKEN DATA:', snap.data());
   }
 
   return snap.exists()

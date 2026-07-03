@@ -129,7 +129,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       shape: 'pill',
       text: 'continue_with',
       logo_alignment: 'left',
-      width: 320
+      width: 360
     });
 
     this.googleBotonRenderizado = true;

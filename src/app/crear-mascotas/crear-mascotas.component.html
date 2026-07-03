@@ -79,16 +79,16 @@
               </ion-item>
 
               <!-- Fecha nacimiento -->
-            <ion-item>
+            <ion-item class="input-fecha">
               <ion-label position="stacked">
                 Fecha de nacimiento
               </ion-label>
 
-              <ion-datetime
-                presentation="date"
-                [max]="fechaActual"
-                formControlName="fechaNacimiento">
-              </ion-datetime>
+              <input
+                type="date"
+                formControlName="fechaNacimiento"
+                [max]="hoy"
+                class="date-input-custom">
             </ion-item>
 
               <!-- Edad -->

@@ -61,7 +61,8 @@
         <!-- Contenido -->
         <ion-col size="12" sizeMd="8" sizeLg="7">
           <!-- INFO (editable) -->
-          <form *ngIf="section()==='info'" [formGroup]="form" (ngSubmit)="guardarInfo()">
+          <!-- 🔴 importante: no renderizar hasta tener el form -->
+          <form *ngIf="section()==='info' && form" [formGroup]="form" (ngSubmit)="guardarInfo()">
             <ion-list inset="true">
               <ion-item>
                 <ion-label position="stacked">Nombre</ion-label>
@@ -123,24 +124,13 @@
                 </ion-select>
               </ion-item>
 
-              <ion-item>
+              <ion-item class="input-fecha">
                 <ion-label position="stacked">Fecha de nacimiento</ion-label>
-                <ion-datetime-button datetime="dt-nac" class="ion-margin-top ion-margin-bottom"></ion-datetime-button>
-                <ion-modal [keepContentsMounted]="true">
-                  <ng-template>
-                    <ion-datetime
-                      id="dt-nac"
-                      presentation="date"
-                      [max]="fechaMax"
-                      [value]="form.get('fechaNacimiento')?.value"
-                      (ionChange)="onIonDateChange($event)"
-                      locale="es-ES">
-                    </ion-datetime>
-                  </ng-template>
-                </ion-modal>
-                <ion-note slot="end" color="medium">
-                  {{ form.get('fechaNacimiento')?.value ? (form.get('fechaNacimiento')?.value | date:'dd-MM-yyyy') : 'Sin seleccionar' }}
-                </ion-note>
+                <input
+                  type="date"
+                  formControlName="fechaNacimiento"
+                  [max]="hoy"
+                  class="date-input-custom">
               </ion-item>
             </ion-list>
 
@@ -354,15 +344,12 @@
                       <ion-input formControlName="titulo" clearInput></ion-input>
                     </ion-item>
 
-                    <ion-item>
+                    <ion-item class="input-fecha">
                       <ion-label position="stacked">Fecha</ion-label>
-                      <ion-datetime
-                        presentation="date"
+                      <input
+                        type="date"
                         formControlName="fecha"
-                        locale="es-CL"
-                        class="ion-margin-top ion-margin-bottom"
-                        (ionChange)="citaForm.get('fecha')?.setValue($event.detail.value)">
-                      </ion-datetime>
+                        class="date-input-custom">
                     </ion-item>
 
                     <ion-item>
@@ -475,26 +462,23 @@
                       </ion-select>
                     </ion-item>
 
-                    <ion-item>
+                    <ion-item class="input-fecha">
                       <ion-label position="stacked">Fecha de aplicación</ion-label>
-                      <ion-datetime
-                        presentation="date"
+                      <input
+                        type="date"
                         formControlName="fechaAplicacion"
-                        locale="es-CL"
-                        class="ion-margin-top ion-margin-bottom"
-                        (ionChange)="vacunaForm.get('fechaAplicacion')?.setValue($event.detail.value)">
-                      </ion-datetime>
+                        [max]="hoy"
+                        class="date-input-custom">
                     </ion-item>
 
-                    <ion-item>
+                    <ion-item class="input-fecha">
                       <ion-label position="stacked">Próxima dosis (opcional)</ion-label>
-                      <ion-datetime
-                        presentation="date"
+                      <input
+                        type="date"
                         formControlName="proximaFecha"
-                        locale="es-CL"
-                        class="ion-margin-top ion-margin-bottom"
-                        (ionChange)="vacunaForm.get('proximaFecha')?.setValue($event.detail.value)">
-                      </ion-datetime>
+                        [min]="hoy"
+                        [max]="doceAnosFuturo"
+                        class="date-input-custom">
                     </ion-item>
 
                     <ion-item>
@@ -628,15 +612,12 @@
                       <ion-input formControlName="tipo" clearInput></ion-input>
                     </ion-item>
 
-                    <ion-item>
+                    <ion-item class="input-fecha">
                       <ion-label position="stacked">Fecha programada (opcional)</ion-label>
-                      <ion-datetime
-                        presentation="date"
+                      <input
+                        type="date"
                         formControlName="fechaProgramada"
-                        locale="es-CL"
-                        class="ion-margin-top ion-margin-bottom"
-                        (ionChange)="examenForm.get('fechaProgramada')?.setValue($event.detail.value)">
-                      </ion-datetime>
+                        class="date-input-custom">
                     </ion-item>
 
                     <ion-item>
@@ -644,15 +625,12 @@
                       <ion-toggle formControlName="realizado"></ion-toggle>
                     </ion-item>
 
-                    <ion-item *ngIf="examenForm.get('realizado')?.value">
+                    <ion-item class="input-fecha" *ngIf="examenForm.get('realizado')?.value">
                       <ion-label position="stacked">Fecha realizado</ion-label>
-                      <ion-datetime
-                        presentation="date"
+                      <input
+                        type="date"
                         formControlName="fechaRealizado"
-                        locale="es-CL"
-                        class="ion-margin-top ion-margin-bottom"
-                        (ionChange)="examenForm.get('fechaRealizado')?.setValue($event.detail.value)">
-                      </ion-datetime>
+                        class="date-input-custom">
                     </ion-item>
 
                     <ion-item>
@@ -753,26 +731,20 @@
                       <ion-input type="number" inputmode="decimal" formControlName="mg"></ion-input>
                     </ion-item>
 
-                    <ion-item>
+                    <ion-item class="input-fecha">
                       <ion-label position="stacked">Inicio del tratamiento</ion-label>
-                      <ion-datetime
-                        presentation="date"
+                      <input
+                        type="date"
                         formControlName="fechaInicio"
-                        locale="es-CL"
-                        class="ion-margin-top ion-margin-bottom"
-                        (ionChange)="medicamentoForm.get('fechaInicio')?.setValue($event.detail.value)">
-                      </ion-datetime>
+                        class="date-input-custom">
                     </ion-item>
 
-                    <ion-item>
+                    <ion-item class="input-fecha">
                       <ion-label position="stacked">Fin del tratamiento (opcional)</ion-label>
-                      <ion-datetime
-                        presentation="date"
+                      <input
+                        type="date"
                         formControlName="fechaFin"
-                        locale="es-CL"
-                        class="ion-margin-top ion-margin-bottom"
-                        (ionChange)="medicamentoForm.get('fechaFin')?.setValue($event.detail.value)">
-                      </ion-datetime>
+                        class="date-input-custom">
                     </ion-item>
 
                     <ion-item>

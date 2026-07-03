@@ -18,6 +18,9 @@ export const environment = {
   // Mismo Web Client ID que en environment.ts (es público, no es un secreto)
   googleWebClientId: '691736988474-1k8beq55v07k8tsbj3d1rsle52q5s12l.apps.googleusercontent.com',
 
+  // Mismo criterio que en environment.ts: restringida por HTTP referrer, segura de exponer.
+  googlePlacesApiKey: 'AIzaSyBUMGw2keUDxu4zHYDS8pehHMHtXC7cx9c',
+
   authAuthorizedDomains: [
     'ashbis-ae5b2.web.app',
     'ashbis-ae5b2.firebaseapp.com',

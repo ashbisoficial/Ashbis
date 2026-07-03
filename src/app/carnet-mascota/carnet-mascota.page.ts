@@ -7,16 +7,9 @@ import {
   IonBadge
 } from '@ionic/angular/standalone';
 import { QRCodeComponent } from 'angularx-qrcode';
-import { PublicQrService } from '../services/public-qr.service';
-import {
-  Firestore,
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-  query,
-  orderBy
-} from '@angular/fire/firestore';
+
+// URL base de Cloud Functions — debe coincidir con el PROJECT_ID en .firebaserc
+const CF_BASE = 'https://us-central1-ashbis-ae5b2.cloudfunctions.net';
 
 @Component({
   selector: 'app-carnet-mascota',
@@ -36,8 +29,7 @@ import {
 export class CarnetMascotaPage implements OnInit {
 
   private route = inject(ActivatedRoute);
-  private firestore = inject(Firestore);
-  private publicQrService = inject(PublicQrService);
+
   mascota: any = null;
   dueno: any = null;
   vacunas: any[] = [];
@@ -50,143 +42,54 @@ export class CarnetMascotaPage implements OnInit {
   qrUrl = '';
 
   async ngOnInit() {
+    const token = this.route.snapshot.paramMap.get('id');
 
-  const tokenOrId =
-    this.route.snapshot.paramMap.get('id');
-
-  console.log('TOKEN RECIBIDO:', tokenOrId);
-
-  if (!tokenOrId) {
-    this.error = true;
-    this.cargando = false;
-    return;
-  }
-
-  try {
-
-    const qrData =
-      await this.publicQrService.getQrToken(
-        'carnet',
-        tokenOrId
-      );
-
-    console.log('QR DATA:', qrData);
-
-    if (qrData?.mascotaId) {
-
-      await this.cargarMascota(
-        qrData.mascotaId
-      );
-
-    } else {
-
-      // compatibilidad mascotas antiguas
-      await this.cargarMascota(
-        tokenOrId
-      );
-
+    if (!token) {
+      this.error = true;
+      this.cargando = false;
+      return;
     }
 
-  } catch (e) {
+    try {
+      const url = `${CF_BASE}/getCarnetPublico?token=${encodeURIComponent(token)}&tipo=carnet`;
+      const res = await fetch(url);
 
-    console.error(
-      'Error cargando carnet:',
-      e
-    );
-
-    this.error = true;
-
-  } finally {
-
-    this.cargando = false;
-
-  }
-}
-
-  private async cargarMascota(id: string): Promise<void> {
-
-  console.log('CARGANDO MASCOTA ID:', id);
-
-  const mascotaSnap = await getDoc(
-    doc(this.firestore, `mascotas/${id}`)
-  );
-
-  console.log('EXISTE MASCOTA:', mascotaSnap.exists());
-
-  if (mascotaSnap.exists()) {
-    console.log('DATOS MASCOTA:', mascotaSnap.data());
-  }
-
-  if (!mascotaSnap.exists()) {
-    this.error = true;
-    return;
-  }
-
-  this.mascota = mascotaSnap.data();
-    this.qrUrl = `${window.location.origin}/carnet/${id}`;
-
-    // 2. Datos de contacto del dueño: leemos la copia pública y mínima
-    // (usuarios/{uid}/publico/contacto), nunca el perfil privado completo.
-    if (this.mascota?.uidUsuario) {
-      try {
-        const contactoSnap = await getDoc(
-          doc(this.firestore, `usuarios/${this.mascota.uidUsuario}/publico/contacto`)
-        );
-        if (contactoSnap.exists()) {
-          const d = contactoSnap.data();
-          this.dueno = {
-            nombre: d['nombre'] ?? '',
-            apellido: d['apellido'] ?? '',
-            telefono: d['telefono'] ?? ''
-          };
-        }
-      } catch (e) {
-        console.warn('No se pudo cargar el contacto del dueño:', e);
+      if (!res.ok) {
+        this.error = true;
+        return;
       }
+
+      const data = await res.json();
+      this.mascota     = data.mascota ?? null;
+      this.dueno       = data.dueno ?? null;
+      this.vacunas     = data.vacunas ?? [];
+      this.medicamentos = data.medicamentos ?? [];
+      this.examenes    = data.examenes ?? [];
+      this.citas       = data.citas ?? [];
+
+      if (!this.mascota) { this.error = true; return; }
+
+      this.qrUrl = `${window.location.origin}/carnet/${token}`;
+
+    } catch (e) {
+      console.error('Error cargando carnet:', e);
+      this.error = true;
+    } finally {
+      this.cargando = false;
     }
-
-    const basePath = `mascotas/${id}`;
-
-    const cargarSubcoleccion = async (
-      nombre: string,
-      ruta: string,
-      campoOrden: string,
-      direccion: 'asc' | 'desc'
-    ): Promise<any[]> => {
-      try {
-        const snap = await getDocs(query(collection(this.firestore, ruta), orderBy(campoOrden, direccion)));
-        return snap.docs.map(d => d.data());
-      } catch (e) {
-        console.warn(`No se pudo cargar "${nombre}" en el carnet público:`, e);
-        return [];
-      }
-    };
-
-    [this.vacunas, this.medicamentos, this.examenes, this.citas] = await Promise.all([
-      cargarSubcoleccion('vacunas', `${basePath}/vacunas`, 'fechaAplicacion', 'desc'),
-      cargarSubcoleccion('medicamentos', `${basePath}/medicamentos`, 'fechaInicio', 'desc'),
-      cargarSubcoleccion('examenes', `${basePath}/examenes`, 'fechaProgramada', 'asc'),
-      cargarSubcoleccion('citas', `${basePath}/citas`, 'fechaInicio', 'asc')
-    ]);
   }
+
   traducirIndicador(valor: string): string {
-
-  const mapa: Record<string,string> = {
-
-    cuidado_otros_animales: '⚠️ Otros animales',
-    cuidado_mujeres: '⚠️ Mujeres',
-    cuidado_hombres: '⚠️ Hombres',
-    cuidado_ninos: '⚠️ Niños',
-
-    cuidado_misma_especie: '⚠️ Misma especie',
-
-    necesita_compania: '❤️ Necesita compañía',
-
-    temeroso: '😟 Temeroso',
-
-    agresivo: '🚫 Agresivo'
-  };
-
-  return mapa[valor] || valor;
-}
+    const mapa: Record<string, string> = {
+      cuidado_otros_animales: '⚠️ Otros animales',
+      cuidado_mujeres: '⚠️ Mujeres',
+      cuidado_hombres: '⚠️ Hombres',
+      cuidado_ninos: '⚠️ Niños',
+      cuidado_misma_especie: '⚠️ Misma especie',
+      necesita_compania: '❤️ Necesita compañía',
+      temeroso: '😟 Temeroso',
+      agresivo: '🚫 Agresivo'
+    };
+    return mapa[valor] || valor;
+  }
 }

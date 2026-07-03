@@ -66,7 +66,10 @@ export class MascotaEditarComponent implements OnDestroy {
 
   mascota = signal<Mascota | null>(null);
   section = signal<Section>('info');
-  fechaMax = new Date().toISOString();
+  readonly hoy = new Date().toISOString().split('T')[0];
+  readonly doceAnosFuturo = new Date(
+    new Date().setFullYear(new Date().getFullYear() + 12)
+  ).toISOString().split('T')[0];
 
   // Calendario / Citas
   citas = signal<Cita[]>([]);
@@ -245,12 +248,6 @@ export class MascotaEditarComponent implements OnDestroy {
     } finally {
       this.saving.set(false);
     }
-  }
-
-  onIonDateChange(ev: CustomEvent) {
-    const val = (ev as any).detail?.value as string | null;
-    if (!val) return;
-    this.form.patchValue({ fechaNacimiento: val });
   }
 
   showToast(msg: string) {

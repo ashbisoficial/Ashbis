@@ -11,6 +11,7 @@ import { Observable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Auth } from '@angular/fire/auth';
 import { SecurityService } from 'src/app/services/security.service';
+import { Models } from '../models/models';
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -24,25 +25,7 @@ export type Cita = {
   creadoPor: string;
 };
 
-export interface Mascota {
-  id: string;
-  nombre: string;
-  especie: string;
-  raza: string;
-  sexo: string;
-  color?: string;
-  castrado?: 'Sí' | 'No';
-  edad?: number;
-  fechaNacimiento?: string;
-  fechaRegistro?: string;
-  date?: any;
-  uidUsuario: string;
-  fotoUrl?: string;
-  galeria?: string[];
-  numeroChip?: string;
-  peso?: number;
-  indicadores?: string[];
-}
+export type Mascota = Models.Mascotas.Mascota;
 
 export type Vacuna = {
   id?: string;

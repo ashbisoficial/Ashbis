@@ -10,21 +10,28 @@ import {
 } from '@ionic/angular/standalone';
 import { ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
-import { map, switchMap } from 'rxjs/operators';
+import { map, switchMap, take } from 'rxjs/operators';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { addIcons } from 'ionicons';
 import {
   hourglassOutline, locateOutline, star, bagOutline, pawOutline,
   chatbubblesOutline, heartOutline, heart, closeOutline, createOutline,
   callOutline, globeOutline, timeOutline, starOutline,
-  chevronBackOutline, chevronForwardOutline, paw, bag
+  chevronBackOutline, chevronForwardOutline, paw, bag,
+  qrCodeOutline, addCircleOutline
 } from 'ionicons/icons';
 import { register } from 'swiper/element/bundle';
 import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
 import { firstValueFrom, of, Subject, takeUntil } from 'rxjs';
 import { User } from '@angular/fire/auth';
+import { environment } from 'src/environments/environment';
 import * as L from 'leaflet';
 register();
+
+// El script de Google Maps JavaScript API (cargado dinámicamente en
+// cargarGoogleMaps()) define este objeto global; no hay tipos oficiales
+// livianos para la librería "places" nueva, así que lo tratamos como `any`.
+declare const google: any;
 
 
 interface Marcador {
@@ -65,7 +72,8 @@ addIcons({
   hourglassOutline, locateOutline, bagOutline, pawOutline, star,
   chatbubblesOutline, heartOutline, heart, closeOutline, createOutline,
   callOutline, globeOutline, timeOutline, starOutline,
-  chevronBackOutline, chevronForwardOutline, paw, bag
+  chevronBackOutline, chevronForwardOutline, paw, bag,
+  qrCodeOutline, addCircleOutline
 });
 
 @Component({
@@ -111,12 +119,12 @@ export class HomePage implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   veterinariasFavoritas: VeterinariaFavorita[] = [];
 
-  // Servidores Overpass en orden de prioridad
-  private readonly OVERPASS_SERVERS = [
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
-  ];
+  // Carga perezosa y única del script de Google Maps JavaScript API
+  private googleMapsLoadPromise: Promise<void> | null = null;
+
+  // Cache en memoria de resultados de Places API por zona (~100 m) y tipo,
+  // para no repetir la misma consulta pagada dentro de la misma sesión.
+  private cacheResultados = new Map<string, any[]>();
 
   imagenesCarrusel = [
     { src: 'assets/img/carrusel1.jpg', titulo: 'Cuidado y amor para tus mascotas' },
@@ -208,35 +216,6 @@ export class HomePage implements OnInit, OnDestroy {
     await toast.present();
   }
 
-  // ── Horario OSM ──────────────────────────────────────
-  private evaluarHorario(openingHours: string | undefined): boolean | null {
-    if (!openingHours) return null;
-    const oh = openingHours.trim().toLowerCase();
-    if (oh === '24/7') return true;
-
-    const now      = new Date();
-    const dayIndex = now.getDay();
-    const hora     = now.getHours() * 60 + now.getMinutes();
-
-    const diasMap: Record<string, number[]> = {
-      mo: [1], tu: [2], we: [3], th: [4], fr: [5], sa: [6], su: [0],
-      'mo-fr': [1,2,3,4,5], 'mo-sa': [1,2,3,4,5,6],
-      'mo-su': [0,1,2,3,4,5,6], 'sa-su': [0,6],
-    };
-
-    for (const parte of oh.split(';').map(p => p.trim())) {
-      const match = parte.match(/^([a-z\-]+)\s+(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);
-      if (!match) continue;
-      const [, dia, h1, m1, h2, m2] = match;
-      const diasValidos = diasMap[dia];
-      if (!diasValidos?.includes(dayIndex)) continue;
-      const inicio = +h1 * 60 + +m1;
-      const fin    = +h2 * 60 + +m2;
-      return hora >= inicio && hora <= fin;
-    }
-    return null;
-  }
-
   // ── Búsqueda ─────────────────────────────────────────
   findPlacesAction(tipo: 'veterinary_care' | 'pet_store') {
     this.currentSearchType = tipo;
@@ -281,74 +260,99 @@ export class HomePage implements OnInit, OnDestroy {
     );
   }
 
-  searchNearbyPlaces(coords: { lat: number; lng: number }) {
+  // Carga el script de Google Maps JS una sola vez (necesario porque la key
+  // viene de environment.ts, así que no se puede fijar en un <script> estático
+  // de index.html).
+  private cargarGoogleMaps(): Promise<void> {
+    if ((window as any).google?.maps?.importLibrary) return Promise.resolve();
+    if (this.googleMapsLoadPromise) return this.googleMapsLoadPromise;
+
+    this.googleMapsLoadPromise = new Promise((resolve, reject) => {
+      (window as any).__ashbisGoogleMapsReady = () => resolve();
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.googlePlacesApiKey}&libraries=places&language=es&callback=__ashbisGoogleMapsReady`;
+      script.async = true;
+      script.onerror = () => reject(new Error('No se pudo cargar Google Maps.'));
+      document.head.appendChild(script);
+    });
+    return this.googleMapsLoadPromise;
+  }
+
+  async searchNearbyPlaces(coords: { lat: number; lng: number }) {
     this.estaCargando = true;
     this.markersLayer?.clearLayers();
     this.markerRefs.clear();
 
-    const tag = this.currentSearchType === 'veterinary_care' ? 'amenity=veterinary' : 'shop=pet';
-    const query = `
-      [out:json][timeout:25];
-      (
-        node[${tag}](around:5000,${coords.lat},${coords.lng});
-        way[${tag}](around:5000,${coords.lat},${coords.lng});
-      );
-      out center tags;
-    `;
-    this.intentarOverpass(0, query);
-  }
-
-  private intentarOverpass(index: number, query: string) {
-    if (index >= this.OVERPASS_SERVERS.length) {
+    try {
+      const places = await this.buscarPlacesConCache(coords, this.currentSearchType!);
+      await this.procesarResultados(places);
+    } catch (err) {
+      console.error('Error Places API:', err);
       this.estaCargando = false;
-      this.presentToast('No se pudo conectar al servidor. Intenta en unos minutos.', 'danger');
-      return;
+      this.presentToast('No se pudo conectar con Google Places. Intenta en unos minutos.', 'danger');
     }
-
-    fetch(this.OVERPASS_SERVERS[index], { method: 'POST', body: query })
-      .then(r => {
-        const ct = r.headers.get('content-type') || '';
-        if (!r.ok || ct.includes('xml') || ct.includes('text/html')) {
-          throw new Error(`Error ${r.status} en servidor ${index + 1}`);
-        }
-        return r.json();
-      })
-      .then(data => this.procesarResultados(data.elements || []))
-      .catch(err => {
-        console.warn(`Servidor ${index + 1} falló:`, err.message);
-        setTimeout(() => this.intentarOverpass(index + 1, query), 500);
-      });
   }
 
-  private async procesarResultados(elementos: any[]) {
+  // Evita repetir la misma consulta a Places API si el usuario busca de nuevo
+  // en la misma zona (~100 m, por el toFixed(3)) durante la misma sesión.
+  private async buscarPlacesConCache(
+    coords: { lat: number; lng: number },
+    tipo: 'veterinary_care' | 'pet_store'
+  ): Promise<any[]> {
+    const key = `${tipo}_${coords.lat.toFixed(3)}_${coords.lng.toFixed(3)}`;
+    const cacheado = this.cacheResultados.get(key);
+    if (cacheado) return cacheado;
+
+    await this.cargarGoogleMaps();
+    const { Place, SearchNearbyRankPreference } = await google.maps.importLibrary('places');
+
+    const { places } = await Place.searchNearby({
+      fields: [
+        'id', 'displayName', 'formattedAddress', 'location', 'rating',
+        'businessStatus', 'regularOpeningHours', 'nationalPhoneNumber', 'websiteURI'
+      ],
+      locationRestriction: { center: coords, radius: 5000 },
+      includedPrimaryTypes: [tipo],
+      maxResultCount: 20,
+      rankPreference: SearchNearbyRankPreference.DISTANCE,
+      language: 'es',
+    });
+
+    const resultados = places || [];
+    this.cacheResultados.set(key, resultados);
+    return resultados;
+  }
+
+  private async procesarResultados(places: any[]) {
     this.estaCargando = false;
 
-    if (!elementos.length) {
+    if (!places.length) {
       this.presentToast('No se encontraron lugares en 5 km.', 'warning');
       return;
     }
 
     // Una sola llamada a Firestore para todos los lugares
     const infoExtra = await runInInjectionContext(this.injector, () =>
-      this.firestoreService.getLugaresInfo(elementos.map(e => String(e.id)))
+      this.firestoreService.getLugaresInfo(places.map(p => p.id))
     );
 
-    this.marcadoresEnMapa = elementos
-      .filter(el => (el.lat ?? el.center?.lat) && (el.lon ?? el.center?.lon))
-      .map(el => ({
-        lat:          el.lat ?? el.center?.lat,
-        lng:          el.lon ?? el.center?.lon,
-        title:        el.tags?.name || (this.currentSearchType === 'veterinary_care' ? 'Veterinaria' : 'Tienda de mascotas'),
-        address:      el.tags?.['addr:street']
-                        ? `${el.tags['addr:street']} ${el.tags['addr:housenumber'] || ''}`.trim()
-                        : 'Dirección no disponible',
-        placeId:      String(el.id),
+    this.marcadoresEnMapa = places
+      .filter(p => p.location)
+      .map(p => ({
+        lat:          p.location.lat(),
+        lng:          p.location.lng(),
+        title:        p.displayName || (this.currentSearchType === 'veterinary_care' ? 'Veterinaria' : 'Tienda de mascotas'),
+        address:      p.formattedAddress || 'Dirección no disponible',
+        placeId:      p.id,
         tipo:         this.currentSearchType!,
-        phone:        el.tags?.phone || el.tags?.['contact:phone'],
-        website:      el.tags?.website || el.tags?.['contact:website'],
-        openingHours: el.tags?.opening_hours,
-        isOpen:       this.evaluarHorario(el.tags?.opening_hours),
-        userInfo:     infoExtra[String(el.id)],
+        phone:        p.nationalPhoneNumber,
+        website:      p.websiteURI,
+        openingHours: p.regularOpeningHours?.weekdayDescriptions?.join('\n'),
+        isOpen:       p.businessStatus && p.businessStatus !== 'OPERATIONAL'
+                        ? false
+                        : (p.regularOpeningHours?.openNow ?? null),
+        rating:       p.rating,
+        userInfo:     infoExtra[p.id],
       }));
 
     // Ordenamos por cercanía real para que "Siguiente / Anterior" tenga sentido
@@ -548,5 +552,26 @@ export class HomePage implements OnInit, OnDestroy {
 
   irAlChatIA() {
     this.router.navigate(['/chat-ia']);
+  }
+
+  irAQR() {
+    this.router.navigate(['/tabs/mascota-qr']);
+  }
+
+  irAHistorial() {
+    const uid = this.auth.getCurrentUser()?.uid;
+    if (!uid) return;
+
+    runInInjectionContext(this.injector, () => this.firestoreService.getUserPets(uid))
+      .pipe(take(1))
+      .subscribe(mascotas => {
+        if (mascotas.length === 1) {
+          this.router.navigate(['/tabs/mascota-detalle', mascotas[0].id]);
+        } else if (mascotas.length > 1) {
+          this.router.navigate(['/tabs/listar-mascotas']);
+        } else {
+          this.router.navigate(['/tabs/crear-mascotas']);
+        }
+      });
   }
 }

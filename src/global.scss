@@ -88,3 +88,24 @@
   70%  { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0), 0 2px 8px rgba(0, 0, 0, 0.5); }
   100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0), 0 2px 8px rgba(0, 0, 0, 0.5); }
 }
+
+/* ===========================================================
+   INPUT DE FECHA NATIVO (reemplaza ion-datetime inline en
+   formularios: crear-mascotas, mascota-editar)
+   =========================================================== */
+.date-input-custom {
+  width: 100%;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  color: var(--ion-color-dark);
+  font-size: 16px;
+  outline: none;
+  cursor: pointer;
+
+  &::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    cursor: pointer;
+    padding: 4px;
+  }
+}

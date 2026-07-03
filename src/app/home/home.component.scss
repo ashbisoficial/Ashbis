@@ -162,6 +162,33 @@ swiper-slide {
   --background: transparent;
 }
 
+.acceso-rapido {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border-radius: 50px;
+  border: 3px solid #8b0808;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  ion-icon {
+    font-size: 26px;
+    color: #ffffff;
+  }
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
 ion-button[color="danger"] {
   --background-activated: #ff3b30;
   --border-radius: 20px;

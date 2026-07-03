@@ -335,3 +335,62 @@ ion-datetime::part(wheel-highlight) {
   --background: transparent;
   color: #ff4d4d;
 }
+
+/* ============================================
+   8. CENTRADO Y PULIDO DE INPUTS (adaptado al
+   tema oscuro de esta página: tarjetas gris oscuro
+   con sombra en vez de var(--ion-color-light))
+============================================ */
+ion-content {
+  --padding-start: 16px;
+  --padding-end: 16px;
+}
+
+ion-item {
+  --border-radius: 12px !important;
+  --background: #141414 !important;
+  --padding-start: 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+ion-item ion-label {
+  font-size: 13px !important;
+  font-weight: 500;
+}
+
+ion-input, ion-select, ion-textarea {
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+  font-size: 15px;
+}
+
+/* .date-input-custom (global.scss) usa var(--ion-color-dark) por defecto,
+   invisible sobre las tarjetas oscuras de esta página en particular. */
+.date-input-custom {
+  color: #ffffff !important;
+
+  &::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+}
+
+ion-accordion-group {
+  margin-bottom: 12px;
+}
+
+ion-accordion {
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+ion-button[type="submit"],
+ion-button.btn-guardar {
+  --border-radius: 50px;
+  margin: 20px 0 40px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}

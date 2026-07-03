@@ -4,10 +4,8 @@ import { CommonModule } from '@angular/common';
 import { IonContent, IonSpinner, IonButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { callOutline, logoWhatsapp, mailOutline, shareOutline } from 'ionicons/icons';
-import { PublicQrService } from '../services/public-qr.service';
-import {
-  Firestore, doc, getDoc, collection, getDocs, query, orderBy
-} from '@angular/fire/firestore';
+
+const CF_BASE = 'https://us-central1-ashbis-ae5b2.cloudfunctions.net';
 
 @Component({
   selector: 'app-mascota-perdida',
@@ -18,9 +16,7 @@ import {
 })
 export class MascotaPerdidaPage implements OnInit {
 
-  private route         = inject(ActivatedRoute);
-  private firestore     = inject(Firestore);
-  private publicQrSvc   = inject(PublicQrService);
+  private route = inject(ActivatedRoute);
 
   mascota:   any = null;
   dueno:     any = null;
@@ -29,7 +25,6 @@ export class MascotaPerdidaPage implements OnInit {
   cargando = true;
   error    = false;
 
-  // Mapa de indicadores internos → etiqueta legible
   private static readonly INDICADORES: Record<string, string> = {
     cuidado_otros_animales: 'Precaución con otros animales',
     cuidado_mujeres:        'Precaución con mujeres',
@@ -50,44 +45,24 @@ export class MascotaPerdidaPage implements OnInit {
     if (!token) { this.error = true; this.cargando = false; return; }
 
     try {
-      const qrData = await this.publicQrSvc.getQrToken('perdida', token);
-      if (!qrData?.mascotaId) { this.error = true; return; }
-      await this.cargarDatos(qrData.mascotaId);
+      const url = `${CF_BASE}/getCarnetPublico?token=${encodeURIComponent(token)}&tipo=perdida`;
+      const res = await fetch(url);
+
+      if (!res.ok) { this.error = true; return; }
+
+      const data = await res.json();
+      this.mascota            = data.mascota ? { id: token, ...data.mascota } : null;
+      this.dueno              = data.dueno ?? null;
+      this.medicamentosActivos = data.medicamentos ?? [];
+
+      if (!this.mascota) { this.error = true; }
+
     } catch (e) {
       console.error('Error cargando ficha de pérdida:', e);
       this.error = true;
     } finally {
       this.cargando = false;
     }
-  }
-
-  private async cargarDatos(mascotaId: string) {
-    // Mascota
-    const snap = await getDoc(doc(this.firestore, `mascotas/${mascotaId}`));
-    if (!snap.exists()) { this.error = true; return; }
-    this.mascota = { id: snap.id, ...snap.data() };
-
-    // Contacto público del dueño
-    if (this.mascota.uidUsuario) {
-      try {
-        const cSnap = await getDoc(
-          doc(this.firestore, `usuarios/${this.mascota.uidUsuario}/publico/contacto`)
-        );
-        if (cSnap.exists()) this.dueno = cSnap.data();
-      } catch { /* no crítico */ }
-    }
-
-    // Medicamentos activos (solo los que todavía están vigentes)
-    try {
-      const hoy = new Date().toISOString().slice(0, 10);
-      const medSnap = await getDocs(
-        query(collection(this.firestore, `mascotas/${mascotaId}/medicamentos`),
-              orderBy('fechaInicio', 'desc'))
-      );
-      this.medicamentosActivos = medSnap.docs
-        .map(d => d.data())
-        .filter(m => !m['fechaFin'] || m['fechaFin'] >= hoy);
-    } catch { /* no crítico */ }
   }
 
   // ── Helpers para la plantilla ──────────────────────────────────────────

@@ -102,23 +102,33 @@ ion-text[color="danger"] p {
    BOTONES
 ============================ */
 
+/* Todos los botones del formulario, mismo tamaño y proporciones */
+.btn-ashbis,
+.btn-crear {
+  width: 90%;
+  max-width: 360px;
+  height: 46px;
+  margin: 12px auto;
+  --border-radius: 24px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .5px;
+}
+
 /* Botón ingresar */
 .btn-ashbis {
   --background: #8b0808;
   --background-hover: #b91c1c;
   --background-activated: #991b1b;
-
   --color: #ffffff;
-
-  --border-radius: 20px;
-  font-weight: 600;
-
 }
 
-/* Contenedor del botón de Google (el botón en sí lo dibuja Google Identity Services) */
+/* Contenedor del botón de Google — el botón en sí lo dibuja Google Identity
+   Services dentro de un iframe y no se puede restylear (política de marca de
+   Google); solo podemos centrarlo y darle el mismo ancho que el resto. */
 .google-btn-container {
   width: 90%;
-  max-width: 320px;
+  max-width: 360px;
   margin: 15px auto;
   display: flex;
   flex-direction: column;
@@ -127,10 +137,14 @@ ion-text[color="danger"] p {
 }
 
 .google-btn-fallback {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border-radius: 12px;
+  padding: 10px 14px;
   font-size: 12px;
-  color: #d94b4b;
+  line-height: 1.4;
   text-align: center;
-  margin: 4px 0 0;
+  margin: 0;
 }
 
 /* Link olvidar contraseña */
@@ -143,15 +157,11 @@ ion-text[color="danger"] p {
 }
 
 /* Botón crear */
-.btn-crear{
-   --background: #ffffff;
+.btn-crear {
+  --background: #ffffff;
   --background-hover: #8b0808;
   --background-activated: #991b1b;
-
   --color: #000000;
-
-  --border-radius: 20px;
-  font-weight: 600;
 }
 
 /* Texto inferior */

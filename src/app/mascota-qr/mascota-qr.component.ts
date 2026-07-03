@@ -16,7 +16,7 @@ import {
 } from '@ionic/angular/standalone';
 
 import { addIcons } from 'ionicons';
-import { downloadOutline, imageOutline, shareOutline } from 'ionicons/icons';
+import { downloadOutline, shareOutline } from 'ionicons/icons';
 
 import { Firestore, doc, updateDoc } from '@angular/fire/firestore';
 import { PublicQrService } from '../services/public-qr.service';
@@ -229,10 +229,13 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     // QR Médico: URL al carnet público completo
     const baseUrl = window.location.origin;
 
+
     if (m.qrCarnetToken) {
-      this.qrFichaMedica = `${baseUrl}/carnet/${m.qrCarnetToken}`;
+      this.qrFichaMedica =
+        `${baseUrl}/carnet/${m.qrCarnetToken}`;
     } else {
-      this.qrFichaMedica = `${baseUrl}/carnet/${mascota.id}`;
+      this.qrFichaMedica =
+        `${baseUrl}/carnet/${mascota.id}`;
     }
 
     // ── QR Emergencia: texto estructurado y legible al escanearlo ──────────
@@ -297,14 +300,18 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     lineas.push('══════════════════════');
 
     if (m.qrPerdidaToken) {
-      this.qrEmergencia = `${baseUrl}/perdida/${m.qrPerdidaToken}`;
-    } else {
-      this.qrEmergencia = lineas
-        .filter(l => l !== null && l !== undefined)
-        .join('\n')
-        .trim();
-    }
 
+        this.qrEmergencia =
+          `${baseUrl}/perdida/${m.qrPerdidaToken}`;
+
+      } else {
+
+        this.qrEmergencia = lineas
+          .filter(l => l !== null && l !== undefined)
+          .join('\n')
+          .trim();
+
+      }
     // Texto plano para el PDF (sin caracteres de borde)
     this.cuidadosEspecialesTexto = [
       comportamientoLegible.join(', ') || 'Sin indicadores de comportamiento especiales',

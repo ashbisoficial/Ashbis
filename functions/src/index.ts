@@ -11,14 +11,23 @@ const ALLOWED_ORIGINS = new Set([
   'https://ashbis-ae5b2.firebaseapp.com',
   'http://localhost:8100',
   'http://localhost:4200',
+  'capacitor://localhost',
+  'http://localhost',
 ]);
 
-function corsHeaders(origin?: string): Record<string, string> {
+function corsHeaders(origin?: string, isPublic = false): Record<string, string> {
   const base: Record<string, string> = {
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Max-Age': '600',
   };
+  // Rutas públicas (getCarnetPublico): permite cualquier origen, incluyendo
+  // requests nativos de Android/iOS donde origin es undefined.
+  if (isPublic) {
+    base['Access-Control-Allow-Origin'] = '*';
+    return base;
+  }
+  // Rutas autenticadas (aiProxy, eliminarCuenta): CORS estricto
   if (origin && ALLOWED_ORIGINS.has(origin)) {
     base['Access-Control-Allow-Origin'] = origin;
     base['Vary'] = 'Origin';
@@ -247,6 +256,182 @@ export const aiProxy = onRequest(
     } catch (error) {
       functions.logger.error('aiProxy unexpected error', error);
       res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+  }
+);
+
+// ─── Cloud Function: getCarnetPublico ─────────────────────────────────────────
+// Sirve datos públicos del QR (carnet médico o ficha de pérdida) sin exponer
+// el Firestore directamente al cliente no autenticado.
+export const getCarnetPublico = onRequest(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB', maxInstances: 10 },
+  async (req, res) => {
+    const origin = req.headers.origin;
+    const headers = corsHeaders(origin, true);
+    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+    Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const token = req.query['token'] as string;
+    const tipo  = req.query['tipo'] as string;  // 'carnet' | 'perdida'
+
+    if (!token || !tipo || !['carnet', 'perdida'].includes(tipo)) {
+      res.status(400).json({ error: 'Parámetros inválidos' });
+      return;
+    }
+
+    try {
+      const db = admin.firestore();
+
+      // 1. Verificar token
+      const tokenSnap = await db.doc(`public_qr/${tipo}/tokens/${token}`).get();
+      if (!tokenSnap.exists || !tokenSnap.data()?.activa) {
+        res.status(404).json({ error: 'QR inválido o inactivo' });
+        return;
+      }
+
+      const mascotaId = tokenSnap.data()!.mascotaId as string;
+
+      // 2. Datos de la mascota
+      const mascotaSnap = await db.doc(`mascotas/${mascotaId}`).get();
+      if (!mascotaSnap.exists) {
+        res.status(404).json({ error: 'Mascota no encontrada' });
+        return;
+      }
+      const mascota = mascotaSnap.data()!;
+
+      // 3. Contacto público del dueño
+      let dueno: any = null;
+      try {
+        const duenoSnap = await db.doc(`usuarios/${mascota['uidUsuario']}/publico/contacto`).get();
+        if (duenoSnap.exists) dueno = duenoSnap.data();
+      } catch { /* no crítico */ }
+
+      // 4. Subcolecciones médicas (solo si es carnet médico)
+      let vacunas: any[] = [];
+      let medicamentos: any[] = [];
+      let examenes: any[] = [];
+      let citas: any[] = [];
+
+      if (tipo === 'carnet') {
+        const [vSnap, mSnap, eSnap, cSnap] = await Promise.all([
+          db.collection(`mascotas/${mascotaId}/vacunas`).orderBy('fechaAplicacion', 'desc').get(),
+          db.collection(`mascotas/${mascotaId}/medicamentos`).orderBy('fechaInicio', 'desc').get(),
+          db.collection(`mascotas/${mascotaId}/examenes`).orderBy('fechaProgramada', 'asc').get(),
+          db.collection(`mascotas/${mascotaId}/citas`).orderBy('fechaInicio', 'asc').get(),
+        ]);
+        vacunas      = vSnap.docs.map(d => d.data());
+        medicamentos = mSnap.docs.map(d => d.data());
+        examenes     = eSnap.docs.map(d => d.data());
+        citas        = cSnap.docs.map(d => d.data());
+      }
+
+      // 5. Si es perdida, solo traer medicamentos activos
+      if (tipo === 'perdida') {
+        const hoy = new Date().toISOString().slice(0, 10);
+        const mSnap = await db.collection(`mascotas/${mascotaId}/medicamentos`)
+          .orderBy('fechaInicio', 'desc').get();
+        medicamentos = mSnap.docs.map(d => d.data())
+          .filter((m: any) => !m.fechaFin || m.fechaFin >= hoy);
+      }
+
+      res.status(200).json({ mascota, dueno, vacunas, medicamentos, examenes, citas });
+
+    } catch (error) {
+      functions.logger.error('getCarnetPublico error', error);
+      res.status(500).json({ error: 'Error interno' });
+    }
+  }
+);
+
+// ─── Cloud Function: eliminarCuenta ──────────────────────────────────────────
+// Elimina la cuenta del usuario y todos sus datos (mascotas, subcolecciones,
+// archivos en Storage, tokens QR). Requiere token Bearer válido.
+export const eliminarCuenta = onRequest(
+  { region: 'us-central1', timeoutSeconds: 60, memory: '512MiB', maxInstances: 5 },
+  async (req, res) => {
+    const origin = req.headers.origin;
+    const headers = corsHeaders(origin);
+    Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const authHeader = req.headers.authorization || '';
+    const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/);
+    if (!tokenMatch) { res.status(401).json({ error: 'No autorizado' }); return; }
+
+    let uid: string;
+    try {
+      const decoded = await admin.auth().verifyIdToken(tokenMatch[1]);
+      uid = decoded.uid;
+    } catch {
+      res.status(401).json({ error: 'Token inválido' });
+      return;
+    }
+
+    try {
+      const db = admin.firestore();
+      const bucket = admin.storage().bucket();
+
+      // 1. Obtener mascotas del usuario
+      const mascotasSnap = await db.collection('mascotas')
+        .where('uidUsuario', '==', uid).get();
+
+      // 2. Eliminar subcolecciones y datos de cada mascota
+      for (const mascotaDoc of mascotasSnap.docs) {
+        const petId = mascotaDoc.id;
+        const subcolecciones = ['vacunas', 'medicamentos', 'examenes', 'citas', 'documentos'];
+
+        for (const sub of subcolecciones) {
+          const subSnap = await db.collection(`mascotas/${petId}/${sub}`).get();
+          const batch = db.batch();
+          subSnap.docs.forEach(d => batch.delete(d.ref));
+          if (subSnap.docs.length > 0) await batch.commit();
+        }
+
+        // Eliminar archivos en Storage de esta mascota
+        try {
+          await bucket.deleteFiles({ prefix: `mascotas/${uid}/${petId}/` });
+        } catch { /* puede no existir */ }
+
+        // Eliminar tokens QR de esta mascota
+        for (const tipo of ['carnet', 'perdida']) {
+          try {
+            const qrSnap = await db.collection(`public_qr/${tipo}/tokens`)
+              .where('mascotaId', '==', petId).get();
+            const batch = db.batch();
+            qrSnap.docs.forEach(d => batch.delete(d.ref));
+            if (qrSnap.docs.length > 0) await batch.commit();
+          } catch { /* no crítico */ }
+        }
+
+        await mascotaDoc.ref.delete();
+      }
+
+      // 3. Eliminar datos del usuario
+      try { await bucket.deleteFiles({ prefix: `usuarios/${uid}/` }); } catch { /* puede no existir */ }
+      try { await db.doc(`usuarios/${uid}/publico/contacto`).delete(); } catch { /* puede no existir */ }
+
+      const vetSnap = await db.collection(`usuarios/${uid}/veterinariasFavoritas`).get();
+      if (vetSnap.docs.length > 0) {
+        const batch = db.batch();
+        vetSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+
+      await db.doc(`usuarios/${uid}`).delete();
+
+      // 4. Eliminar cuenta de Firebase Auth
+      await admin.auth().deleteUser(uid);
+
+      res.status(200).json({ success: true, message: 'Cuenta eliminada correctamente' });
+
+    } catch (error) {
+      functions.logger.error('eliminarCuenta error', error);
+      res.status(500).json({ error: 'Error al eliminar la cuenta' });
     }
   }
 );

@@ -23,13 +23,28 @@
     </swiper-container>
   </div>
 
-  <!-- BOTÓN CHAT IA 
+  <!-- BOTÓN CHAT IA
   <div class="ion-text-center ion-margin-top chat-ia-button">
     <ion-button class="btn-ashbis" expand="block" shape="round" (click)="irAlChatIA()">
       <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
       Chat con Ashbis IA
     </ion-button>
   </div> -->
+
+  <!-- ACCESOS RÁPIDOS -->
+  <div style="display: flex; gap: 12px; padding: 0 16px 16px;">
+
+    <button class="acceso-rapido" (click)="irAQR()">
+      <ion-icon name="qr-code-outline"></ion-icon>
+      <span>Ver QR</span>
+    </button>
+
+    <!-- <button class="acceso-rapido" (click)="irAHistorial()">
+      <ion-icon name="add-circle-outline"></ion-icon>
+      <span>Agregar al historial</span>
+    </button>
+
+  </div>
 
   <!-- SECCIÓN MAPA -->
   <ion-card class="map-card-container ion-no-margin">

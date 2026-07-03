@@ -42,6 +42,14 @@ export const environment = {
   // ⚠️ Reemplaza este placeholder o el botón de Google no funcionará.
   googleWebClientId: '691736988474-1k8beq55v07k8tsbj3d1rsle52q5s12l.apps.googleusercontent.com',
 
+  // Key de Maps JavaScript API / Places API (New) para el buscador de veterinarias/tiendas del mapa.
+  // Sácala de: Google Cloud Console → APIs & Services → Credentials → crea una API key,
+  // habilita "Maps JavaScript API" y "Places API (New)", y restríngela por HTTP referrer
+  // a los dominios ashbis-ae5b2.web.app y localhost.
+  // Es segura de exponer en el cliente siempre que esté restringida por referrer.
+  // ⚠️ Reemplaza este placeholder o el mapa no podrá buscar veterinarias/tiendas.
+  googlePlacesApiKey: 'AIzaSyBUMGw2keUDxu4zHYDS8pehHMHtXC7cx9c',
+
   // Dominios autorizados para OAuth de Google (añadir el dominio de producción)
   authAuthorizedDomains: [
     'localhost',

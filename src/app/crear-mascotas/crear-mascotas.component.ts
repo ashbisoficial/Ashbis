@@ -12,7 +12,6 @@ import {
   IonCheckbox,
   IonCol,
   IonContent,
-  IonDatetime,
   IonGrid,
   IonIcon,
   IonImg,
@@ -30,6 +29,7 @@ import { addIcons } from 'ionicons';
 import { addOutline, cameraOutline, cloudUploadOutline, closeCircle, imageOutline, imagesOutline, trashOutline } from 'ionicons/icons';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
+import { Firestore, doc, getDoc, getDocs, collection, query, where, increment, updateDoc } from '@angular/fire/firestore';
 import { Models } from 'src/app/models/models';
 import { SecurityService } from 'src/app/services/security.service';
 
@@ -58,7 +58,6 @@ import { SecurityService } from 'src/app/services/security.service';
     IonNote,
     IonButton,
     IonImg,
-    IonDatetime,
     IonIcon,
     IonSpinner
   ]
@@ -66,6 +65,7 @@ import { SecurityService } from 'src/app/services/security.service';
 export class CrearMascotasComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly firestoreService = inject(FirestoreService);
+  private readonly firestore = inject(Firestore);
   private readonly authService = inject(AuthenticationService);
   private readonly storage = inject(Storage);
   private readonly router = inject(Router);
@@ -78,10 +78,7 @@ export class CrearMascotasComponent implements OnInit {
   imagenFile: File | null = null;
   galeriaFiles: File[] = [];
   galeriaPreviews: string[] = [];
-  fechaFormateada = '';
-  fechaActual = new Date().toISOString();
-  mostrarCalendario = false;
-  fechaTemp: string | null = null;
+  readonly hoy = new Date().toISOString().split('T')[0];
 
   private readonly allowedMime = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   private readonly maxFileBytes = 5 * 1024 * 1024;
@@ -184,14 +181,6 @@ export class CrearMascotasComponent implements OnInit {
     this.comportamientoSelected = this.comportamientoSelected.filter((v) => v !== value);
   }
 
-  onIonDateChange(ev: CustomEvent): void {
-    const valor = (ev as any).detail?.value as string | null;
-    if (!valor) return;
-    this.mascotaForm.patchValue({ fechaNacimiento: valor });
-    const fecha = new Date(valor);
-    this.fechaFormateada = fecha.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-
   async guardarMascota(): Promise<void> {
   this.mascotaForm.markAllAsTouched();
 
@@ -206,11 +195,29 @@ export class CrearMascotasComponent implements OnInit {
   try {
     const user = await this.authService.getUser();
 
-    console.log('USER:', user);
-    console.log('UID:', user?.uid);
-
     if (!user) {
-      throw new Error('Usuario no autenticado');
+      this.cargando = false;
+      await this.presentAlert('Tu sesión expiró. Por favor inicia sesión nuevamente.');
+      return;
+    }
+
+    // Verificar límite de mascotas
+    const userSnap = await getDoc(doc(this.firestore, `usuarios/${user.uid}`));
+    const userData = userSnap.data() as any;
+    const maxPets = userData?.maxPets ?? 2;
+
+    const mascotasSnap = await getDocs(
+      query(collection(this.firestore, 'mascotas'), where('uidUsuario', '==', user.uid))
+    );
+
+    if (mascotasSnap.size >= maxPets) {
+      await this.alertCtrl.create({
+        header: 'Límite alcanzado',
+        message: `Tu plan actual permite hasta ${maxPets} mascotas. Actualiza a Premium para agregar más.`,
+        buttons: ['Entendido']
+      }).then(a => a.present());
+      this.cargando = false;
+      return;
     }
 
     const id = this.firestoreService.createId();
@@ -302,6 +309,11 @@ export class CrearMascotasComponent implements OnInit {
       id
     );
 
+    // Incrementar contador de mascotas del usuario
+    await updateDoc(doc(this.firestore, `usuarios/${user.uid}`), {
+      petCount: increment(1)
+    });
+
     console.log('DOCUMENTO MASCOTA CREADO');
 
     await this.publicQrService.createQrToken(
@@ -355,25 +367,4 @@ export class CrearMascotasComponent implements OnInit {
     await alert.present();
   }
 
-  abrirCalendario(): void {
-  console.log('Abrir calendario');
-  this.fechaTemp = this.mascotaForm.get('fechaNacimiento')?.value || null;
-  this.mostrarCalendario = true;
-}
-
-  onFechaTempChange(event: any): void {
-
-    this.fechaTemp = event.detail.value;
-  }
-
-  cancelarFecha(): void {
-    this.mostrarCalendario = false;
-  }
-
-  confirmarFecha(): void {
-    if (!this.fechaTemp) return;
-    this.mascotaForm.patchValue({ fechaNacimiento: this.fechaTemp });
-    this.fechaFormateada = new Date(this.fechaTemp).toLocaleDateString('es-CL');
-    this.mostrarCalendario = false;
-  }
 }

@@ -12,11 +12,12 @@ import {
   provideAuth,
   getAuth
 } from '@angular/fire/auth';
-import {
-  provideAppCheck,
-  initializeAppCheck,
-  ReCaptchaV3Provider
-} from '@angular/fire/app-check';
+// App Check deshabilitado temporalmente para el beta — ver nota en providers más abajo.
+// import {
+//   provideAppCheck,
+//   initializeAppCheck,
+//   ReCaptchaV3Provider
+// } from '@angular/fire/app-check';
 
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 import { provideStorage, getStorage } from '@angular/fire/storage';
@@ -56,12 +57,17 @@ bootstrapApplication(AppComponent, {
 
     provideAuth(() => getAuth()),
 
-    provideAppCheck(() =>
-      initializeAppCheck(undefined, {
-        provider: new ReCaptchaV3Provider(environment.appCheckSiteKey),
-        isTokenAutoRefreshEnabled: true
-      })
-    ),
+    // App Check deshabilitado temporalmente para el beta: reCAPTCHA v3 devolvía
+    // 400 (dominio/site key no verificados), lo que hacía fallar el token de
+    // App Check y Firestore rechazaba todas las lecturas/escrituras con
+    // "Missing or insufficient permissions" aunque el usuario estuviera
+    // autenticado. Reactivar antes del lanzamiento público:
+    // provideAppCheck(() =>
+    //   initializeAppCheck(undefined, {
+    //     provider: new ReCaptchaV3Provider(environment.appCheckSiteKey),
+    //     isTokenAutoRefreshEnabled: true
+    //   })
+    // ),
 
     provideFirestore(() => getFirestore()),
 
