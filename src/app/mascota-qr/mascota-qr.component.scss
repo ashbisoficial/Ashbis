@@ -82,33 +82,6 @@ ion-content {
 }
 
 /* ============================================
-   BOTONES
-============================================ */
-.acciones {
-  ion-button {
-    --border-radius: 14px;
-    border-color: #810000;
-    --color: #fff;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-}
-
-/* ============================================
-   BOTÓN COMPARTIR – BORDE ROJO
-============================================ */
-.acciones ion-button.compartir-btn {
-  --background: transparent !important;
-  --border-style: solid !important;
-  --border-width: 2px !important;
-  --border-radius: 14px !important;
-  --border-color: #ff3b3b !important; /* rojo */
-  --color: #ffffff !important;
-  font-weight: 600;
-}
-
-
-/* ============================================
    TARJETA: FALTAN DATOS
 ============================================ */
 ion-card[color="danger"] {
@@ -122,7 +95,7 @@ ion-card[color="danger"] {
   ion-button {
     --background: #fff;
     --color: #000;
-    --border-radius: 14px;
+    --border-radius: 24px;
   }
 }
 
@@ -140,7 +113,7 @@ ion-card[color="warning"] {
   ion-button {
     --border-color: #f5d76e;
     --color: #f5d76e;
-    --border-radius: 14px;
+    --border-radius: 24px;
   }
 }
 
@@ -151,7 +124,7 @@ ion-card[color="warning"] {
   --background: transparent !important;
   background: transparent !important;
   padding: 8px 0 12px 0; /* espacio interno */
-  border-bottom: 2px solid #ff3b3b !important; /* solo borde abajo */
+  border-bottom: 2px solid #8b0808 !important; /* solo borde abajo */
   border-radius: 0 !important; /* sin bordes redondeados */
   box-shadow: none !important;
 
@@ -188,7 +161,7 @@ ion-card[color="warning"] {
 
 /* Ícono de la flecha del select */
 .select-rojo::part(icon) {
-  color: #820000 !important;
+  color: #8b0808 !important;
   font-size: 20px;
 }
 
@@ -203,7 +176,7 @@ ion-popover .popover-content {
     --background: #111;
     --color: #aaa;
     --color-checked: #fff;
-    --indicator-color: #8b0808;
+    --indicator-color: #8b0808 !important;
     font-weight: 600;
     border-radius: 12px;
   }

@@ -1,6 +1,6 @@
 :host {
-  --ashbis-primary: #8b0000;
-  --ashbis-secondary: #a11212;
+  --ashbis-primary: #8b0808;
+  --ashbis-secondary: #b91c1c;
   --ashbis-dark: #1d1d1d;
   --ashbis-card: #2b2b2b;
   --ashbis-text: #f5f5f5;
@@ -51,8 +51,8 @@
 .wallet-header {
   background: linear-gradient(
     135deg,
-    #8b0000 0%,
-    #a11212 100%
+    var(--ashbis-primary) 0%,
+    var(--ashbis-secondary) 100%
   );
 
   color: white;
@@ -64,7 +64,7 @@
   justify-content: space-between;
 
   box-shadow:
-    0 12px 30px rgba(139, 0, 0, .35);
+    0 12px 30px rgba(139, 8, 8, .35);
 }
 
 .brand {
@@ -129,7 +129,7 @@
   font-size: .8rem;
   font-weight: 600;
 
-  box-shadow: 0 5px 15px rgba(139,0,0,.25);
+  box-shadow: 0 5px 15px rgba(139,8,8,.25);
 }
 
 /* ───────────────────────────────────────── */
@@ -187,9 +187,9 @@
 /* ───────────────────────────────────────── */
 
 .wallet-alert {
-  background: rgba(139,0,0,.15);
+  background: rgba(139,8,8,.15);
 
-  border: 1px solid rgba(139,0,0,.5);
+  border: 1px solid rgba(139,8,8,.5);
 
   color: white;
 

@@ -42,6 +42,81 @@
   --ion-color-danger-contrast: #ffffff;
   --ion-color-danger-shade: #7a0707;
   --ion-color-danger-tint: #9c1f1f;
+
+  --ashbis-red: #8b0808;
+  --ashbis-red-hover: #b91c1c;
+  --ashbis-red-activated: #991b1b;
+}
+
+/* ===========================================================
+   SISTEMA DE BOTONES UNIFICADO (mismo look que login: esquinas
+   pill, color de marca #8b0808, ancho consistente). Los
+   componentes con overrides locales conflictivos (border-radius
+   o rojos distintos) fueron ajustados para heredar de aquí.
+   =========================================================== */
+
+/* Botón principal, relleno de marca. Úsalo para el CTA
+   principal de un formulario (Ingresar, Guardar, Registrar). */
+.btn-ashbis {
+  --background: var(--ashbis-red);
+  --background-hover: var(--ashbis-red-hover);
+  --background-activated: var(--ashbis-red-activated);
+  --color: #ffffff;
+  --border-radius: 24px;
+  width: 90%;
+  max-width: 360px;
+  height: 46px;
+  margin: 12px auto;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .3px;
+}
+
+/* Botón secundario, borde de marca sobre fondo transparente. */
+.btn-ashbis-outline {
+  --background: transparent;
+  --color: var(--ashbis-red);
+  --border-color: var(--ashbis-red);
+  --border-width: 2px;
+  --border-style: solid;
+  --border-radius: 24px;
+  width: 90%;
+  max-width: 360px;
+  height: 46px;
+  margin: 12px auto;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .3px;
+}
+
+/* Botón blanco (p. ej. "Crear cuenta" en login, acciones
+   secundarias claras). */
+.btn-crear {
+  --background: #ffffff;
+  --background-hover: var(--ashbis-red);
+  --background-activated: var(--ashbis-red-activated);
+  --color: #000000;
+  --border-radius: 24px;
+  width: 90%;
+  max-width: 360px;
+  height: 46px;
+  margin: 12px auto;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .3px;
+}
+
+/* Cualquier ion-button con color="danger"/"medium" que no tenga
+   un estilo propio hereda el mismo radio y color de marca. */
+ion-button[color="danger"] {
+  --background: var(--ashbis-red);
+  --border-radius: 24px;
+  font-weight: 700;
+}
+
+ion-button[color="medium"] {
+  --border-radius: 24px;
+  font-weight: 700;
 }
 
 /* ===========================================================

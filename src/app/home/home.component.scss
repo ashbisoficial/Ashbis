@@ -115,20 +115,20 @@ swiper-slide {
 
   --color: #ffffff;
 
-  --border-radius: 20px;
+  --border-radius: 24px;
   font-weight: 600;
 
 }
 
 .btn-ashbis-outline {
   --background: transparent;
-  --color: #dc2626;
-  --border-color: #dc2626;
+  --color: #8b0808;
+  --border-color: #8b0808;
   --border-width: 2px;
   --border-style: solid;
+  --border-radius: 24px;
 
   font-weight: 600;
-  border-radius: 20px;
 }
 
 .chat-ia-button {
@@ -140,6 +140,7 @@ swiper-slide {
   justify-content: center;
   align-items: center;
   gap: 16px;
+  margin-right: 40px;
   margin-top: 16px;
   margin-bottom: 8px;
 }
@@ -148,7 +149,7 @@ swiper-slide {
   width: 160px;
   height: 45px;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -173,7 +174,7 @@ swiper-slide {
   border-radius: 50px;
   border: 3px solid #8b0808;
   background: transparent;
-  color: #ffffff;
+  color: #f3eaea;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -181,7 +182,7 @@ swiper-slide {
 
   ion-icon {
     font-size: 26px;
-    color: #ffffff;
+    color: #f3eaea;
   }
 
   &:active {
@@ -191,7 +192,7 @@ swiper-slide {
 
 ion-button[color="danger"] {
   --background-activated: #ff3b30;
-  --border-radius: 20px;
+  --border-radius: 24px;
   font-weight: 600;
   box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
 }

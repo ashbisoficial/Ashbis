@@ -64,7 +64,7 @@ ion-content.perfil {
 
   ion-icon {
     font-size: 48px;
-    color: #d94b4b;
+    color: #8b0808;
     margin-bottom: 10px;
   }
 
@@ -155,7 +155,7 @@ ion-content.perfil {
   }
 
   &:hover:not(:disabled) {
-    background: #a90c0c;
+    background: #b91c1c;
     transform: scale(1.06);
   }
 
@@ -204,7 +204,7 @@ ion-content.perfil {
 }
 
 .btn-link {
-  --color: #d94b4b;
+  --color: #8b0808;
   font-size: 13px;
   margin-top: -2px;
 }
@@ -222,7 +222,7 @@ ion-content.perfil {
 
 .seccion-card ion-card-title {
   font-size: 15px;
-  color: #d94b4b;
+  color: #fff9f9;
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
@@ -300,7 +300,7 @@ ion-select[disabled] {
 /* ====== BOTONES ====== */
 .acciones {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
   margin: 4px 0 28px;
   flex-wrap: wrap;
@@ -308,6 +308,7 @@ ion-select[disabled] {
 
 ion-button[color="danger"] {
   --background: #8b0808 !important;
+  --border-radius: 24px;
 }
 
 ion-button[color="medium"] {
@@ -315,6 +316,7 @@ ion-button[color="medium"] {
   --border-color: #8b0808 !important;
   --border-width: 2px;
   --background: transparent !important;
+  --border-radius: 24px;
 }
 
 /* ====== BOTÓN CERRAR SESIÓN ====== */
@@ -324,11 +326,13 @@ ion-button[color="medium"] {
   --border-color: #8b0808;
   --border-width: 2px;
   --border-style: solid;
+  --border-radius: 24px;
 
-  width: 200px;
+  width: 90%;
+  max-width: 360px;
+  height: 46px;
   margin: 10px auto 25px;
   display: block;
-  border-radius: 10px;
 
   transition: 0.25s ease;
 }

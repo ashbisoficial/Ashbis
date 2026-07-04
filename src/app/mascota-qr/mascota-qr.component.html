@@ -43,7 +43,7 @@
       </div>
 
       <!-- Selector tipo QR -->
-      <ion-segment [(ngModel)]="tipoQR" class="ion-margin-vertical">
+      <ion-segment [(ngModel)]="tipoQR" class=" qr-switch ion-margin-vertical">
         <ion-segment-button value="medico">🏥 Ficha Médica</ion-segment-button>
         <ion-segment-button value="emergencia">🚨 Emergencia</ion-segment-button>
       </ion-segment>
@@ -93,7 +93,7 @@
       <!-- Botón descargar PDF -->
       <ion-button
         expand="block"
-        class="ion-margin-top"
+        class="btn-ashbis ion-margin-top"
         (click)="descargarPDF()"
         [disabled]="descargandoPDF || !qrActivo"
       >

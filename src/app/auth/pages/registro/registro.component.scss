@@ -37,7 +37,7 @@ ion-item {
 /* Borde rojo inferior */
 ion-item::part(native) {
   border-bottom: 2px solid #d30000 !important;
-  width: 100%;
+  width: 90%;
   margin: 12px auto;
   padding-left: 8px;
   padding-right: 8px;
@@ -135,22 +135,24 @@ ion-button[slot="end"] ion-icon {
 
 /* ====== BOTONES ====== */
 ion-button[color="danger"] {
-  --background: #d30000;
-  --background-hover: #b80000;
-  --border-radius: 30px !important;
-  height: 45px;
+  --background: #8b0808;
+  --background-hover: #b91c1c;
+  --border-radius: 24px !important;
+  height: 46px;
   font-weight: bold;
   width: 90%;
+  max-width: 360px;
   margin: 20px auto 0 auto;
 }
 
 ion-button[color="medium"] {
-  --background: #d30000;
+  --background: #8b0808;
   --color: #ffffff;
-  --border-radius: 30px !important;
-  height: 45px;
+  --border-radius: 24px !important;
+  height: 46px;
   font-weight: bold;
   width: 90%;
+  max-width: 360px;
   margin: 15px auto;
 }
 

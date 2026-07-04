@@ -71,11 +71,11 @@ ion-content {
   margin: 16px 0;
 }
 
-/* Base de todos los botones */
+/* Base de los botones compactos Foto/Galería (van uno junto al otro) */
 .btn-base {
   --background: #8b0808;
   --color: #ffffff;
-  --border-radius: 14px;
+  --border-radius: 24px;
   --padding-top: 10px;
   --padding-bottom: 10px;
   --padding-start: 0;
@@ -103,13 +103,17 @@ ion-content {
   color: #ffffff;
 }
 
-/* Botón Guardar */
+/* Botón Guardar: CTA principal de página completa, mismo lenguaje
+   que el resto de la app (pill 24px, ancho 90%/360px, centrado) */
 .btn-guardar {
   --background: #8b0808;
+  --border-radius: 24px;
   color: #ffffff;
-  width: 100%;
-  max-width: 230px;
+  width: 90%;
+  max-width: 360px;
+  height: 46px;
   margin: 20px auto;
+  font-weight: 700;
 }
 
 /* ============================================
@@ -387,10 +391,3 @@ ion-accordion {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-ion-button[type="submit"],
-ion-button.btn-guardar {
-  --border-radius: 50px;
-  margin: 20px 0 40px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}

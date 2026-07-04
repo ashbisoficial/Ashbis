@@ -200,7 +200,7 @@
 
             <!-- Botón de Guardar -->
             <ion-button type="submit" expand="block" shape="round"
-              class="btn-base btn-guardar ion-margin-top" [disabled]="cargando">
+              class="btn-guardar ion-margin-top" [disabled]="cargando">
               <ion-spinner *ngIf="cargando" name="crescent" slot="start"></ion-spinner>
               {{ cargando ? 'Guardando...' : 'Guardar Mascota' }}
             </ion-button>
