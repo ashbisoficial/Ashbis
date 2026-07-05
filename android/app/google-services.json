@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "691736988474",
+    "project_id": "ashbis-ae5b2",
+    "storage_bucket": "ashbis-ae5b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:691736988474:android:251b3fca9542dddb779e03",
+        "android_client_info": {
+          "package_name": "proyecto.ashbis2026"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "691736988474-ud71or7a3nrqfesp1piknqml3jvft2mr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "proyecto.ashbis2026",
+            "certificate_hash": "02b749e0f52b98e4fbe3f143a067ca4148b49ab9"
+          }
+        },
+        {
+          "client_id": "691736988474-1k8beq55v07k8tsbj3d1rsle52q5s12l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHElmih2hv0ZifgtGbjMNdo5v_ol6AfzU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "691736988474-1k8beq55v07k8tsbj3d1rsle52q5s12l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
