@@ -17,6 +17,8 @@ import type {
   UserCredential
 } from 'firebase/auth';
 import { environment } from 'src/environments/environment';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@southdevs/capacitor-google-auth';
 
 @Injectable({
   providedIn: 'root'
@@ -63,6 +65,25 @@ export class AuthenticationService {
     return await runInInjectionContext(this.injector, () =>
       signInWithCredential(this.auth, credential)
     );
+  }
+
+  // 🔵 LOGIN GOOGLE (NATIVO) — para la app Android/Capacitor.
+  // Google Identity Services (usado en signInWithGoogleIdToken) es solo para
+  // web: no funciona dentro del WebView de una app empaquetada. En Android
+  // usamos el plugin nativo, que abre el selector de cuentas del sistema y
+  // nos entrega un idToken que canjeamos por la misma sesión de Firebase Auth.
+  async signInWithGoogleNative(): Promise<UserCredential> {
+    const scopes = ['email', 'profile'];
+    await GoogleAuth.initialize({ scopes });
+    const googleUser = await GoogleAuth.signIn({ scopes });
+    const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
+    return await runInInjectionContext(this.injector, () =>
+      signInWithCredential(this.auth, credential)
+    );
+  }
+
+  isNativePlatform(): boolean {
+    return Capacitor.isNativePlatform();
   }
 
   // 🔵 LOGIN GOOGLE (REDIRECT) — LEGADO, ya no se usa desde el componente de login.

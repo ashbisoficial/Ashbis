@@ -7,6 +7,7 @@ import {
   IonBadge
 } from '@ionic/angular/standalone';
 import { QRCodeComponent } from 'angularx-qrcode';
+import { environment } from 'src/environments/environment';
 
 // URL base de Cloud Functions — debe coincidir con el PROJECT_ID en .firebaserc
 const CF_BASE = 'https://us-central1-ashbis-ae5b2.cloudfunctions.net';
@@ -69,7 +70,7 @@ export class CarnetMascotaPage implements OnInit {
 
       if (!this.mascota) { this.error = true; return; }
 
-      this.qrUrl = `${window.location.origin}/carnet/${token}`;
+      this.qrUrl = `${environment.appUrl}/carnet/${token}`;
 
     } catch (e) {
       console.error('Error cargando carnet:', e);

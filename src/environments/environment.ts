@@ -32,6 +32,12 @@ export const environment = {
   // Proxy para el chat IA — nunca llames a Anthropic directamente desde el cliente
   aiProxyUrl: '/api/ai-proxy',
 
+  // URL pública de la app, usada para generar los links de los QR (carnet/perdida).
+  // No se puede usar window.location.origin porque en la app Android (Capacitor)
+  // el origin es algo como "https://localhost" o "capacitor://localhost", no un
+  // dominio escaneable desde otro teléfono.
+  appUrl: 'https://ashbis-ae5b2.web.app',
+
   // App Check reCAPTCHA v3 (defensa contra bots y abuso de cuota)
   // Actívalo en Firebase Console → App Check → Registrar app
   appCheckSiteKey: '6LdcheUsAAAAAIup4YqAAxTuwnXiRqEJ7dYf7XD6',

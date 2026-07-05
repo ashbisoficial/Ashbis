@@ -13,6 +13,10 @@ export const environment = {
 
   aiProxyUrl: '/api/ai-proxy',
 
+  // Mismo motivo que en environment.ts: los QR deben apuntar a la URL pública,
+  // nunca a window.location.origin (rompe en la app Android/Capacitor).
+  appUrl: 'https://ashbis-ae5b2.web.app',
+
   appCheckSiteKey: '6LdcheUsAAAAAIup4YqAAxTuwnXiRqEJ7dYf7XD6',
 
   // Mismo Web Client ID que en environment.ts (es público, no es un secreto)

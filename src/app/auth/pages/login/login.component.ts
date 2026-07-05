@@ -27,7 +27,7 @@ import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
 import { SecurityService } from 'src/app/services/security.service';
 import { environment } from 'src/environments/environment';
-import type { User } from 'firebase/auth';
+import type { User, UserCredential } from 'firebase/auth';
 
 // El script de Google Identity Services (cargado en index.html) define este
 // objeto global; no hay un paquete de tipos oficial liviano para él, así que
@@ -72,6 +72,10 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   loginError: string | null = null;
   googleNoDisponible = false;
 
+  // En la app Android (Capacitor) el botón web de Google Identity Services no
+  // funciona dentro del WebView, así que usamos el plugin nativo en su lugar.
+  readonly esNativo = this.authenticationService.isNativePlatform();
+
   @ViewChild('googleBtn') private googleBtnRef?: ElementRef<HTMLDivElement>;
   private googleBotonRenderizado = false;
   private googleRetryTimeoutId?: ReturnType<typeof setTimeout>;
@@ -94,7 +98,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.inicializarBotonGoogle();
+    if (!this.esNativo) this.inicializarBotonGoogle();
   }
 
   // 🔵 Dibuja el botón oficial de Google (Google Identity Services) en vez de
@@ -142,21 +146,44 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cargando = true;
     try {
       const cred = await this.authenticationService.signInWithGoogleIdToken(response.credential);
-      await this.sincronizarPerfilGoogle(cred.user);
-      this.router.navigate(['tabs/home'], { replaceUrl: true });
+      await this.finalizarLoginGoogle(cred);
     } catch (error: any) {
-      console.error('================================');
-      console.error('ERROR GOOGLE LOGIN (GIS)');
-      console.error('CODE:', error?.code);
-      console.error('MESSAGE:', error?.message);
-      console.error('FULL ERROR:', error);
-      console.error('================================');
-
-      this.loginError =
-        `${error?.code || 'sin-codigo'} - ${error?.message || 'sin-mensaje'}`;
+      this.manejarErrorGoogle(error, 'GIS');
     } finally {
       this.cargando = false;
     }
+  }
+
+  // 🔵 LOGIN GOOGLE (NATIVO) — invocado desde el botón nativo que se muestra
+  // solo dentro de la app Android/Capacitor (ver `esNativo` y el template).
+  async loginConGoogleNativo(): Promise<void> {
+    this.loginError = null;
+    this.cargando = true;
+    try {
+      const cred = await this.authenticationService.signInWithGoogleNative();
+      await this.finalizarLoginGoogle(cred);
+    } catch (error: any) {
+      this.manejarErrorGoogle(error, 'NATIVO');
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  private async finalizarLoginGoogle(cred: UserCredential): Promise<void> {
+    await this.sincronizarPerfilGoogle(cred.user);
+    this.router.navigate(['tabs/home'], { replaceUrl: true });
+  }
+
+  private manejarErrorGoogle(error: any, origen: 'GIS' | 'NATIVO'): void {
+    console.error('================================');
+    console.error(`ERROR GOOGLE LOGIN (${origen})`);
+    console.error('CODE:', error?.code);
+    console.error('MESSAGE:', error?.message);
+    console.error('FULL ERROR:', error);
+    console.error('================================');
+
+    this.loginError =
+      `${error?.code || 'sin-codigo'} - ${error?.message || 'sin-mensaje'}`;
   }
 
   // Crea o actualiza el documento de perfil en Firestore tras un login con Google.

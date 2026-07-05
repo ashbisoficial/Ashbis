@@ -59,14 +59,26 @@
           INGRESAR
         </ion-button>
 
-        <!-- BOTÓN GOOGLE (renderizado por Google Identity Services) -->
-        <div class="google-btn-container">
+        <!-- BOTÓN GOOGLE (web: renderizado por Google Identity Services) -->
+        <div class="google-btn-container" *ngIf="!esNativo">
           <div #googleBtn></div>
           <p class="google-btn-fallback" *ngIf="googleNoDisponible">
             No se pudo cargar el inicio de sesión con Google. Verifica tu conexión o
             desactiva temporalmente algún bloqueador de anuncios/cookies y recarga la página.
           </p>
         </div>
+
+        <!-- BOTÓN GOOGLE (app Android: plugin nativo, GIS no funciona en WebView) -->
+        <ion-button
+          *ngIf="esNativo"
+          type="button"
+          fill="outline"
+          expand="block"
+          [disabled]="cargando"
+          (click)="loginConGoogleNativo()">
+          <ion-icon slot="start" name="logo-google"></ion-icon>
+          Continuar con Google
+        </ion-button>
 
         <!-- OLVIDO CONTRASEÑA -->
         <ion-button fill="clear" class="btn-olvido" (click)="irARecuperarPassword()">

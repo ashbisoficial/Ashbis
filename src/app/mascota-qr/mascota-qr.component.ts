@@ -23,6 +23,7 @@ import { PublicQrService } from '../services/public-qr.service';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService, Mascota, Medicamento } from '../firebase/firestore';
 import { Models } from '../models/models';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-mascota-qr',
@@ -226,8 +227,11 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     const telefono = user.telefono || '';
     const nombreDueno = `${user.nombre || ''} ${user.apellido || ''}`.trim();
 
-    // QR Médico: URL al carnet público completo
-    const baseUrl = window.location.origin;
+    // QR Médico: URL al carnet público completo.
+    // Siempre la URL pública de producción: window.location.origin apunta a
+    // "capacitor://localhost" (o similar) dentro de la app Android, lo cual
+    // generaría un QR inescaneable desde otro teléfono.
+    const baseUrl = environment.appUrl;
 
 
     if (m.qrCarnetToken) {
