@@ -171,6 +171,15 @@ swiper-slide {
 }
 
 .btn-big {
+  /* La Veterinaria también trae la clase global .btn-ashbis (global.scss),
+     que fija margin: 12px auto para los botones de ancho completo (Ingresar,
+     Guardar). Dentro de este contenedor flex, un margin:auto dado a un solo
+     ítem absorbe TODO el espacio libre de la fila para autocentrarse a sí
+     mismo, empujando al otro botón (Tienda) hacia el borde. Confirmado
+     inspeccionando los estilos calculados: Veterinaria tenía margin-left/
+     right de 31px y Tienda de apenas 2px, con el gap real entre ambos de
+     45px en vez de los 12px definidos arriba. */
+  margin: 0 !important;
   flex: 0 0 auto !important;
   width: 140px !important;
   max-width: 140px !important;
