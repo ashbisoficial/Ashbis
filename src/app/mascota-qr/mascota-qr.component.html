@@ -56,6 +56,7 @@
         </ion-card-header>
         <ion-card-content class="qr-content">
           <qrcode
+            id="qr-carnet"
             *ngIf="qrFichaMedica"
             [qrdata]="qrFichaMedica"
             [width]="220"
@@ -74,6 +75,7 @@
         </ion-card-header>
         <ion-card-content class="qr-content">
           <qrcode
+            id="qr-perdida"
             *ngIf="qrEmergencia"
             [qrdata]="qrEmergencia"
             [width]="220"
@@ -90,15 +92,15 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Botón descargar PDF -->
+      <!-- Botón descargar QR -->
       <ion-button
         expand="block"
         class="btn-ashbis ion-margin-top"
-        (click)="descargarPDF()"
-        [disabled]="descargandoPDF || !qrActivo || camposFaltantes.length > 0"
+        (click)="descargarQR()"
+        [disabled]="descargandoQR || !qrActivo || camposFaltantes.length > 0"
       >
         <ion-icon name="download-outline" slot="start"></ion-icon>
-        {{ descargandoPDF ? 'Generando PDF...' : 'Descargar PDF' }}
+        {{ descargandoQR ? 'Descargando...' : 'Descargar QR' }}
       </ion-button>
 
     </ng-container>

@@ -44,10 +44,13 @@ function mapGoogleNativoError(code: string): string {
 function mapAuthError(code: string): string {
   switch (code) {
     case 'auth/user-not-found':
-    case 'auth/invalid-credential':
-      return 'No existe una cuenta con ese correo y contraseña.';
+      return 'No existe una cuenta con ese correo.';
+    // Firebase Auth v9+ también usa 'invalid-credential' para contraseña
+    // incorrecta (además de para email inexistente, por diseño, para no
+    // revelar si una cuenta existe). La agrupamos con wrong-password.
     case 'auth/wrong-password':
-      return 'La contraseña es incorrecta.';
+    case 'auth/invalid-credential':
+      return 'Contraseña incorrecta. Verifica e intenta nuevamente.';
     case 'auth/too-many-requests':
       return 'Demasiados intentos fallidos. Espera unos minutos antes de volver a intentar.';
     case 'auth/network-request-failed':
