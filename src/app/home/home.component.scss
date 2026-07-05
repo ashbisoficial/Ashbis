@@ -1,3 +1,17 @@
+/* En teléfono ocupa todo el ancho; en tablet/desktop centra el
+   contenido en una columna, en vez de estirar el mapa y el carrusel
+   a lo ancho de toda la pantalla. */
+.home-container {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .home-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
 /* ------------------------------ HEADER --------------------- */
 
 

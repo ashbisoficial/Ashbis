@@ -184,3 +184,20 @@ ion-button[color="medium"] {
     padding: 4px;
   }
 }
+
+/* ===========================================================
+   RESPONSIVE BASE
+   La mayoría de las páginas ya se auto-limitan en su propio scss
+   (login: .page-wrapper max-width; registro: ion-grid fixed con
+   sizeSm/sizeMd/sizeLg; crear-mascotas: sus propios breakpoints
+   de tablet/desktop). Una regla global de padding en ion-content
+   pelearía con esos anchos ya afinados por página (p. ej. el mapa
+   de home o las cards de 700-900px de crear-mascotas en tablet),
+   así que aquí solo va el ajuste que es seguro aplicar a toda la
+   app: reducir un poco el texto en teléfonos muy angostos.
+   =========================================================== */
+@media (max-width: 340px) {
+  ion-button {
+    font-size: 13px !important;
+  }
+}
