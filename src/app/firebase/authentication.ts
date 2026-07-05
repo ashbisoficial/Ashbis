@@ -54,22 +54,25 @@ export class AuthenticationService {
     );
   }
 
-  // 🔵 LOGIN GOOGLE — Google Identity Services (recomendado, en uso actualmente)
-  // El componente de login obtiene un ID token con el botón oficial de GIS
-  // (window.google.accounts.id) y lo intercambia aquí por una sesión de
-  // Firebase Auth. A diferencia de signInWithPopup/signInWithRedirect, esto
-  // no depende del iframe puente de Firebase ni de cookies de terceros entre
-  // tu dominio y *.firebaseapp.com, así que funciona aunque Chrome las bloquee.
-  async signInWithGoogleIdToken(idToken: string): Promise<UserCredential> {
-    const credential = GoogleAuthProvider.credential(idToken);
+  // 🔵 LOGIN GOOGLE (WEB) — Google Identity Services, API OAuth2 (en uso actualmente)
+  // El componente de login obtiene un access token con
+  // google.accounts.oauth2.initTokenClient()/requestAccessToken() — abre el
+  // consentimiento de Google en su propia ventana emergente (no un overlay
+  // dentro de la página, como hacían accounts.id.prompt()/renderButton()) —
+  // y lo intercambiamos aquí por una sesión de Firebase Auth. A diferencia de
+  // signInWithPopup/signInWithRedirect, esto no depende del iframe puente de
+  // Firebase ni de cookies de terceros entre tu dominio y *.firebaseapp.com,
+  // así que funciona aunque Chrome las bloquee.
+  async signInWithGoogleAccessToken(accessToken: string): Promise<UserCredential> {
+    const credential = GoogleAuthProvider.credential(null, accessToken);
     return await runInInjectionContext(this.injector, () =>
       signInWithCredential(this.auth, credential)
     );
   }
 
   // 🔵 LOGIN GOOGLE (NATIVO) — para la app Android/Capacitor.
-  // Google Identity Services (usado en signInWithGoogleIdToken) es solo para
-  // web: no funciona dentro del WebView de una app empaquetada. En Android
+  // Google Identity Services (usado en signInWithGoogleAccessToken) es solo
+  // para web: no funciona dentro del WebView de una app empaquetada. En Android
   // usamos el plugin nativo, que abre el selector de cuentas del sistema y
   // nos entrega un idToken que canjeamos por la misma sesión de Firebase Auth.
   async signInWithGoogleNative(): Promise<UserCredential> {
@@ -91,7 +94,7 @@ export class AuthenticationService {
   // Capacitor (donde GIS web no aplica igual y se usaría un plugin nativo
   // en su lugar). En navegador de escritorio/móvil, este flujo es el que
   // fallaba con auth/internal-error cuando Chrome bloquea cookies de
-  // terceros en localhost; por eso se reemplazó por signInWithGoogleIdToken.
+  // terceros en localhost; por eso se reemplazó por signInWithGoogleAccessToken.
   async loginWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({

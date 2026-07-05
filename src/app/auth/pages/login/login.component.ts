@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, inject, AfterViewInit, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, AfterViewInit, OnDestroy, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -71,17 +71,13 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   showPass = false;
   loginError: string | null = null;
   googleNoDisponible = false;
-  // El botón oficial de Google solo se muestra si prompt() (One Tap) no se
-  // pudo desplegar (sin sesión activa en el navegador, FedCM desactivado, etc.).
-  googlePromptNoDisponible = false;
 
   // En la app Android (Capacitor) el botón web de Google Identity Services no
   // funciona dentro del WebView, así que usamos el plugin nativo en su lugar.
   readonly esNativo = this.authenticationService.isNativePlatform();
 
-  @ViewChild('googleBtn') private googleBtnRef?: ElementRef<HTMLDivElement>;
+  private googleTokenClient: any;
   private googleScriptListo = false;
-  private googleBotonOficialRenderizado = false;
   private googleRetryTimeoutId?: ReturnType<typeof setTimeout>;
 
   constructor() {
@@ -105,18 +101,18 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.esNativo) this.inicializarGoogleWeb();
   }
 
-  // 🔵 Inicializa Google Identity Services en vez de usar
-  // signInWithPopup/signInWithRedirect de Firebase. Esto evita el
-  // auth/internal-error que ocurre en Chrome cuando las cookies de terceros
-  // están bloqueadas: GIS usa su propio mecanismo (FedCM cuando está
-  // disponible) en vez de depender del iframe puente de Firebase.
-  // Reintenta unas cuantas veces por si el script de Google (cargado en
-  // index.html) todavía no terminó de descargarse. No renderiza el botón
-  // oficial: eso solo ocurre como respaldo (ver `loginConGoogleWeb`).
+  // 🔵 Inicializa el cliente OAuth2 de Google Identity Services. A propósito
+  // NO usamos accounts.id.prompt()/renderButton(): esas API dibujan su propio
+  // selector/botón encima de la página (el "Continuar como Ana" que se veía
+  // sobre nuestro botón). accounts.oauth2.initTokenClient() en cambio abre el
+  // consentimiento de Google en su propia ventana emergente, separada de la
+  // página — nuestro botón custom es lo único que se ve en la página en todo
+  // momento. Reintenta unas cuantas veces por si el script de Google (cargado
+  // en index.html) todavía no terminó de descargarse.
   private inicializarGoogleWeb(intentos = 0): void {
     if (this.googleScriptListo) return;
 
-    if (typeof google === 'undefined' || !google?.accounts?.id) {
+    if (typeof google === 'undefined' || !google?.accounts?.oauth2) {
       if (intentos < 20) {
         this.googleRetryTimeoutId = setTimeout(() => this.inicializarGoogleWeb(intentos + 1), 150);
       } else {
@@ -126,62 +122,43 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    google.accounts.id.initialize({
+    this.googleTokenClient = google.accounts.oauth2.initTokenClient({
       client_id: environment.googleWebClientId,
-      callback: (response: { credential: string }) => this.onGoogleCredential(response)
+      scope: 'email profile openid',
+      callback: (response: { access_token?: string; error?: string }) => this.onGoogleAccessToken(response)
     });
 
     this.googleScriptListo = true;
   }
 
-  // 🔵 Disparado por nuestro botón "CONTINUAR CON GOOGLE". En vez de mostrar
-  // el botón oficial de Google (que a veces se renderiza personalizado, p.ej.
-  // "Continuar como Ana", y cuyo estilo no podemos tocar por política de
-  // marca de Google), abrimos directamente su selector de cuentas (One Tap)
-  // vía prompt(). Si el navegador no puede desplegarlo (sin sesión activa,
-  // FedCM desactivado, bloqueador de terceros, etc.) mostramos el botón
-  // oficial como respaldo, para no dejar al usuario sin forma de continuar.
+  // 🔵 Disparado por nuestro botón "CONTINUAR CON GOOGLE".
   loginConGoogleWeb(): void {
     if (this.cargando) return;
 
-    if (!this.googleScriptListo || typeof google === 'undefined') {
+    if (!this.googleScriptListo || !this.googleTokenClient) {
       this.googleNoDisponible = true;
       return;
     }
 
-    google.accounts.id.prompt((notification: any) => {
-      const noSeMostro =
-        notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.();
-      if (noSeMostro) {
-        this.googlePromptNoDisponible = true;
-        setTimeout(() => this.renderizarBotonOficialFallback(), 0);
-      }
-    });
-  }
-
-  private renderizarBotonOficialFallback(): void {
-    if (this.googleBotonOficialRenderizado || !this.googleBtnRef || typeof google === 'undefined') return;
-
-    google.accounts.id.renderButton(this.googleBtnRef.nativeElement, {
-      type: 'standard',
-      theme: 'outline',
-      size: 'large',
-      shape: 'pill',
-      text: 'continue_with',
-      logo_alignment: 'left',
-      width: 360
-    });
-
-    this.googleBotonOficialRenderizado = true;
-  }
-
-  // 🔵 Google nos entrega un ID token (JWT) ya validado; lo intercambiamos
-  // por una sesión de Firebase Auth con signInWithCredential.
-  private async onGoogleCredential(response: { credential: string }): Promise<void> {
     this.loginError = null;
     this.cargando = true;
+    this.googleTokenClient.requestAccessToken();
+  }
+
+  // 🔵 Google nos entrega un access token ya validado; lo intercambiamos por
+  // una sesión de Firebase Auth con signInWithCredential.
+  private async onGoogleAccessToken(response: { access_token?: string; error?: string }): Promise<void> {
+    if (!response?.access_token) {
+      // El usuario cerró la ventana emergente o Google rechazó la solicitud.
+      this.cargando = false;
+      if (response?.error && response.error !== 'popup_closed') {
+        this.manejarErrorGoogle({ code: response.error, message: 'Google no entregó un token de acceso.' }, 'GIS');
+      }
+      return;
+    }
+
     try {
-      const cred = await this.authenticationService.signInWithGoogleIdToken(response.credential);
+      const cred = await this.authenticationService.signInWithGoogleAccessToken(response.access_token);
       await this.finalizarLoginGoogle(cred);
     } catch (error: any) {
       this.manejarErrorGoogle(error, 'GIS');
