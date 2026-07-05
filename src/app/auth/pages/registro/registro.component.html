@@ -156,7 +156,7 @@
                 </ion-item>
                 <ion-note color="danger" *ngIf="f.confirmPassword.touched && f.confirmPassword.hasError('required')">Debes confirmar la contraseña</ion-note>
                 <ion-note color="danger" *ngIf="datosForm.touched && datosForm.hasError('passwordMismatch')">Las contraseñas no coinciden</ion-note>
-                <ion-item lines="none" style="--padding-start: 0; --inner-padding-end: 0; margin: 8px 0;">
+                <ion-item class="item-consentimiento" lines="none" style="--padding-start: 0; --inner-padding-end: 0; margin: 8px 0;">
                   <div style="display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 4px 0;">
                     <ion-checkbox
                       formControlName="consentimiento"

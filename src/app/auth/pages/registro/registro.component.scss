@@ -43,6 +43,16 @@ ion-item::part(native) {
   padding-right: 8px;
 }
 
+/* El ion-item del checkbox de consentimiento no es un campo de formulario:
+   la regla de arriba le agregaba la misma línea roja que a los inputs. */
+ion-item.item-consentimiento::part(native) {
+  border-bottom: none !important;
+  width: 100%;
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 /* Labels */
 ion-label {
   background: #070707 !important;

@@ -175,11 +175,15 @@ ion-select::part(text) {
   font-weight: bold;
 }
 
-/* Grid del formulario */
+/* Grid del formulario. El slot="content" del ion-accordion vive en su propio
+   shadow root y no hereda el fondo oscuro de la página, por lo que sin esto
+   se ve una franja gris clara detrás de los checkboxes. */
 .comportamiento-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  background: #141414;
+  padding: 12px 16px;
 }
 
 @media (min-width: 720px) {
@@ -371,9 +375,20 @@ ion-input, ion-select, ion-textarea {
 }
 
 /* .date-input-custom (global.scss) usa var(--ion-color-dark) por defecto,
-   invisible sobre las tarjetas oscuras de esta página en particular. */
+   invisible sobre las tarjetas oscuras de esta página en particular.
+   Es un <input> nativo, no un ion-input/ion-select, así que no hereda el
+   borde rojo inferior del resto de los campos (regla de la sección 4);
+   se lo agregamos aquí para que se vea consistente. */
 .date-input-custom {
   color: #ffffff !important;
+  background: #070707 !important;
+  border-bottom: 2px solid #de0505 !important;
+  width: 100%;
+  max-width: 500px;
+  margin: 10px auto;
+  display: block;
+  padding-left: 10px;
+  padding-right: 10px;
 
   &::-webkit-calendar-picker-indicator {
     filter: invert(1);
@@ -385,6 +400,7 @@ ion-accordion-group {
 }
 
 ion-accordion {
+  --background: #141414;
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 8px;

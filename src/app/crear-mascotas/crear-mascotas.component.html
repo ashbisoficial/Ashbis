@@ -79,9 +79,9 @@
               </ion-item>
 
               <!-- Fecha nacimiento -->
-            <ion-item class="input-fecha">
+            <ion-item class="input-fecha" [class.is-invalid]="isInvalid('fechaNacimiento')">
               <ion-label position="stacked">
-                Fecha de nacimiento
+                Fecha de nacimiento <span class="req">*</span>
               </ion-label>
 
               <input
@@ -89,6 +89,7 @@
                 formControlName="fechaNacimiento"
                 [max]="hoy"
                 class="date-input-custom">
+              <ion-note color="danger" *ngIf="isInvalid('fechaNacimiento')">Selecciona la fecha de nacimiento.</ion-note>
             </ion-item>
 
               <!-- Edad -->
