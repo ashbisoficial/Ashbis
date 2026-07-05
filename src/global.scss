@@ -32,9 +32,16 @@
  * https://ionicframework.com/docs/theming/dark-mode
  */
 
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
+/* La app usa un único diseño oscuro (ver justificación en el plan de
+   estabilización): dark.always.css aplica siempre la paleta oscura de Ionic
+   sin importar `prefers-color-scheme` del sistema. dark.system.css (la
+   variante anterior) seguía el tema del SO, lo que dejaba en modo claro del
+   teléfono los componentes que no tienen un override propio (ion-alert,
+   ion-toast, ion-modal — ver abajo) con el tema claro por defecto de Ionic,
+   mientras el resto de la app se queda oscuro a la fuerza. */
+@import "@ionic/angular/css/palettes/dark.always.css";
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import '@ionic/angular/css/palettes/dark.system.css';
+/* @import '@ionic/angular/css/palettes/dark.system.css'; */
 
 :root {
   --ion-color-danger: #8b0808;

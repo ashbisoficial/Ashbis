@@ -1,0 +1,32 @@
+diff --git a/node_modules/@southdevs/capacitor-google-auth/android/src/main/java/com/codetrixstudio/capacitor/GoogleAuth/GoogleAuth.java b/node_modules/@southdevs/capacitor-google-auth/android/src/main/java/com/codetrixstudio/capacitor/GoogleAuth/GoogleAuth.java
+index f01f8b7..7c092f6 100644
+--- a/node_modules/@southdevs/capacitor-google-auth/android/src/main/java/com/codetrixstudio/capacitor/GoogleAuth/GoogleAuth.java
++++ b/node_modules/@southdevs/capacitor-google-auth/android/src/main/java/com/codetrixstudio/capacitor/GoogleAuth/GoogleAuth.java
+@@ -3,6 +3,7 @@ package com.codetrixstudio.capacitor.GoogleAuth;
+ import android.accounts.Account;
+ import android.accounts.AccountManager;
+ import android.accounts.AccountManagerFuture;
++import android.content.ActivityNotFoundException;
+ import android.content.Intent;
+ import android.os.Bundle;
+ import android.util.Log;
+@@ -82,8 +83,17 @@ public class GoogleAuth extends Plugin {
+       rejectWithNullClientError(call);
+       return;
+     }
+-    Intent signInIntent = googleSignInClient.getSignInIntent();
+-    startActivityForResult(call, signInIntent, "signInResult");
++    // PATCH (patch-package): dispositivos sin Google Play Services (p. ej.
++    // Huawei sin GMS) no tienen la Activity que resuelve este Intent.
++    // Sin este try/catch, ActivityNotFoundException se propaga sin capturar
++    // a través de Plugin.startActivityForResult() y crashea la app en vez
++    // de simplemente rechazar la promesa de signIn().
++    try {
++      Intent signInIntent = googleSignInClient.getSignInIntent();
++      startActivityForResult(call, signInIntent, "signInResult");
++    } catch (ActivityNotFoundException e) {
++      call.reject("Google Play Services no está disponible en este dispositivo.", "GOOGLE_PLAY_SERVICES_UNAVAILABLE");
++    }
+   }
+ 
+   @ActivityCallback

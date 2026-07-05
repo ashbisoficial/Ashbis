@@ -93,6 +93,15 @@ ion-content.perfil {
   margin-bottom: 14px;
 }
 
+@media (max-width: 360px) {
+  .avatar-wrap,
+  .avatar-img,
+  .skeleton-avatar {
+    width: 110px;
+    height: 110px;
+  }
+}
+
 .avatar-img {
   width: 140px;
   height: 140px;

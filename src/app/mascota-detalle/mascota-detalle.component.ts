@@ -26,10 +26,16 @@ import {
   IonLabel,
   IonList,
   IonItem,
+  IonNote,
+  IonCard,
+  IonCardContent,
   IonSpinner,
-  IonButton,        // 🔥 IMPORTANTE
-  IonIcon           // 🔥 IMPORTANTE
+  IonButton,
+  IonIcon
 } from '@ionic/angular/standalone';
+
+import { addIcons } from 'ionicons';
+import { medicalOutline, clipboardOutline, eyedropOutline, pawOutline, mapOutline } from 'ionicons/icons';
 
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { Router } from '@angular/router';
@@ -55,10 +61,13 @@ import { Router } from '@angular/router';
     IonLabel,
     IonList,
     IonItem,
+    IonNote,
+    IonCard,
+    IonCardContent,
     IonSpinner,
 
-    IonButton,   // 🔥 NECESARIO
-    IonIcon      // 🔥 NECESARIO (usas ion-icon en HTML)
+    IonButton,
+    IonIcon
   ],
   providers: [DatePipe],
   templateUrl: './mascota-detalle.component.html',
@@ -75,6 +84,10 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   private mascotaId = '';
 
   cargando = true;
+
+  constructor() {
+    addIcons({ medicalOutline, clipboardOutline, eyedropOutline, pawOutline, mapOutline });
+  }
 
   segmentoActual: 'vacunas' | 'examenes' | 'medicamentos' | 'veterinarias' = 'vacunas';
 

@@ -7,7 +7,12 @@ ion-content {
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
-  padding-top: 56px; /* baja todo el contenido para que no tape el status bar */
+  /* Antes era un padding-top fijo de 56px "por si acaso" — en teléfonos
+     bajos (ej. iPhone SE, 667px) eso más los márgenes fijos del logo/
+     botones sumaba ~760px de contenido real, más que el viewport, y por
+     eso aparecía scroll. Se usa el inset real del status bar (0 si el
+     dispositivo no lo necesita) en vez de un valor fijo siempre reservado. */
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
 }
 
 /* Evita que el contenido quede pegado a los bordes del celular */
@@ -23,8 +28,7 @@ ion-content {
 ============================ */
 ion-thumbnail {
   --size: clamp(80px, 25vw, 120px); /* se achica en teléfonos angostos */
-  margin: 10px auto 25px auto;
-  margin-top: 35px;
+  margin: 15px auto;
   border-radius: 20px;
   overflow: hidden;
 }
@@ -34,7 +38,7 @@ ion-thumbnail {
 ============================ */
 .titulo {
   text-align: center;
-  margin-bottom: 25px;
+  margin-bottom: 15px;
   font-size: 26px;
   font-weight: bold;
 }
@@ -108,7 +112,7 @@ ion-text[color="danger"] p {
   width: 90%;
   max-width: 360px;
   height: 46px;
-  margin: 12px auto;
+  margin: 8px auto;
   --border-radius: 24px;
   font-weight: 700;
   font-size: 15px;
@@ -129,7 +133,7 @@ ion-text[color="danger"] p {
 .google-btn-container {
   width: 90%;
   max-width: 360px;
-  margin: 15px auto;
+  margin: 10px auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -152,7 +156,7 @@ ion-text[color="danger"] p {
   width: 90%;
   max-width: 360px;
   height: 46px;
-  margin: 8px auto;
+  margin: 6px auto;
   --border-radius: 24px;
   --border-color: #ffffff;
   --color: #ffffff;
@@ -197,7 +201,9 @@ ion-text[color="danger"] p {
 }
 
 
-/* Lo subimos un poco para evitar que quede detrás del menú inferior */
+/* Espacio real de gestos/barra inferior en vez de un valor fijo siempre
+   reservado (parte del exceso de contenido que causaba scroll en teléfonos
+   bajos). */
 .safe-bottom-space {
-  height: 40px;
+  height: max(12px, env(safe-area-inset-bottom, 12px));
 }

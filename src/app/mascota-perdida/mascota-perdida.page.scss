@@ -58,8 +58,8 @@
 }
 
 .mascota-foto {
-  width: 240px;
-  height: 240px;
+  width: clamp(160px, 60vw, 240px);
+  height: clamp(160px, 60vw, 240px);
   border-radius: 50%;
   object-fit: cover;
   border: 4px solid #8b0808;

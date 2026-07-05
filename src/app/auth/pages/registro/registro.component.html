@@ -97,19 +97,16 @@
                     type="email"
                     inputmode="email"
                     autocomplete="email"
-                    placeholder="usuario@gmail.com"
+                    placeholder="usuario@correo.com"
                     formControlName="email"
                     (ionBlur)="datosForm.get('email')?.markAsTouched()">
                   </ion-input>
                 </ion-item>
-                <ion-note color="danger" 
+                <ion-note color="danger"
                 *ngIf="f.email.touched && f.email.hasError('required')">
                 El email es obligatorio</ion-note>
-                <ion-note color="danger" 
-                *ngIf="f.email.touched && f.email.hasError('gmail')">
-                Solo direcciones @gmail.com son permitidas</ion-note>
-                <ion-note color="danger" 
-                *ngIf="f.email.touched && f.email.hasError('email') && !f.email.hasError('gmail')">
+                <ion-note color="danger"
+                *ngIf="f.email.touched && f.email.hasError('email')">
                 Formato de email inválido</ion-note>
                 <ion-item>
                   <ion-label position="stacked">Contraseña <span class="required">*</span></ion-label>

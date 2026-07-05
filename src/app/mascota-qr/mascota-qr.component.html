@@ -37,9 +37,9 @@
         </ion-select>
       </ion-item>
 
-      <!-- Sin teléfono: aviso -->
-      <div *ngIf="mascotaSeleccionada() && !userProfile?.telefono" class="aviso-telefono">
-        ⚠️ Agrega tu teléfono en <strong>Perfil</strong> para generar el QR de emergencia correctamente.
+      <!-- Faltan datos críticos para este QR: no lo dejamos generar como si estuviera completo -->
+      <div *ngIf="camposFaltantes.length" class="aviso-telefono">
+        ⚠️ Antes de generar este QR, completa: {{ camposFaltantes.join(', ') }}.
       </div>
 
       <!-- Selector tipo QR -->
@@ -95,7 +95,7 @@
         expand="block"
         class="btn-ashbis ion-margin-top"
         (click)="descargarPDF()"
-        [disabled]="descargandoPDF || !qrActivo"
+        [disabled]="descargandoPDF || !qrActivo || camposFaltantes.length > 0"
       >
         <ion-icon name="download-outline" slot="start"></ion-icon>
         {{ descargandoPDF ? 'Generando PDF...' : 'Descargar PDF' }}

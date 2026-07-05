@@ -86,7 +86,6 @@ export class RegistroComponent implements OnInit {
 
   nombreRegex = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
   telefonoRegex = /^\+569\d{8}$/;
-  gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
   passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
   pwStrength: { percent: number; label: string } | null = null;
@@ -98,7 +97,7 @@ export class RegistroComponent implements OnInit {
       telefono: ['', [Validators.required, Validators.pattern(this.telefonoRegex)]],
       direccion: ['', [Validators.required, Validators.minLength(10)]],
       region: ['', Validators.required],
-      email: ['', [Validators.required, Validators.pattern(this.gmailRegex)]],
+      email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.pattern(this.passwordRegex)]],
       confirmPassword: ['', Validators.required],
       consentimiento: [false, [Validators.requiredTrue]]

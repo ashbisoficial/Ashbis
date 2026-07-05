@@ -1,0 +1,93 @@
+/* ============================================
+   FONDO GENERAL (mismo lenguaje que crear-mascotas/home)
+============================================ */
+ion-content {
+  --background: #070707;
+  color: #ffffff;
+}
+
+ion-content::part(scroll),
+ion-content .inner-scroll {
+  background: #070707;
+}
+
+/* ============================================
+   SEGMENTO DE PESTAÑAS
+============================================ */
+ion-segment {
+  --background: transparent;
+  margin-bottom: 12px;
+}
+
+ion-segment-button {
+  --background-checked: #8b0808;
+  --color: #aaaaaa;
+  --color-checked: #ffffff;
+  --indicator-color: transparent;
+  border-radius: 12px;
+  min-height: 64px;
+  font-size: 12px;
+  font-weight: 600;
+
+  ion-icon {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+}
+
+/* ============================================
+   TARJETAS DE ITEMS (mismo look que crear-mascotas: #141414, redondeado)
+============================================ */
+ion-item {
+  --background: #141414;
+  --color: #ffffff;
+  --border-radius: 12px;
+  --padding-start: 14px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+ion-item h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+ion-item p {
+  font-size: 13px;
+  color: #bbbbbb;
+}
+
+/* Estado vacío */
+ion-card {
+  background: #141414;
+  box-shadow: none;
+  border-radius: 12px;
+}
+
+ion-card-content {
+  color: #bbbbbb;
+  font-size: 14px;
+}
+
+/* ============================================
+   RESPONSIVE
+============================================ */
+@media (max-width: 360px) {
+  ion-segment-button {
+    min-height: 56px;
+    font-size: 11px;
+
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  ion-content {
+    --padding-start: calc((100% - 700px) / 2);
+    --padding-end: calc((100% - 700px) / 2);
+  }
+}

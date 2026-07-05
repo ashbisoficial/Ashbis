@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnDestroy } from '@angular/core';
 import { NgIf, NgFor, TitleCasePipe } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
@@ -6,6 +6,7 @@ import {
   IonItem, IonLabel, IonButton, IonIcon, IonAvatar, IonList, IonSkeletonText
 } from '@ionic/angular/standalone';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -22,10 +23,11 @@ import { AuthenticationService } from 'src/app/firebase/authentication';
   templateUrl: './perfil-mascota.component.html',
   styleUrls: ['./perfil-mascota.component.scss']
 })
-export class MascotaPerfilComponent {
+export class MascotaPerfilComponent implements OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private fs = inject(FirestoreService);
+  private destroy$ = new Subject<void>();
 
   veterinariasFavoritas: VeterinariaFavorita[] = [];
   private auth = inject(AuthenticationService);
@@ -41,12 +43,20 @@ export class MascotaPerfilComponent {
       this.loading.set(false);
     }
 
-    // 2) lee por :id (fuente de verdad)
+    // 2) lee por :id (fuente de verdad) — es un stream vivo de Firestore, hay
+    // que cortarlo al salir de la pantalla o queda escuchando para siempre.
     const id = this.route.snapshot.paramMap.get('id')!;
-    this.fs.getPetById(id).subscribe((doc) => {
-      if (doc) this.mascota.set(doc);
-      this.loading.set(false);
-    });
+    this.fs.getPetById(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((doc) => {
+        if (doc) this.mascota.set(doc);
+        this.loading.set(false);
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get avatar(): string {

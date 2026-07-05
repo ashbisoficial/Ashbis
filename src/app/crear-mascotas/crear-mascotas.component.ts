@@ -32,6 +32,7 @@ import { FirestoreService } from 'src/app/firebase/firestore';
 import { Firestore, doc, getDoc, getDocs, collection, query, where, increment, updateDoc } from '@angular/fire/firestore';
 import { Models } from 'src/app/models/models';
 import { SecurityService } from 'src/app/services/security.service';
+import { getFriendlyErrorMessage } from 'src/app/services/firebase-error.util';
 
 @Component({
   selector: 'app-crear-mascota',
@@ -349,9 +350,7 @@ export class CrearMascotasComponent implements OnInit {
     console.error('CODE:', err?.code);
     console.error('MESSAGE:', err?.message);
 
-    await this.presentAlert(
-      `${err?.code || 'error'} - ${err?.message || 'Error desconocido'}`
-    );
+    await this.presentAlert(getFriendlyErrorMessage(err, 'firestore'));
 
   } finally {
     this.cargando = false;
@@ -360,7 +359,7 @@ export class CrearMascotasComponent implements OnInit {
 
   async presentAlert(message: string): Promise<void> {
     const alert = await this.alertCtrl.create({
-      header: 'Atencion',
+      header: 'Atención',
       message,
       buttons: ['Aceptar']
     });

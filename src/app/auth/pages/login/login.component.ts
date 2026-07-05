@@ -26,6 +26,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
 import { SecurityService } from 'src/app/services/security.service';
+import { getFriendlyErrorMessage } from 'src/app/services/firebase-error.util';
 import { environment } from 'src/environments/environment';
 import type { User, UserCredential } from 'firebase/auth';
 
@@ -195,8 +196,13 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     console.error('FULL ERROR:', error);
     console.error('================================');
 
-    this.loginError =
-      `${error?.code || 'sin-codigo'} - ${error?.message || 'sin-mensaje'}`;
+    // 'NATIVO' viene del plugin de Capacitor (códigos numéricos de
+    // GoogleSignInStatusCodes + nuestro GOOGLE_PLAY_SERVICES_UNAVAILABLE);
+    // 'GIS' puede venir de Firebase (auth/...) tras canjear el access token.
+    this.loginError = getFriendlyErrorMessage(
+      error,
+      origen === 'NATIVO' ? 'google-nativo' : 'auth'
+    );
   }
 
   // Crea o actualiza el documento de perfil en Firestore tras un login con Google.
@@ -268,9 +274,9 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       await this.authenticationService.login(email, password);
       this.security.resetLoginAttempts(email);
       this.router.navigate(['tabs/home'], { replaceUrl: true });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      this.loginError = 'Credenciales incorrectas.';
+      this.loginError = getFriendlyErrorMessage(err, 'auth');
     } finally {
       this.cargando = false;
     }

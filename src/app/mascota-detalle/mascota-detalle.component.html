@@ -7,7 +7,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content [fullscreen]="true" class="ion-padding">
 
   <div *ngIf="cargando" class="ion-text-center ion-padding">
     <ion-spinner name="crescent"></ion-spinner>
@@ -16,21 +16,25 @@
 
   <div *ngIf="!cargando && mascota">
 
-    <ion-segment [value]="segmentoActual" (ionChange)="segmentoCambiado($event)">
+    <ion-segment [value]="segmentoActual" (ionChange)="segmentoCambiado($event)" scrollable="true">
 
-      <ion-segment-button value="vacunas">
+      <ion-segment-button value="vacunas" layout="icon-top">
+        <ion-icon name="medical-outline"></ion-icon>
         <ion-label>Vacunas</ion-label>
       </ion-segment-button>
 
-      <ion-segment-button value="examenes">
+      <ion-segment-button value="examenes" layout="icon-top">
+        <ion-icon name="clipboard-outline"></ion-icon>
         <ion-label>Exámenes</ion-label>
       </ion-segment-button>
 
-      <ion-segment-button value="medicamentos">
+      <ion-segment-button value="medicamentos" layout="icon-top">
+        <ion-icon name="eyedrop-outline"></ion-icon>
         <ion-label>Medicamentos</ion-label>
       </ion-segment-button>
 
-      <ion-segment-button value="veterinarias">
+      <ion-segment-button value="veterinarias" layout="icon-top">
+        <ion-icon name="paw-outline"></ion-icon>
         <ion-label>Veterinarias</ion-label>
       </ion-segment-button>
 
@@ -43,9 +47,17 @@
         <ion-item *ngFor="let vacuna of vacunas">
           <ion-label>
             <h2>{{ vacuna.tipo }}</h2>
-            <p>{{ vacuna.fechaAplicacion | date:'dd/MM/yyyy' }}</p>
+            <p>Aplicada: {{ vacuna.fechaAplicacion | date:'dd/MM/yyyy' }}</p>
           </ion-label>
+          <ion-note slot="end" color="primary" *ngIf="vacuna.proximaFecha">
+            Próxima: {{ vacuna.proximaFecha | date:'dd/MM/yyyy' }}
+          </ion-note>
         </ion-item>
+        <ion-card *ngIf="vacunas.length === 0">
+          <ion-card-content class="ion-text-center">
+            No hay vacunas registradas.
+          </ion-card-content>
+        </ion-card>
       </ion-list>
 
       <!-- EXAMENES -->
@@ -53,9 +65,20 @@
         <ion-item *ngFor="let examen of examenes">
           <ion-label>
             <h2>{{ examen.tipo }}</h2>
-            <p>{{ examen.fechaRealizado | date:'dd/MM/yyyy' }}</p>
+            <p>
+              {{ examen.realizado ? 'Realizado:' : 'Programado:' }}
+              {{ (examen.realizado ? examen.fechaRealizado : examen.fechaProgramada) | date:'dd/MM/yyyy' }}
+            </p>
           </ion-label>
+          <ion-note slot="end" [color]="examen.realizado ? 'success' : 'warning'">
+            {{ examen.realizado ? 'Completado' : 'Pendiente' }}
+          </ion-note>
         </ion-item>
+        <ion-card *ngIf="examenes.length === 0">
+          <ion-card-content class="ion-text-center">
+            No hay exámenes registrados.
+          </ion-card-content>
+        </ion-card>
       </ion-list>
 
       <!-- MEDICAMENTOS -->
@@ -63,30 +86,40 @@
         <ion-item *ngFor="let med of medicamentos">
           <ion-label>
             <h2>{{ med.nombre }}</h2>
-            <p>{{ med.mg }} mg</p>
+            <p>Dosis: {{ med.mg }} mg</p>
           </ion-label>
+          <ion-note slot="end" color="tertiary">
+            Inicia: {{ med.fechaInicio | date:'dd/MM/yyyy' }}
+          </ion-note>
         </ion-item>
+        <ion-card *ngIf="medicamentos.length === 0">
+          <ion-card-content class="ion-text-center">
+            No hay medicamentos registrados.
+          </ion-card-content>
+        </ion-card>
       </ion-list>
 
       <!-- VETERINARIAS -->
       <ion-list *ngSwitchCase="'veterinarias'">
 
         <ion-item *ngFor="let vet of veterinariasFavoritas">
-
           <ion-label>
             <h2>{{ vet.nombre }}</h2>
             <p>{{ vet.direccion }}</p>
+            <p *ngIf="vet.rating">⭐ {{ vet.rating }}</p>
           </ion-label>
 
-          <ion-button
-            slot="end"
-            fill="clear"
-            (click)="abrirEnMapa(vet)"
-          >
-            <ion-icon name="map-outline"></ion-icon>
+          <ion-button slot="end" fill="clear" (click)="abrirEnMapa(vet)">
+            <ion-icon name="map-outline" slot="icon-only"></ion-icon>
           </ion-button>
-
         </ion-item>
+
+        <ion-card *ngIf="veterinariasFavoritas.length === 0">
+          <ion-card-content class="ion-text-center">
+            Aún no tienes veterinarias favoritas.<br />
+            Agrégalas desde el mapa en la pantalla principal.
+          </ion-card-content>
+        </ion-card>
 
       </ion-list>
 

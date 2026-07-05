@@ -12,8 +12,8 @@ import {
 
 import { RefresherCustomEvent } from '@ionic/angular';
 import { Auth, authState } from '@angular/fire/auth';
-import { of, take } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { Subject, of, take } from 'rxjs';
+import { switchMap, takeUntil } from 'rxjs/operators';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { Router, RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
@@ -40,6 +40,7 @@ export class ListarMascotasComponent implements OnInit, OnDestroy {
   private auth = inject(Auth);
   private fs = inject(FirestoreService);
   private router = inject(Router);
+  private destroy$ = new Subject<void>();
 
   loading = signal(true);
   mascotas = signal<Mascota[]>([]);
@@ -56,7 +57,8 @@ export class ListarMascotasComponent implements OnInit, OnDestroy {
           const uid = user?.uid ?? null;
           this.usuarioUid.set(uid);
           return uid ? this.fs.getUserPets(uid) : of<Mascota[]>([]);
-        })
+        }),
+        takeUntil(this.destroy$)
       )
       .subscribe(pets => {
         this.mascotas.set(pets ?? []);
@@ -67,7 +69,8 @@ export class ListarMascotasComponent implements OnInit, OnDestroy {
   ngOnInit() {}
 
   ngOnDestroy() {
-    // Limpieza si es necesaria
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   trackById = (_: number, m: Mascota) => m.id;

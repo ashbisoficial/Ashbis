@@ -12,7 +12,7 @@ import {
   IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
   IonSpinner, IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle,
   IonCardContent, IonButton, IonIcon, IonItem, IonLabel,
-  IonSelect, IonSelectOption, IonSegment, IonSegmentButton
+  IonSelect, IonSelectOption, IonSegment, IonSegmentButton, ToastController
 } from '@ionic/angular/standalone';
 
 import { addIcons } from 'ionicons';
@@ -48,6 +48,7 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
   firestoreService = inject(FirestoreService);
   private publicQrSvc = inject(PublicQrService);
   private firestore   = inject(Firestore);
+  private toastCtrl   = inject(ToastController);
 
   // ── Estado ──────────────────────────────────────────────────────────────
   cargando = signal(true);
@@ -83,6 +84,27 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     return this.tipoQR === 'medico'
       ? 'Escanea para ver el historial veterinario completo'
       : 'Si pierdo a mi mascota, escanea para contactar al dueño';
+  }
+
+  // ── Validación previa a generar/descargar el QR ─────────────────────────
+  // El QR en sí solo apunta a una URL con un token; lo que puede faltar es
+  // la información real detrás de ese link. Si falta algo crítico para el
+  // propósito de este QR, se lo decimos al usuario en vez de dejarlo confiar
+  // en un QR de emergencia sin forma de contactarlo, por ejemplo.
+  get camposFaltantes(): string[] {
+    const m = this.mascotaSeleccionada();
+    if (!m) return [];
+
+    const faltan: string[] = [];
+
+    if (!m.nombre) faltan.push('el nombre de la mascota');
+
+    if (this.tipoQR === 'emergencia') {
+      const tieneContacto = !!this.userProfile?.telefono || !!(this.userProfile?.nombre || this.userProfile?.apellido);
+      if (!tieneContacto) faltan.push('un teléfono o nombre de contacto en tu perfil');
+    }
+
+    return faltan;
   }
 
   constructor() {
@@ -271,7 +293,7 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     const lineas = [
       '══ MASCOTA PERDIDA ══',
       '',
-      `Nombre: ${m.nombre}`,
+      `Nombre: ${m.nombre || 'Mascota'}`,
       `Descripción: ${descripcionFisica}`,
       m.senas ? `Señas: ${m.senas}` : '',
       `Microchip: ${m.numeroChip || 'No registrado'}`,
@@ -483,7 +505,9 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(12);
     pdf.setTextColor(255, 255, 255);
-    pdf.text('🐾  SI ENCONTRASTE A ESTA MASCOTA, POR FAVOR CONTÁCTAME', pageWidth / 2, y + 7, { align: 'center' });
+    // jsPDF con la fuente helvetica estándar usa WinAnsi/CP1252, que no
+    // incluye el emoji de pata; sin esto se veía como un glifo faltante.
+    pdf.text('SI ENCONTRASTE A ESTA MASCOTA, POR FAVOR CONTÁCTAME', pageWidth / 2, y + 7, { align: 'center' });
     y += 20;
 
     // Nombre grande
@@ -583,7 +607,7 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(11);
       pdf.setTextColor(...rojo);
-      pdf.text('⚠  NECESITA MEDICACIÓN — VER INFORMACIÓN DE CONTACTO', marginX, y + 2);
+      pdf.text('AVISO: NECESITA MEDICACIÓN — VER INFORMACIÓN DE CONTACTO', marginX, y + 2);
       y += 12;
     }
 
@@ -638,6 +662,12 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       console.error('Error generando PDF:', error);
+      const toast = await this.toastCtrl.create({
+        message: 'No se pudo generar el PDF. Intenta nuevamente.',
+        duration: 2500,
+        color: 'danger'
+      });
+      await toast.present();
     } finally {
       this.descargandoPDF = false;
     }
