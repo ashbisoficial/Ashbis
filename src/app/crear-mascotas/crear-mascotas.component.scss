@@ -182,7 +182,7 @@ ion-select::part(text) {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  background: #141414;
+  background: #070707;
   padding: 12px 16px;
 }
 
@@ -405,5 +405,12 @@ ion-accordion {
   overflow: hidden;
   margin-bottom: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* --background no llega al wrapper real del contenido colapsable (vive en
+   otra parte del shadow DOM); ::part(content) es la única forma soportada
+   de pintarlo, si no queda una franja gris clara detrás de los checkboxes. */
+ion-accordion::part(content) {
+  background: #070707 !important;
 }
 

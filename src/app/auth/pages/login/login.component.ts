@@ -71,13 +71,17 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   showPass = false;
   loginError: string | null = null;
   googleNoDisponible = false;
+  // El botón oficial de Google solo se muestra si prompt() (One Tap) no se
+  // pudo desplegar (sin sesión activa en el navegador, FedCM desactivado, etc.).
+  googlePromptNoDisponible = false;
 
   // En la app Android (Capacitor) el botón web de Google Identity Services no
   // funciona dentro del WebView, así que usamos el plugin nativo en su lugar.
   readonly esNativo = this.authenticationService.isNativePlatform();
 
   @ViewChild('googleBtn') private googleBtnRef?: ElementRef<HTMLDivElement>;
-  private googleBotonRenderizado = false;
+  private googleScriptListo = false;
+  private googleBotonOficialRenderizado = false;
   private googleRetryTimeoutId?: ReturnType<typeof setTimeout>;
 
   constructor() {
@@ -98,22 +102,23 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    if (!this.esNativo) this.inicializarBotonGoogle();
+    if (!this.esNativo) this.inicializarGoogleWeb();
   }
 
-  // 🔵 Dibuja el botón oficial de Google (Google Identity Services) en vez de
-  // usar signInWithPopup/signInWithRedirect de Firebase. Esto evita el
+  // 🔵 Inicializa Google Identity Services en vez de usar
+  // signInWithPopup/signInWithRedirect de Firebase. Esto evita el
   // auth/internal-error que ocurre en Chrome cuando las cookies de terceros
   // están bloqueadas: GIS usa su propio mecanismo (FedCM cuando está
   // disponible) en vez de depender del iframe puente de Firebase.
   // Reintenta unas cuantas veces por si el script de Google (cargado en
-  // index.html) todavía no terminó de descargarse.
-  private inicializarBotonGoogle(intentos = 0): void {
-    if (this.googleBotonRenderizado) return;
+  // index.html) todavía no terminó de descargarse. No renderiza el botón
+  // oficial: eso solo ocurre como respaldo (ver `loginConGoogleWeb`).
+  private inicializarGoogleWeb(intentos = 0): void {
+    if (this.googleScriptListo) return;
 
-    if (typeof google === 'undefined' || !google?.accounts?.id || !this.googleBtnRef) {
+    if (typeof google === 'undefined' || !google?.accounts?.id) {
       if (intentos < 20) {
-        this.googleRetryTimeoutId = setTimeout(() => this.inicializarBotonGoogle(intentos + 1), 150);
+        this.googleRetryTimeoutId = setTimeout(() => this.inicializarGoogleWeb(intentos + 1), 150);
       } else {
         console.warn('No se pudo cargar Google Identity Services (script bloqueado o sin red).');
         this.googleNoDisponible = true;
@@ -126,6 +131,37 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       callback: (response: { credential: string }) => this.onGoogleCredential(response)
     });
 
+    this.googleScriptListo = true;
+  }
+
+  // 🔵 Disparado por nuestro botón "CONTINUAR CON GOOGLE". En vez de mostrar
+  // el botón oficial de Google (que a veces se renderiza personalizado, p.ej.
+  // "Continuar como Ana", y cuyo estilo no podemos tocar por política de
+  // marca de Google), abrimos directamente su selector de cuentas (One Tap)
+  // vía prompt(). Si el navegador no puede desplegarlo (sin sesión activa,
+  // FedCM desactivado, bloqueador de terceros, etc.) mostramos el botón
+  // oficial como respaldo, para no dejar al usuario sin forma de continuar.
+  loginConGoogleWeb(): void {
+    if (this.cargando) return;
+
+    if (!this.googleScriptListo || typeof google === 'undefined') {
+      this.googleNoDisponible = true;
+      return;
+    }
+
+    google.accounts.id.prompt((notification: any) => {
+      const noSeMostro =
+        notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.();
+      if (noSeMostro) {
+        this.googlePromptNoDisponible = true;
+        setTimeout(() => this.renderizarBotonOficialFallback(), 0);
+      }
+    });
+  }
+
+  private renderizarBotonOficialFallback(): void {
+    if (this.googleBotonOficialRenderizado || !this.googleBtnRef || typeof google === 'undefined') return;
+
     google.accounts.id.renderButton(this.googleBtnRef.nativeElement, {
       type: 'standard',
       theme: 'outline',
@@ -136,7 +172,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       width: 360
     });
 
-    this.googleBotonRenderizado = true;
+    this.googleBotonOficialRenderizado = true;
   }
 
   // 🔵 Google nos entrega un ID token (JWT) ya validado; lo intercambiamos

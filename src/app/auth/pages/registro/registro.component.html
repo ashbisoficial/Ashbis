@@ -157,18 +157,17 @@
                 <ion-note color="danger" *ngIf="f.confirmPassword.touched && f.confirmPassword.hasError('required')">Debes confirmar la contraseña</ion-note>
                 <ion-note color="danger" *ngIf="datosForm.touched && datosForm.hasError('passwordMismatch')">Las contraseñas no coinciden</ion-note>
                 <ion-item class="item-consentimiento" lines="none" style="--padding-start: 0; --inner-padding-end: 0; margin: 8px 0;">
-                  <div style="display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 4px 0;">
-                    <ion-checkbox
-                      formControlName="consentimiento"
-                      style="margin-top: 2px; flex-shrink: 0;">
-                    </ion-checkbox>
+                  <div style="display: flex; flex-direction: column; align-items: center;
+                              gap: 6px; width: 100%; padding: 4px 0; text-align: center;">
+                    <ion-checkbox formControlName="consentimiento"></ion-checkbox>
                     <p style="font-size: 12px; color: var(--ion-color-medium);
-                              margin: 0; line-height: 1.5; flex: 1;">
+                              margin: 0; line-height: 1.6;">
                       Acepto los
                       <a href="/terminos" target="_blank"
                          style="color: #8b0808; text-decoration: none; font-weight: 500;">
                         Términos y Condiciones
                       </a>
+                      <br>
                       y la
                       <a href="/privacidad" target="_blank"
                          style="color: #8b0808; text-decoration: none; font-weight: 500;">
