@@ -1,16 +1,21 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { onRequest } from 'firebase-functions/v2/https';
+import { defineSecret } from 'firebase-functions/params';
 
 admin.initializeApp();
+
+const DISCORD_WEBHOOK = defineSecret('DISCORD_WEBHOOK');
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = new Set([
   'https://ashbis.app',
   'https://ashbis-ae5b2.web.app',
   'https://ashbis-ae5b2.firebaseapp.com',
+  'https://ashbis-web.web.app',
   'http://localhost:8100',
   'http://localhost:4200',
+  'http://localhost:3000',
   'capacitor://localhost',
   'http://localhost',
 ]);
@@ -442,6 +447,108 @@ export const eliminarCuenta = onRequest(
     } catch (error) {
       functions.logger.error('eliminarCuenta error', error);
       res.status(500).json({ error: 'Error al eliminar la cuenta' });
+    }
+  }
+);
+
+// ─── Cloud Function: contactFormProxy ────────────────────────────────────────
+// Recibe el formulario de contacto del sitio web (ashbis-web.web.app) y lo
+// reenvía a Discord vía webhook. El webhook nunca se expone al cliente:
+// vive solo en functions.config().discord.webhook (server-side).
+const MOTIVO_TEXTO: Record<string, string> = {
+  equipo: '👥 Unirse al equipo',
+  patrocinador: '💼 Ser patrocinador',
+  soporte: '🛠️ Soporte técnico',
+  otro: '💬 Otro',
+};
+
+export const contactFormProxy = onRequest(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB', maxInstances: 10, secrets: [DISCORD_WEBHOOK] },
+  async (req, res) => {
+    const origin = req.headers.origin;
+    const headers = corsHeaders(origin);
+    Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    // Endpoint público sin autenticación: rate limit por IP para evitar spam/abuso.
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim()
+               || req.socket.remoteAddress
+               || 'unknown';
+    if (hitRateLimit(`contact_${ip}`)) {
+      res.status(429).json({ error: 'Demasiadas solicitudes. Intenta más tarde.' });
+      return;
+    }
+
+    const nombre  = sanitizeInput(req.body?.nombre, 100);
+    const email   = sanitizeInput(req.body?.email, 100);
+    const rawMotivo = sanitizeInput(req.body?.motivo, 50);
+    const mensaje = sanitizeInput(req.body?.mensaje, 2000) || 'Sin mensaje adicional';
+    const area        = sanitizeInput(req.body?.area, 50);
+    const otroMotivo  = sanitizeInput(req.body?.otro_motivo, 100);
+    const areaOtro    = sanitizeInput(req.body?.area_otro, 100);
+    const tipoPatro   = sanitizeInput(req.body?.tipo_patro, 50);
+    const nombrePatro = sanitizeInput(req.body?.nombre_patro, 100);
+    const cv          = sanitizeInput(req.body?.cv, 300);
+
+    if (!nombre || !email || !rawMotivo) {
+      res.status(400).json({ error: 'Faltan campos requeridos' });
+      return;
+    }
+
+    const motivoTexto = MOTIVO_TEXTO[rawMotivo] || rawMotivo;
+
+    const fields: { name: string; value: string; inline?: boolean }[] = [
+      { name: '👤 Nombre', value: nombre, inline: true },
+      { name: '📧 Email', value: email, inline: true },
+      { name: '📌 Motivo', value: motivoTexto, inline: false },
+    ];
+
+    if (rawMotivo === 'otro' && otroMotivo) fields.push({ name: '💬 Especifica', value: otroMotivo, inline: false });
+    if (area) fields.push({ name: '🎯 Área', value: area, inline: true });
+    if (areaOtro) fields.push({ name: '🎯 Área (otro)', value: areaOtro, inline: true });
+    if (tipoPatro) fields.push({ name: '🏢 Tipo', value: tipoPatro, inline: true });
+    if (nombrePatro) fields.push({ name: '🏢 Nombre patrocinador', value: nombrePatro, inline: true });
+    if (cv) fields.push({ name: '📎 CV / portafolio', value: cv, inline: false });
+    fields.push({ name: '💬 Mensaje', value: mensaje, inline: false });
+
+    const webhook = DISCORD_WEBHOOK.value();
+    if (!webhook) {
+      functions.logger.error('Discord webhook no configurado (secret DISCORD_WEBHOOK)');
+      res.status(500).json({ error: 'Servicio no disponible temporalmente' });
+      return;
+    }
+
+    try {
+      const discordRes = await fetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: 'Ashbis Web',
+          avatar_url: 'https://ashbis-web.web.app/img/logo4.png',
+          allowed_mentions: { parse: [] }, // evita pings de @everyone/@here/roles desde input de usuarios
+          embeds: [{
+            title: '📬 Nuevo mensaje de contacto',
+            color: 0xC10000,
+            fields,
+            footer: { text: 'Ashbis · ashbis-web.web.app' },
+            timestamp: new Date().toISOString(),
+          }],
+        }),
+      });
+
+      if (!discordRes.ok) {
+        functions.logger.error('Discord webhook error', await discordRes.text());
+        res.status(502).json({ error: 'Error al enviar a Discord' });
+        return;
+      }
+
+      res.status(200).json({ success: true });
+
+    } catch (error) {
+      functions.logger.error('contactFormProxy error', error);
+      res.status(500).json({ error: 'Error interno' });
     }
   }
 );
