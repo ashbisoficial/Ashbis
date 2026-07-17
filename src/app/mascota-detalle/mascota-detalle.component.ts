@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, NgIf, DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { Subject, switchMap, takeUntil } from 'rxjs';
+import { of, Subject, switchMap, takeUntil } from 'rxjs';
 
 import { 
   FirestoreService, 
@@ -154,7 +154,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     this.auth.authState$.pipe(
       takeUntil(this.destroy$),
       switchMap(user => {
-        if (!user) throw new Error('Usuario no autenticado');
+        if (!user) return of<VeterinariaFavorita[]>([]);
         return this.firestoreService.getVeterinariasFavoritasByUsuario(user.uid);
       })
     ).subscribe(vets => {

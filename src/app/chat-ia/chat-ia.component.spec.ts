@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-import { IonicModule } from '@ionic/angular';
-
+import { provideHttpClient } from '@angular/common/http';
 import { ChatIaComponent } from './chat-ia.component';
 
 describe('ChatIaComponent', () => {
@@ -9,8 +8,8 @@ describe('ChatIaComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ChatIaComponent ],
-      imports: [IonicModule.forRoot()]
+      imports: [ChatIaComponent],
+      providers: [provideHttpClient()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ChatIaComponent);

@@ -139,7 +139,7 @@ export class HomePage implements OnInit, OnDestroy {
     { src: 'assets/img/10.jpg', titulo: 'Evento 4' },
   ];
 
-  constructor(private toastCtrl: ToastController) {
+  constructor() {
     addIcons({ chatbubblesOutline, locateOutline, bagOutline });
   }
 

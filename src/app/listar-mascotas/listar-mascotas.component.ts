@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, OnDestroy } from '@angular/core';
 import { NgIf, NgFor, DatePipe } from '@angular/common';
 
 import {
@@ -35,7 +35,7 @@ import { add, qrCodeOutline } from 'ionicons/icons';
   styleUrls: ['./listar-mascotas.component.scss'],
   providers: [DatePipe],
 })
-export class ListarMascotasComponent implements OnInit, OnDestroy {
+export class ListarMascotasComponent implements OnDestroy {
 
   private auth = inject(Auth);
   private fs = inject(FirestoreService);
@@ -65,8 +65,6 @@ export class ListarMascotasComponent implements OnInit, OnDestroy {
         this.loading.set(false);
       });
   }
-
-  ngOnInit() {}
 
   ngOnDestroy() {
     this.destroy$.next();

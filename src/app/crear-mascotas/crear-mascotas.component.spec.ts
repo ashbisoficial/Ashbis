@@ -1,6 +1,11 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-import { IonicModule } from '@ionic/angular';
-
+import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
+import { provideAuth, getAuth } from '@angular/fire/auth';
+import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+import { provideStorage, getStorage } from '@angular/fire/storage';
+import { provideRouter } from '@angular/router';
+import { provideIonicAngular } from '@ionic/angular/standalone';
+import { environment } from 'src/environments/environment';
 import { CrearMascotasComponent } from './crear-mascotas.component';
 
 describe('CrearMascotasComponent', () => {
@@ -9,8 +14,15 @@ describe('CrearMascotasComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ CrearMascotasComponent ],
-      imports: [IonicModule.forRoot()]
+      imports: [CrearMascotasComponent],
+      providers: [
+        provideFirebaseApp(() => initializeApp(environment.firebase)),
+        provideAuth(() => getAuth()),
+        provideFirestore(() => getFirestore()),
+        provideStorage(() => getStorage()),
+        provideRouter([]),
+        provideIonicAngular(),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CrearMascotasComponent);

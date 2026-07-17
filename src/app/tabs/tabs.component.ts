@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 
@@ -34,7 +34,7 @@ import {
     IonLabel
   ]
 })
-export class TabsComponent implements OnInit {
+export class TabsComponent {
 
   constructor() {
     // 4. Añadir todos los iconos que usa el HTML
@@ -46,6 +46,4 @@ export class TabsComponent implements OnInit {
       personOutline
     });
   }
-
-  ngOnInit() {}
 }

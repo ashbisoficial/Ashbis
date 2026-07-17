@@ -517,7 +517,7 @@
                     <ng-container *ngIf="e.fechaRealizado"> • Realizado: {{ e.fechaRealizado | date:'dd-MM-yyyy' }}</ng-container>
                   </p>
                   <p *ngIf="e.lugar">Lugar: {{ e.lugar }}</p>
-                  <p *ngIf="e.costo != null">Costo: {{ e.costo | currency:'CLP':'symbol-narrow':'1.0-0' }}</p>
+                  <p *ngIf="e.costo !== undefined">Costo: {{ e.costo | currency:'CLP':'symbol-narrow':'1.0-0' }}</p>
                   <p *ngIf="e.notas" class="ion-text-wrap">{{ e.notas }}</p>
 
                   <!-- Archivos -->
@@ -680,7 +680,7 @@
                     <ng-container *ngIf="m.fechaFin"> • Fin: {{ m.fechaFin | date:'dd-MM-yyyy' }}</ng-container>
                   </p>
 
-                  <p *ngIf="m.costo != null">Costo: {{ m.costo | currency:'CLP':'symbol-narrow':'1.0-0' }}</p>
+                  <p *ngIf="m.costo !== undefined">Costo: {{ m.costo | currency:'CLP':'symbol-narrow':'1.0-0' }}</p>
                   <p *ngIf="m.notas" class="ion-text-wrap">Notas: {{ m.notas }}</p>
                 </ion-label>
 

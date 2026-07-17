@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -72,7 +72,7 @@ import { SecurityService } from 'src/app/services/security.service';
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
 })
-export class RegistroComponent implements OnInit {
+export class RegistroComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authenticationService = inject(AuthenticationService);
   private readonly firestoreService = inject(FirestoreService);
@@ -108,8 +108,6 @@ export class RegistroComponent implements OnInit {
   constructor() {
     addIcons({ eye, eyeOff });
   }
-
-  ngOnInit(): void {}
 
   get f() {
     return this.datosForm.controls;

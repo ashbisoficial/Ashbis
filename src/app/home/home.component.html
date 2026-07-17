@@ -137,7 +137,7 @@
       <h3 class="panel-nombre">{{ marcadorSeleccionado.title }}</h3>
       <p class="panel-direccion">
         {{ marcadorSeleccionado.address }}
-        <span class="panel-distancia" *ngIf="marcadorSeleccionado.distanciaM != null">
+        <span class="panel-distancia" *ngIf="marcadorSeleccionado.distanciaM !== undefined">
           · {{ formatearDistancia(marcadorSeleccionado.distanciaM) }}
         </span>
       </p>

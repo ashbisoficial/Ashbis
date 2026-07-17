@@ -1,5 +1,5 @@
 import { DatePipe, NgIf } from '@angular/common';
-import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -84,7 +84,7 @@ interface UsuarioActual {
   ],
   providers: [DatePipe]
 })
-export class PerfilComponent implements OnInit, OnDestroy {
+export class PerfilComponent implements OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
@@ -155,8 +155,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
         }
       });
   }
-
-  ngOnInit(): void {}
 
   ngOnDestroy(): void {
     this.destroy$.next();

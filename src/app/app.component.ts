@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { Router, NavigationStart } from '@angular/router';
 
@@ -8,7 +8,9 @@ import { Router, NavigationStart } from '@angular/router';
   imports: [IonApp, IonRouterOutlet],
 })
 export class AppComponent {
-  constructor(private router: Router) {
+  private readonly router = inject(Router);
+
+  constructor() {
     // Ionic oculta la página saliente con aria-hidden="true" durante la
     // transición de rutas. Si un botón (u otro elemento) dentro de esa
     // página todavía tiene el foco, el navegador emite el warning
