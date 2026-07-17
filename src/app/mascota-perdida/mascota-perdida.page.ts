@@ -21,6 +21,7 @@ export class MascotaPerdidaPage implements OnInit {
   mascota:   any = null;
   dueno:     any = null;
   medicamentosActivos: any[] = [];
+  reportadaPerdida = false;
 
   cargando = true;
   error    = false;
@@ -54,6 +55,7 @@ export class MascotaPerdidaPage implements OnInit {
       this.mascota            = data.mascota ? { id: token, ...data.mascota } : null;
       this.dueno              = data.dueno ?? null;
       this.medicamentosActivos = data.medicamentos ?? [];
+      this.reportadaPerdida   = !!data.mascotaPerdida;
 
       if (!this.mascota) { this.error = true; }
 

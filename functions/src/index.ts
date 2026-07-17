@@ -344,16 +344,33 @@ export const getCarnetPublico = onRequest(
         citas        = cSnap.docs.map(d => d.data());
       }
 
-      // 5. Si es perdida, solo traer medicamentos activos
+      // 5. Si es perdida, solo traer medicamentos activos. El contacto del
+      // dueño SOLO se expone si el dueño marcó la mascota como perdida —
+      // el QR es permanente (va en el collar), pero el contacto no debe
+      // quedar público todo el tiempo, solo mientras la mascota esté
+      // efectivamente reportada como extraviada.
+      const mascotaPerdida = mascota['estado'] === 'perdida';
       if (tipo === 'perdida') {
         const hoy = new Date().toISOString().slice(0, 10);
         const mSnap = await db.collection(`mascotas/${mascotaId}/medicamentos`)
           .orderBy('fechaInicio', 'desc').get();
         medicamentos = mSnap.docs.map(d => d.data())
           .filter((m: any) => !m.fechaFin || m.fechaFin >= hoy);
+
+        if (!mascotaPerdida) {
+          dueno = null;
+        }
       }
 
-      res.status(200).json({ mascota, dueno, vacunas, medicamentos, examenes, citas });
+      res.status(200).json({
+        mascota,
+        dueno,
+        vacunas,
+        medicamentos,
+        examenes,
+        citas,
+        ...(tipo === 'perdida' ? { mascotaPerdida } : {}),
+      });
 
     } catch (error) {
       functions.logger.error('getCarnetPublico error', error);

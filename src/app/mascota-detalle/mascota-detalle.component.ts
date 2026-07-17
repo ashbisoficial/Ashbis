@@ -31,11 +31,21 @@ import {
   IonCardContent,
   IonSpinner,
   IonButton,
-  IonIcon
+  IonIcon,
+  AlertController,
+  ToastController
 } from '@ionic/angular/standalone';
 
 import { addIcons } from 'ionicons';
-import { medicalOutline, clipboardOutline, eyedropOutline, pawOutline, mapOutline } from 'ionicons/icons';
+import {
+  medicalOutline,
+  clipboardOutline,
+  eyedropOutline,
+  pawOutline,
+  mapOutline,
+  alertCircleOutline,
+  checkmarkCircleOutline
+} from 'ionicons/icons';
 
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { Router } from '@angular/router';
@@ -80,13 +90,24 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   private firestoreService = inject(FirestoreService);
   private auth = inject(AuthenticationService);
   private router = inject(Router);
+  private alertCtrl = inject(AlertController);
+  private toastCtrl = inject(ToastController);
 
   private mascotaId = '';
 
   cargando = true;
+  actualizandoEstado = false;
 
   constructor() {
-    addIcons({ medicalOutline, clipboardOutline, eyedropOutline, pawOutline, mapOutline });
+    addIcons({
+      medicalOutline,
+      clipboardOutline,
+      eyedropOutline,
+      pawOutline,
+      mapOutline,
+      alertCircleOutline,
+      checkmarkCircleOutline
+    });
   }
 
   segmentoActual: 'vacunas' | 'examenes' | 'medicamentos' | 'veterinarias' = 'vacunas';
@@ -170,5 +191,55 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
         nombre: vet.nombre
       }
     });
+  }
+
+  get estaPerdida(): boolean {
+    return this.mascota?.estado === 'perdida';
+  }
+
+  async toggleEstadoPerdida(): Promise<void> {
+    if (this.estaPerdida) {
+      // Marcar como encontrada no expone nada, se hace directo.
+      await this.actualizarEstado('normal', 'Marcada como encontrada. Ya no se muestra tu contacto en la ficha.');
+      return;
+    }
+
+    // Activar el reporte de pérdida expone tu contacto en la ficha pública
+    // del QR, así que se pide confirmación antes.
+    const alert = await this.alertCtrl.create({
+      header: 'Reportar como perdida',
+      message: 'A partir de ahora, quien escanee el QR de "mascota perdida" va a poder ver tu nombre y teléfono de contacto para ayudarte a encontrarla. Podés desactivarlo cuando quieras.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Reportar perdida',
+          handler: () => this.actualizarEstado('perdida', 'Mascota reportada como perdida. Tu contacto ya es visible en la ficha del QR.')
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  private async actualizarEstado(estado: 'normal' | 'perdida', mensajeExito: string): Promise<void> {
+    if (!this.mascotaId || this.actualizandoEstado) return;
+    this.actualizandoEstado = true;
+    try {
+      await this.firestoreService.updatePet(this.mascotaId, { estado });
+      const toast = await this.toastCtrl.create({
+        message: mensajeExito,
+        duration: 3000,
+        color: estado === 'perdida' ? 'warning' : 'success'
+      });
+      await toast.present();
+    } catch {
+      const toast = await this.toastCtrl.create({
+        message: 'No se pudo actualizar el estado. Intenta nuevamente.',
+        duration: 2500,
+        color: 'danger'
+      });
+      await toast.present();
+    } finally {
+      this.actualizandoEstado = false;
+    }
   }
 }

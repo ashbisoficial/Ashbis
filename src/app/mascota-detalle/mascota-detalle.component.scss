@@ -72,6 +72,39 @@ ion-card-content {
 }
 
 /* ============================================
+   ESTADO DE PÉRDIDA
+============================================ */
+.estado-perdida-card {
+  margin-bottom: 12px;
+
+  ion-card-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    ion-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.estado-perdida-texto {
+  flex: 1;
+  min-width: 0;
+
+  strong {
+    display: block;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 12px;
+  }
+}
+
+/* ============================================
    RESPONSIVE
 ============================================ */
 @media (max-width: 360px) {

@@ -16,8 +16,11 @@
   <div *ngIf="!cargando && !error && mascota" class="ficha">
 
     <!-- Franja de alerta superior -->
-    <div class="franja-alerta">
+    <div class="franja-alerta" *ngIf="reportadaPerdida">
       <span class="alerta-texto">🐾 MASCOTA PERDIDA — POR FAVOR AYUDA A ENCONTRARLA</span>
+    </div>
+    <div class="franja-alerta franja-normal" *ngIf="!reportadaPerdida">
+      <span class="alerta-texto">✅ Esta mascota no está reportada como perdida en este momento</span>
     </div>
 
     <!-- Header con foto y datos principales -->
@@ -79,8 +82,8 @@
       </div>
     </div>
 
-    <!-- Botones de contacto -->
-    <div class="contacto-seccion">
+    <!-- Botones de contacto: solo si el dueño reportó la mascota como perdida -->
+    <div class="contacto-seccion" *ngIf="reportadaPerdida">
       <h3 class="seccion-titulo">📞 CONTACTAR AL DUEÑO</h3>
 
       <p class="dueno-nombre" *ngIf="dueno">
@@ -115,6 +118,19 @@
         <p *ngIf="mascota.telefonoEmergencia">
           <a [href]="'tel:' + mascota.telefonoEmergencia">{{ mascota.telefonoEmergencia }}</a>
         </p>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando la mascota no está reportada como perdida -->
+    <div class="contacto-seccion" *ngIf="!reportadaPerdida">
+      <p class="dueno-nombre">
+        El dueño no ha activado el reporte de pérdida, así que su contacto no está disponible públicamente en este momento.
+      </p>
+      <div class="botones-contacto">
+        <ion-button class="btn-compartir" fill="outline" expand="block" (click)="compartir()">
+          <ion-icon name="share-outline" slot="start"></ion-icon>
+          Compartir ficha
+        </ion-button>
       </div>
     </div>
 
