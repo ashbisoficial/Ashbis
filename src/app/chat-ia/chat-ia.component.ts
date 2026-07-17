@@ -131,20 +131,9 @@ export class ChatIaComponent implements OnInit {
     this.mensaje = '';
     this.cargando = true;
 
-    const systemPrompt = `
-Eres Ashbis IA, un asistente veterinario especializado ÚNICAMENTE en mascotas.
-Solo puedes responder preguntas sobre: salud animal, alimentación, vacunas, medicamentos,
-comportamiento, cuidados, emergencias veterinarias y bienestar animal.
-Si te preguntan algo fuera de ese ámbito, responde amablemente que solo puedes ayudar con temas de mascotas.
-Responde en español, en texto plano sin asteriscos ni markdown.
-Sé conciso (máximo 10 líneas) pero informativo.
-Siempre recomienda visitar a un veterinario ante síntomas graves.
-Contexto: Tema=${this.categoriaSeleccionada}, Mascota=${this.mascotaSeleccionada}.
-`.trim();
-
     try {
       const resp = await this.aiProxy.sendMessage(
-        `${systemPrompt}\n\nPregunta del usuario: ${texto}`,
+        texto,
         this.categoriaSeleccionada,
         this.mascotaSeleccionada
       );
