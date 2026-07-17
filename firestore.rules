@@ -53,7 +53,12 @@ service cloud.firestore {
       }
 
       match /publico/{docId} {
-        allow read:   if true;
+        // La ficha pública del carnet/QR la sirve la Cloud Function
+        // getCarnetPublico con el Admin SDK (que ignora estas reglas), así
+        // que el cliente nunca necesita leer esto directo. Si fuera "true",
+        // cualquiera podría hacer un collectionGroup('publico') y descargar
+        // nombre/apellido/teléfono de todos los usuarios de la app.
+        allow read:   if isUser(uid);
         allow write:  if isUser(uid) && noLongStrings(request.resource.data);
       }
     }
@@ -108,7 +113,12 @@ service cloud.firestore {
     }
 
     match /public_qr/{tipo}/tokens/{token} {
-      allow read:   if true;
+      // El escaneo público del QR (carnet/perdida) lo sirve la Cloud
+      // Function getCarnetPublico con el Admin SDK, que ignora estas
+      // reglas — el cliente solo necesita leer/escribir sus propios
+      // tokens. Con "true" cualquiera podía listar la colección completa
+      // y obtener mascotaId + ownerId de cada mascota de la app.
+      allow read:   if isAuth() && resource.data.ownerId == request.auth.uid;
       allow create: if isAuth()
                     && request.resource.data.ownerId == request.auth.uid;
       allow update: if isAuth()
