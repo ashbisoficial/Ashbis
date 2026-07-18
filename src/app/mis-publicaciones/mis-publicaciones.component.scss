@@ -10,6 +10,18 @@
     font-size: 12.5px;
     line-height: 1.4;
     color: var(--ion-color-medium-shade);
+
+    // Ionic trunca el texto del label a una sola línea con "..." por
+    // defecto; acá el texto es largo a propósito (incluye el enlace a los
+    // términos), así que se fuerza a que haga salto de línea normal.
+    &::part(label) {
+      white-space: normal;
+    }
+  }
+
+  a {
+    color: #ff5252;
+    text-decoration: underline;
   }
 }
 

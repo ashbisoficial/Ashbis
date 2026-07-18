@@ -68,10 +68,15 @@
 
         <div class="veracidad-check">
           <ion-checkbox formControlName="aceptaVeracidad" labelPlacement="end" justify="start">
-            Confirmo que la información y las fotos de esta publicación son reales y
-            verídicas. Entiendo que si se determina que se trata de una estafa, un
-            fraude, o un intento de dañar la imagen de Ashbis o de sus usuarios,
-            seré responsable legal y podré ser sancionado con una multa y una demanda.
+            Confirmo que la información y las fotos de esta publicación son reales, y
+            acepto los
+            <a
+              href="/terminos"
+              target="_blank"
+              rel="noopener"
+              (click)="$event.stopPropagation()"
+            >Términos y condiciones de publicación</a>,
+            incluyendo las sanciones por fraude o información falsa.
           </ion-checkbox>
         </div>
 
