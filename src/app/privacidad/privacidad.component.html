@@ -7,70 +7,95 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
-  <h2>Política de Privacidad</h2>
-  <p><strong>Última actualización:</strong> julio 2026</p>
-  <p><strong>Responsable del tratamiento:</strong> Equipo Ashbis</p>
-  <p><strong>Contacto:</strong> ashbis.oficial@gmail.com</p>
+<ion-content class="ion-padding legal-content">
+  <div class="legal-container" id="top">
+    <h2 class="legal-title">Política de Privacidad</h2>
 
-  <h3>1. Datos que recopilamos</h3>
-  <p>Recopilamos los siguientes datos personales:</p>
-  <ul>
-    <li>Nombre, apellido, teléfono y email al registrarte</li>
-    <li>Información de tus mascotas: nombre, especie, raza, fecha de nacimiento, fotos</li>
-    <li>Historial de salud: vacunas, medicamentos, exámenes, citas veterinarias</li>
-    <li>Ubicación aproximada para mostrar veterinarias cercanas (solo cuando usas el mapa)</li>
-  </ul>
+    <div class="legal-meta">
+      <span><strong>Última actualización:</strong> julio 2026</span>
+      <span><strong>Responsable del tratamiento:</strong> Equipo Ashbis</span>
+      <span><strong>Contacto:</strong> ashbis.oficial@gmail.com</span>
+    </div>
 
-  <h3>2. Finalidad del tratamiento</h3>
-  <p>Usamos tus datos para:</p>
-  <ul>
-    <li>Proveer el servicio de gestión de salud de mascotas</li>
-    <li>Generar códigos QR de identificación y emergencia</li>
-    <li>Enviarte recordatorios de vacunas y citas (si activas las notificaciones)</li>
-    <li>Mostrar veterinarias y tiendas cercanas a tu ubicación</li>
-    <li>Mejorar la aplicación mediante análisis de uso anónimo</li>
-  </ul>
+    <nav class="legal-indice">
+      <p>En esta página</p>
+      <ol>
+        <li><a href="#p1" (click)="ir('p1', $event)">1. Datos que recopilamos</a></li>
+        <li><a href="#p2" (click)="ir('p2', $event)">2. Finalidad del tratamiento</a></li>
+        <li><a href="#p3" (click)="ir('p3', $event)">3. Base legal</a></li>
+        <li><a href="#p4" (click)="ir('p4', $event)">4. Transferencia internacional</a></li>
+        <li><a href="#p5" (click)="ir('p5', $event)">5. Compartición de datos</a></li>
+        <li><a href="#p6" (click)="ir('p6', $event)">6. QR público de emergencia</a></li>
+        <li><a href="#p7" (click)="ir('p7', $event)">7. Tus derechos</a></li>
+        <li><a href="#p8" (click)="ir('p8', $event)">8. Retención de datos</a></li>
+        <li><a href="#p9" (click)="ir('p9', $event)">9. Seguridad</a></li>
+        <li><a href="#p10" (click)="ir('p10', $event)">10. Menores de edad</a></li>
+        <li><a href="#p11" (click)="ir('p11', $event)">11. Cambios a esta política</a></li>
+        <li><a href="#p12" (click)="ir('p12', $event)">12. Contacto</a></li>
+      </ol>
+    </nav>
 
-  <h3>3. Base legal</h3>
-  <p>El tratamiento de tus datos se basa en tu consentimiento explícito otorgado al registrarte, conforme a la Ley N° 19.628 sobre Protección de la Vida Privada de Chile y en cumplimiento de la futura Ley N° 21.719.</p>
+    <h3 id="p1">1. Datos que recopilamos</h3>
+    <p>Recopilamos los siguientes datos personales:</p>
+    <ul>
+      <li>Nombre, apellido, teléfono y email al registrarte</li>
+      <li>Información de tus mascotas: nombre, especie, raza, fecha de nacimiento, fotos</li>
+      <li>Historial de salud: vacunas, medicamentos, exámenes, citas veterinarias</li>
+      <li>Ubicación aproximada para mostrar veterinarias cercanas (solo cuando usas el mapa)</li>
+    </ul>
 
-  <h3>4. Transferencia internacional de datos</h3>
-  <p>Ashbis utiliza Firebase (Google LLC, EE.UU.) para almacenar datos. Google cuenta con certificaciones de seguridad SOC2 e ISO 27001. Al usar Ashbis consientes esta transferencia internacional de datos.</p>
+    <h3 id="p2">2. Finalidad del tratamiento</h3>
+    <p>Usamos tus datos para:</p>
+    <ul>
+      <li>Proveer el servicio de gestión de salud de mascotas</li>
+      <li>Generar códigos QR de identificación y emergencia</li>
+      <li>Enviarte recordatorios de vacunas y citas (si activas las notificaciones)</li>
+      <li>Mostrar veterinarias y tiendas cercanas a tu ubicación</li>
+      <li>Mejorar la aplicación mediante análisis de uso anónimo</li>
+    </ul>
 
-  <h3>5. Compartición de datos</h3>
-  <p>No vendemos ni compartimos tus datos personales con terceros con fines comerciales. Tus datos solo se comparten con:</p>
-  <ul>
-    <li>Google Firebase (infraestructura técnica)</li>
-    <li>Google Places API (búsqueda de veterinarias, solo ubicación aproximada)</li>
-    <li>Anthropic (procesamiento del asistente IA, sin datos de identificación personal)</li>
-  </ul>
+    <h3 id="p3">3. Base legal</h3>
+    <p>El tratamiento de tus datos se basa en tu consentimiento explícito otorgado al registrarte, conforme a la Ley N° 19.628 sobre Protección de la Vida Privada de Chile y en cumplimiento de la futura Ley N° 21.719.</p>
 
-  <h3>6. QR público de emergencia</h3>
-  <p>El QR de emergencia de tu mascota muestra únicamente los datos que tú elijas hacer visibles (nombre de mascota, teléfono de contacto, alertas médicas). Puedes desactivarlo o modificarlo en cualquier momento desde la app.</p>
+    <h3 id="p4">4. Transferencia internacional de datos</h3>
+    <p>Ashbis utiliza Firebase (Google LLC, EE.UU.) para almacenar datos. Google cuenta con certificaciones de seguridad SOC2 e ISO 27001. Al usar Ashbis consientes esta transferencia internacional de datos.</p>
 
-  <h3>7. Tus derechos</h3>
-  <p>Tienes derecho a:</p>
-  <ul>
-    <li><strong>Acceder</strong> a tus datos desde tu perfil en la app</li>
-    <li><strong>Rectificar</strong> datos incorrectos editando tu perfil</li>
-    <li><strong>Eliminar</strong> todos tus datos usando "Eliminar mi cuenta y datos" en Perfil</li>
-    <li><strong>Revocar</strong> el consentimiento en cualquier momento eliminando tu cuenta</li>
-    <li><strong>Portabilidad</strong> — solicitar una copia de tus datos a ashbis.oficial@gmail.com</li>
-  </ul>
+    <h3 id="p5">5. Compartición de datos</h3>
+    <p>No vendemos ni compartimos tus datos personales con terceros con fines comerciales. Tus datos solo se comparten con:</p>
+    <ul>
+      <li>Google Firebase (infraestructura técnica)</li>
+      <li>Google Places API (búsqueda de veterinarias, solo ubicación aproximada)</li>
+      <li>Anthropic (procesamiento del asistente IA, sin datos de identificación personal)</li>
+    </ul>
 
-  <h3>8. Retención de datos</h3>
-  <p>Tus datos se conservan mientras mantengas una cuenta activa. Al eliminar tu cuenta, todos tus datos se borran permanentemente de nuestros servidores en un plazo máximo de 30 días.</p>
+    <h3 id="p6">6. QR público de emergencia</h3>
+    <p>El QR de emergencia de tu mascota muestra únicamente los datos que tú elijas hacer visibles (nombre de mascota, teléfono de contacto, alertas médicas). Puedes desactivarlo o modificarlo en cualquier momento desde la app.</p>
 
-  <h3>9. Seguridad</h3>
-  <p>Protegemos tus datos mediante autenticación Firebase, reglas de acceso estrictas, cifrado en tránsito (HTTPS) y almacenamiento seguro en Google Cloud.</p>
+    <h3 id="p7">7. Tus derechos</h3>
+    <p>Tienes derecho a:</p>
+    <ul>
+      <li><strong>Acceder</strong> a tus datos desde tu perfil en la app</li>
+      <li><strong>Rectificar</strong> datos incorrectos editando tu perfil</li>
+      <li><strong>Eliminar</strong> todos tus datos usando "Eliminar mi cuenta y datos" en Perfil</li>
+      <li><strong>Revocar</strong> el consentimiento en cualquier momento eliminando tu cuenta</li>
+      <li><strong>Portabilidad</strong> — solicitar una copia de tus datos a ashbis.oficial@gmail.com</li>
+    </ul>
 
-  <h3>10. Menores de edad</h3>
-  <p>Ashbis no está dirigida a menores de 14 años. Si eres menor de 14 años, necesitas autorización de tu tutor legal para usar la app.</p>
+    <h3 id="p8">8. Retención de datos</h3>
+    <p>Tus datos se conservan mientras mantengas una cuenta activa. Al eliminar tu cuenta, todos tus datos se borran permanentemente de nuestros servidores en un plazo máximo de 30 días.</p>
 
-  <h3>11. Cambios a esta política</h3>
-  <p>Notificaremos cambios relevantes por email con al menos 15 días de anticipación.</p>
+    <h3 id="p9">9. Seguridad</h3>
+    <p>Protegemos tus datos mediante autenticación Firebase, reglas de acceso estrictas, cifrado en tránsito (HTTPS) y almacenamiento seguro en Google Cloud.</p>
 
-  <h3>12. Contacto</h3>
-  <p>Para ejercer tus derechos o resolver dudas sobre privacidad: <a href="mailto:ashbis.oficial@gmail.com">ashbis.oficial@gmail.com</a></p>
+    <h3 id="p10">10. Menores de edad</h3>
+    <p>Ashbis no está dirigida a menores de 14 años. Si eres menor de 14 años, necesitas autorización de tu tutor legal para usar la app.</p>
+
+    <h3 id="p11">11. Cambios a esta política</h3>
+    <p>Notificaremos cambios relevantes por email con al menos 15 días de anticipación.</p>
+
+    <h3 id="p12">12. Contacto</h3>
+    <p>Para ejercer tus derechos o resolver dudas sobre privacidad: <a href="mailto:ashbis.oficial@gmail.com">ashbis.oficial@gmail.com</a></p>
+
+    <a href="#top" (click)="ir('top', $event)" class="legal-volver">↑ Volver arriba</a>
+  </div>
 </ion-content>
