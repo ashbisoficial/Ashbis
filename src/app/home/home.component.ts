@@ -8,7 +8,7 @@ import {
   IonCard, IonButton, IonIcon, IonCardContent, IonContent, IonSpinner,
   IonInput, IonItem, IonLabel, IonTextarea
 } from '@ionic/angular/standalone';
-import { ToastController } from '@ionic/angular';
+import { AlertController, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { map, switchMap, take } from 'rxjs/operators';
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -22,6 +22,7 @@ import {
 } from 'ionicons/icons';
 import { register } from 'swiper/element/bundle';
 import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
+import { Models } from '../models/models';
 import { firstValueFrom, of, Subject, takeUntil } from 'rxjs';
 import { User } from '@angular/fire/auth';
 import { environment } from 'src/environments/environment';
@@ -86,7 +87,7 @@ addIcons({
     IonCard, IonButton, IonIcon, IonCardContent, IonContent, IonSpinner,
     IonInput, IonItem, IonLabel, IonTextarea
   ],
-  providers: [ToastController],
+  providers: [ToastController, AlertController],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class HomePage implements OnInit, OnDestroy {
@@ -94,6 +95,7 @@ export class HomePage implements OnInit, OnDestroy {
   private auth            = inject(AuthenticationService);
   private router          = inject(Router);
   private toastController = inject(ToastController);
+  private alertController = inject(AlertController);
   private firestoreService= inject(FirestoreService);
   private injector        = inject(EnvironmentInjector);
 
@@ -139,6 +141,11 @@ export class HomePage implements OnInit, OnDestroy {
     { src: 'assets/img/10.jpg', titulo: 'Evento 4' },
   ];
 
+  // Feed público de publicaciones de refugios (adopción/recolección/
+  // donación). Si no hay ninguna activa, el carrusel de abajo muestra las
+  // imágenes genéricas de imagenesCarruselInferior en su lugar.
+  publicacionesActivas: Models.Publicaciones.Publicacion[] = [];
+
   constructor() {
     addIcons({ chatbubblesOutline, locateOutline, bagOutline });
   }
@@ -147,6 +154,30 @@ export class HomePage implements OnInit, OnDestroy {
   ngOnInit() {
     this.cargarLeaflet().then(() => this.initMap());
     this.cargarVeterinariasFavoritas();
+    this.cargarPublicacionesActivas();
+  }
+
+  private cargarPublicacionesActivas() {
+    runInInjectionContext(this.injector, () =>
+      this.firestoreService.getPublicacionesActivas()
+    ).pipe(takeUntil(this.destroy$))
+      .subscribe(pubs => this.publicacionesActivas = pubs);
+  }
+
+  async verPublicacion(pub: Models.Publicaciones.Publicacion): Promise<void> {
+    const etiquetasTipo: Record<Models.Publicaciones.TipoPublicacion, string> = {
+      adopcion: '🐾 Adopción',
+      recoleccion: '📋 Recolección',
+      donacion: '💛 Donación',
+      otro: '📌 Otro',
+    };
+    const alert = await this.alertController.create({
+      header: pub.titulo,
+      subHeader: `${etiquetasTipo[pub.tipo]} · ${pub.nombreAutor}`,
+      message: pub.descripcion,
+      buttons: ['Cerrar'],
+    });
+    await alert.present();
   }
 
   ngOnDestroy() {

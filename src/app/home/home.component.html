@@ -212,7 +212,9 @@
 
   </ion-card>
 
-  <!-- CARRUSEL INFERIOR -->
+  <!-- CARRUSEL INFERIOR: publicaciones activas de refugios (adopción,
+       recolección, donación), o imágenes genéricas si todavía no hay
+       ninguna publicada. -->
   <div class="carrusel-inferior-wrapper">
     <swiper-container
       slides-per-view="2.2"
@@ -221,11 +223,21 @@
       autoplay-delay="3000"
       autoplay-disable-on-interaction="false"
     >
-      <swiper-slide *ngFor="let img of imagenesCarruselInferior">
-        <div class="slide-content-inferior">
-          <img [src]="img.src" [alt]="img.titulo || 'slide'" />
-        </div>
-      </swiper-slide>
+      <ng-container *ngIf="publicacionesActivas.length; else carruselGenerico">
+        <swiper-slide *ngFor="let pub of publicacionesActivas" (click)="verPublicacion(pub)">
+          <div class="slide-content-inferior">
+            <img [src]="pub.fotoUrl || 'assets/img/9.jpg'" [alt]="pub.titulo" />
+            <span class="slide-titulo">{{ pub.titulo }}</span>
+          </div>
+        </swiper-slide>
+      </ng-container>
+      <ng-template #carruselGenerico>
+        <swiper-slide *ngFor="let img of imagenesCarruselInferior">
+          <div class="slide-content-inferior">
+            <img [src]="img.src" [alt]="img.titulo || 'slide'" />
+          </div>
+        </swiper-slide>
+      </ng-template>
     </swiper-container>
   </div>
 

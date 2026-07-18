@@ -1,6 +1,4 @@
-/* En teléfono ocupa todo el ancho; en tablet/desktop centra el
-   contenido en una columna, en vez de estirar el mapa y el carrusel
-   a lo ancho de toda la pantalla. */
+/* En tablet/desktop centra el contenido en columna, sin estirar a lo ancho. */
 .home-container {
   width: 100%;
 }
@@ -12,10 +10,7 @@
   }
 }
 
-/* ------------------------------ HEADER --------------------- */
-
-
-
+/* HEADER */
 .header-menu {
   --background: #000000;
   border-bottom: 3px solid #8b0808;
@@ -48,7 +43,7 @@
   .logo-header { height: 44px; }
 }
 
-/* ------------------------------ CARRUSEL ---------------------------------- */
+/* CARRUSEL */
 
 swiper-container {
   width: 100%;
@@ -83,7 +78,7 @@ swiper-slide {
 @media (max-width: 600px) { swiper-container { height: 200px; } }
 @media (max-width: 480px) { swiper-container { height: 180px; } }
 
-/* ------------------------------ MAPA LEAFLET -------------------------------- */
+/* MAPA LEAFLET */
 
 .map-container {
   width: 100%;
@@ -109,7 +104,7 @@ swiper-slide {
   z-index: 0 !important;
 }
 
-/* ------------------------------ SPINNER -------------------------------- */
+/* SPINNER */
 
 .spinner-container {
   display: flex;
@@ -121,7 +116,7 @@ swiper-slide {
   font-size: 14px;
 }
 
-/* ----------------------- BOTONES  ---------------------------- */
+/* BOTONES */
 .btn-ashbis {
   --background: #8b0808;
   --background-hover: #b91c1c;
@@ -269,6 +264,7 @@ ion-button[color="danger"] {
 }
 
 .slide-content-inferior {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
@@ -282,6 +278,18 @@ ion-button[color="danger"] {
   object-fit: cover;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+.slide-titulo {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 5px 8px;
+  background: linear-gradient(transparent, rgba(0,0,0,.75));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 /* ===== LEYENDA MAPA ===== */
