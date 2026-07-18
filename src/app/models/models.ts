@@ -140,32 +140,98 @@ export namespace Models {
       notas?: string;
       creadoPor: string;
     }
+
+    /**
+     * Subcolección mascotas/{id}/colaboradores: acceso compartido al perfil
+     * de una mascota puntual sin cambiar de dueño (hogar temporal). Se crea
+     * al aceptar una Transferencia de tipo 'hogar_temporal'.
+     */
+    export interface ColaboradorMascota {
+      uid: string;
+      nombre: string;
+      email: string;
+      tipo: 'hogar_temporal';
+      agregadoEn?: any;
+    }
   }
 
-  // ─── TRANSFERENCIAS DE DUEÑO (adopción/hogar temporal) ─────────────────────
+  // ─── TRANSFERENCIAS DE DUEÑO (adopción) Y HOGAR TEMPORAL ───────────────────
   export namespace Transferencias {
     export const PathTransferencias = 'transferencias';
 
     export type EstadoTransferencia = 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada';
 
     /**
-     * Solicitud de cambio de dueño de una mascota (típicamente iniciada por
-     * un refugio al dar una mascota en adopción u hogar temporal). Solo
-     * cambia el uidUsuario de la mascota cuando el destinatario la acepta
-     * — nunca se reasigna de forma unilateral.
+     * 'adopcion': se entrega la mascota por completo — al aceptar, cambia
+     * mascotas/{id}.uidUsuario al nuevo dueño (con todo su historial).
+     * 'hogar_temporal': acceso compartido, NO cambia de dueño — al aceptar,
+     * se agrega a quien acepta como colaborador en
+     * mascotas/{id}/colaboradores/{uid}, y el refugio sigue siendo el dueño
+     * legal. Pensado para hogares temporales o foster.
+     */
+    export type TipoTransferencia = 'adopcion' | 'hogar_temporal';
+
+    /**
+     * Solicitud de cambio de dueño o de acceso compartido de una mascota,
+     * iniciada por quien la tiene hoy (típicamente un refugio). Solo se
+     * concreta cuando el destinatario la acepta — nunca de forma unilateral.
      */
     export interface Transferencia {
       id?: string;
+      tipo: TipoTransferencia;
       mascotaId: string;
       mascotaNombre: string;
       deUid: string;
       deNombre: string;
-      /** Email de quien recibe la mascota. Así se puede invitar sin conocer el uid de antemano. */
+      /** Email de quien recibe la mascota/acceso. Así se puede invitar sin conocer el uid de antemano. */
       paraEmail: string;
       /** Se completa recién cuando la transferencia se acepta. */
       paraUid?: string;
       estado: EstadoTransferencia;
       mensaje?: string;
+      createdAt?: any;
+      resueltaEn?: any;
+    }
+  }
+
+  // ─── EQUIPO DE REFUGIO (varias personas operando la misma cuenta) ──────────
+  export namespace Equipo {
+    export const PathInvitaciones = 'invitacionesEquipo';
+    export const PathMiembros = 'miembros'; // subcolección de usuarios/{refugioUid}/miembros
+
+    export type RolEquipo = 'admin' | 'staff';
+    export type EstadoInvitacion = 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada';
+
+    /**
+     * Documento en usuarios/{refugioUid}/miembros/{uid}. refugioUid va
+     * duplicado dentro del propio documento (además de estar en la ruta)
+     * para poder hacer un collectionGroup('miembros').where('uid','==', mi
+     * uid) y saber de qué refugios soy miembro sin conocer antes el uid del
+     * refugio.
+     */
+    export interface MiembroEquipo {
+      uid: string;
+      refugioUid: string;
+      nombre: string;
+      email: string;
+      rolEquipo: RolEquipo;
+      agregadoEn?: any;
+    }
+
+    /**
+     * Invitación a sumarse al equipo de un refugio. El refugio (dueño
+     * original o un admin del equipo) invita por email; la persona pasa a
+     * operar la cuenta del refugio recién cuando acepta desde su perfil.
+     * Aceptar lo resuelve la Cloud Function aceptarInvitacionEquipo, que
+     * crea el documento en usuarios/{refugioUid}/miembros/{uid}.
+     */
+    export interface InvitacionEquipo {
+      id?: string;
+      refugioUid: string;
+      refugioNombre: string;
+      paraEmail: string;
+      rolEquipo: RolEquipo;
+      estado: EstadoInvitacion;
       createdAt?: any;
       resueltaEn?: any;
     }

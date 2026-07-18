@@ -1,13 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import {
   Firestore,
-  collection, collectionData, deleteDoc, doc, getDoc,
+  collection, collectionData, collectionGroup, deleteDoc, doc, getDoc,
   serverTimestamp, setDoc, updateDoc, docData, addDoc,
   query, where, orderBy, CollectionReference,
   arrayUnion, arrayRemove,
 } from '@angular/fire/firestore';
 import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
-import { Observable } from 'rxjs';
+import { Observable, combineLatest, map, of, switchMap } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Auth } from '@angular/fire/auth';
 import { SecurityService } from 'src/app/services/security.service';
@@ -141,10 +141,39 @@ export class FirestoreService {
 
   // ── Mascotas ─────────────────────────────────────────────────────────────────
 
-  getUserPets(uid: string): Observable<Mascota[]> {
+  private getUserPetsPropios(uid: string): Observable<Mascota[]> {
     const r = collection(this.firestore, 'mascotas') as CollectionReference<Mascota>;
     const q = query(r, where('uidUsuario', '==', uid), orderBy('date', 'desc'));
     return collectionData(q, { idField: 'id' }) as Observable<Mascota[]>;
+  }
+
+  /**
+   * Mascotas propias, más las de cualquier refugio del que uid sea parte
+   * del equipo (mismas que ve el dueño original, sin duplicar entre sí).
+   */
+  getUserPets(uid: string): Observable<Mascota[]> {
+    return this.getMisRefugios(uid).pipe(
+      switchMap(refugioUids => {
+        if (!refugioUids.length) return this.getUserPetsPropios(uid);
+        const fuentes = [uid, ...refugioUids].map(u => this.getUserPetsPropios(u));
+        return combineLatest(fuentes).pipe(
+          map(listas => {
+            const porId = new Map<string, Mascota>();
+            listas.forEach(lista => lista.forEach(m => porId.set(m.id, m)));
+            return Array.from(porId.values());
+          })
+        );
+      })
+    );
+  }
+
+  /** uids de los refugios de cuyo equipo uid forma parte. */
+  getMisRefugios(uid: string): Observable<string[]> {
+    const r = collectionGroup(this.firestore, Models.Equipo.PathMiembros);
+    const q = query(r, where('uid', '==', uid));
+    return collectionData(q).pipe(
+      map(docs => (docs as Models.Equipo.MiembroEquipo[]).map(d => d.refugioUid))
+    );
   }
 
   getPetById(id: string): Observable<Mascota | undefined> {
@@ -474,23 +503,31 @@ export class FirestoreService {
     await deleteDoc(doc(this.firestore, `${Models.Publicaciones.PathPublicaciones}/${id}`));
   }
 
-  // ── Transferencias de dueño (refugio → nuevo dueño) ─────────────────────────
+  // ── Transferencias de dueño (adopción) y hogar temporal ─────────────────────
   // Aceptar una transferencia NO se hace desde acá: requiere la Cloud
-  // Function aceptarTransferencia, porque reasigna mascotas/{id}.uidUsuario
-  // y eso las reglas de Firestore no se lo permiten hacer al cliente.
+  // Function aceptarTransferencia. Para 'adopcion' reasigna
+  // mascotas/{id}.uidUsuario; para 'hogar_temporal' agrega un colaborador
+  // sin cambiar de dueño. Ninguna de las dos cosas se la permiten las
+  // reglas de Firestore al cliente directo.
 
   async crearTransferencia(
+    tipo: Models.Transferencias.TipoTransferencia,
     mascotaId: string,
     mascotaNombre: string,
+    deUid: string,
     deNombre: string,
     paraEmail: string,
     mensaje?: string
   ): Promise<string> {
-    const uid = this.assertAuthenticated();
+    // deUid es el dueño real de la mascota (el refugio), no necesariamente
+    // quien ejecuta la acción: puede ser un miembro del equipo operando en
+    // nombre del refugio.
+    this.assertAuthenticated();
     const clean = this.security.sanitizeFirestoreObject({
+      tipo,
       mascotaId,
       mascotaNombre,
-      deUid: uid,
+      deUid,
       deNombre,
       paraEmail: paraEmail.trim().toLowerCase(),
       estado: 'pendiente' as const,
@@ -529,6 +566,70 @@ export class FirestoreService {
       estado: 'cancelada',
       resueltaEn: serverTimestamp(),
     });
+  }
+
+  // ── Equipo de refugio ────────────────────────────────────────────────────────
+  // Aceptar una invitación NO se hace desde acá: requiere la Cloud Function
+  // aceptarInvitacionEquipo, que crea usuarios/{refugioUid}/miembros/{uid}
+  // después de validar que quien acepta es el destinatario real.
+
+  async crearInvitacionEquipo(
+    refugioUid: string,
+    refugioNombre: string,
+    paraEmail: string,
+    rolEquipo: Models.Equipo.RolEquipo
+  ): Promise<string> {
+    this.assertAuthenticated();
+    const clean = this.security.sanitizeFirestoreObject({
+      refugioUid,
+      refugioNombre,
+      paraEmail: paraEmail.trim().toLowerCase(),
+      rolEquipo,
+      estado: 'pendiente' as const,
+    });
+    const refDoc = doc(collection(this.firestore, Models.Equipo.PathInvitaciones));
+    await setDoc(refDoc, { ...clean, createdAt: serverTimestamp() });
+    return refDoc.id;
+  }
+
+  getInvitacionesEquipoEnviadas(refugioUid: string): Observable<Models.Equipo.InvitacionEquipo[]> {
+    const r = collection(this.firestore, Models.Equipo.PathInvitaciones);
+    const q = query(r, where('refugioUid', '==', refugioUid), orderBy('createdAt', 'desc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Equipo.InvitacionEquipo[]>;
+  }
+
+  getInvitacionesEquipoPendientesParaMi(email: string): Observable<Models.Equipo.InvitacionEquipo[]> {
+    const r = collection(this.firestore, Models.Equipo.PathInvitaciones);
+    const q = query(
+      r,
+      where('paraEmail', '==', email.trim().toLowerCase()),
+      where('estado', '==', 'pendiente')
+    );
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Equipo.InvitacionEquipo[]>;
+  }
+
+  async rechazarInvitacionEquipo(id: string): Promise<void> {
+    await updateDoc(doc(this.firestore, `${Models.Equipo.PathInvitaciones}/${id}`), {
+      estado: 'rechazada',
+      resueltaEn: serverTimestamp(),
+    });
+  }
+
+  async cancelarInvitacionEquipo(id: string): Promise<void> {
+    await updateDoc(doc(this.firestore, `${Models.Equipo.PathInvitaciones}/${id}`), {
+      estado: 'cancelada',
+      resueltaEn: serverTimestamp(),
+    });
+  }
+
+  getMiembrosEquipo(refugioUid: string): Observable<Models.Equipo.MiembroEquipo[]> {
+    const r = collection(this.firestore, `usuarios/${refugioUid}/${Models.Equipo.PathMiembros}`);
+    return collectionData(r) as Observable<Models.Equipo.MiembroEquipo[]>;
+  }
+
+  /** El dueño/admin saca a alguien, o un miembro se va solo (memberUid === su propio uid). */
+  async quitarMiembroEquipo(refugioUid: string, memberUid: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, `usuarios/${refugioUid}/${Models.Equipo.PathMiembros}/${memberUid}`));
   }
 
   // ── Privados ───────────────────────────────────────────────────────────────

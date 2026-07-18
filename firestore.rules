@@ -10,24 +10,53 @@ service cloud.firestore {
       return isAuth() && request.auth.uid == uid;
     }
 
-    function ownsData() {
-      return isAuth() &&
-        request.resource.data.get('uidUsuario', null) == request.auth.uid;
-    }
-
-    function ownsPet(petId) {
-      return isAuth() &&
-        get(/databases/$(database)/documents/mascotas/$(petId)).data.uidUsuario
-          == request.auth.uid;
-    }
-
     // El rol es autodeclarado (ver reglas de /usuarios más abajo): no es una
     // verificación de identidad real, solo evita que cuentas 'usuario'
     // normales usen las funciones de refugio.
-    function esRefugio() {
+    function esCuentaRefugio(uid) {
+      return get(/databases/$(database)/documents/usuarios/$(uid)).data.get('rol', 'usuario') == 'refugio';
+    }
+
+    // ¿"auth" es parte del equipo que opera la cuenta de refugioUid?
+    // (usuarios/{refugioUid}/miembros/{auth.uid} existe)
+    function esMiembroDelRefugio(refugioUid) {
       return isAuth() &&
-        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('rol', 'usuario')
-          == 'refugio';
+        exists(/databases/$(database)/documents/usuarios/$(refugioUid)/miembros/$(request.auth.uid));
+    }
+
+    // Dueño original de la cuenta, o miembro del equipo con rolEquipo 'admin'.
+    function esAdminDelRefugio(refugioUid) {
+      return isUser(refugioUid) ||
+        (isAuth() &&
+         get(/databases/$(database)/documents/usuarios/$(refugioUid)/miembros/$(request.auth.uid))
+           .data.get('rolEquipo', 'staff') == 'admin');
+    }
+
+    // Dueño original, o cualquier miembro del equipo (admin o staff): puede
+    // crear/editar mascotas, publicaciones y transferencias en nombre de la
+    // cuenta de refugio. Eliminar mascotas o gestionar el equipo requiere
+    // esAdminDelRefugio en cambio.
+    function puedeOperarComoRefugio(refugioUid) {
+      return isUser(refugioUid) || esMiembroDelRefugio(refugioUid);
+    }
+
+    // Acceso compartido a UNA mascota puntual (hogar temporal), sin ser
+    // parte del equipo del refugio ni dueño.
+    function esColaboradorMascota(petId) {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/mascotas/$(petId)/colaboradores/$(request.auth.uid));
+    }
+
+    function puedeAccederMascota(petId) {
+      let pet = get(/databases/$(database)/documents/mascotas/$(petId)).data;
+      return puedeOperarComoRefugio(pet.uidUsuario) || esColaboradorMascota(petId);
+    }
+
+    // Puede crear un documento cuyo uidUsuario sea el propio, o el de un
+    // refugio del que forme parte el equipo.
+    function ownsData() {
+      return isAuth() &&
+        puedeOperarComoRefugio(request.resource.data.get('uidUsuario', null));
     }
 
     function noLongStrings(data) {
@@ -80,49 +109,85 @@ service cloud.firestore {
         allow read:   if isUser(uid);
         allow write:  if isUser(uid) && noLongStrings(request.resource.data);
       }
+
+      // Equipo del refugio: quiénes operan esta cuenta además del dueño.
+      match /miembros/{memberUid} {
+        // La condición "resource.data.uid == request.auth.uid" (además de
+        // "isUser(memberUid)", que es lo mismo pero mirando la ruta) es la
+        // que hace falta para poder correr
+        // collectionGroup('miembros').where('uid','==', miUid) — Firestore
+        // necesita que la regla se pueda validar mirando solo el filtro de
+        // la consulta, no la ruta del documento.
+        allow read:   if isUser(uid) || esMiembroDelRefugio(uid)
+                      || isUser(memberUid) || resource.data.uid == request.auth.uid;
+        // Solo la Cloud Function aceptarInvitacionEquipo crea estos docs,
+        // después de validar la invitación por email — nunca el cliente.
+        allow create: if false;
+        allow update: if false;
+        // El dueño/admin puede sacar a cualquiera; un miembro se puede ir solo.
+        allow delete: if esAdminDelRefugio(uid) || isUser(memberUid);
+      }
     }
 
     match /mascotas/{petId} {
-      // Solo el dueño puede leer/escribir su mascota.
-      // Las páginas públicas del QR deben usar Cloud Function con Admin SDK.
-      allow read: if isAuth() && resource.data.uidUsuario == request.auth.uid;
+      // Dueño original, equipo del refugio dueño, o colaborador de hogar
+      // temporal en esta mascota puntual.
+      allow read: if isAuth() && (
+        resource.data.uidUsuario == request.auth.uid ||
+        puedeOperarComoRefugio(resource.data.uidUsuario) ||
+        esColaboradorMascota(petId)
+      );
       allow create: if ownsData() && noLongStrings(request.resource.data);
       allow update: if isAuth()
-                    && resource.data.uidUsuario == request.auth.uid
-                    && request.resource.data.get('uidUsuario', request.auth.uid)
-                       == request.auth.uid
+                    && puedeOperarComoRefugio(resource.data.uidUsuario)
+                    && request.resource.data.get('uidUsuario', resource.data.uidUsuario)
+                       == resource.data.uidUsuario
                     && noLongStrings(request.resource.data);
-      allow delete: if isAuth() && resource.data.uidUsuario == request.auth.uid;
+      // Eliminar una mascota es más delicado que editarla: solo dueño o admin.
+      allow delete: if esAdminDelRefugio(resource.data.uidUsuario);
 
       match /vacunas/{vacunaId} {
-        allow read, write: if ownsPet(petId);
-        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow delete: if ownsPet(petId);
+        allow read, write: if puedeAccederMascota(petId);
+        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow delete: if puedeAccederMascota(petId);
       }
       match /medicamentos/{medId} {
-        allow read: if ownsPet(petId);
-        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow delete: if ownsPet(petId);
+        allow read: if puedeAccederMascota(petId);
+        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow delete: if puedeAccederMascota(petId);
       }
       match /examenes/{examenId} {
-        allow read: if ownsPet(petId);
-        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow delete: if ownsPet(petId);
+        allow read: if puedeAccederMascota(petId);
+        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow delete: if puedeAccederMascota(petId);
       }
       match /citas/{citaId} {
-        allow read: if ownsPet(petId);
-        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow delete: if ownsPet(petId);
+        allow read: if puedeAccederMascota(petId);
+        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow delete: if puedeAccederMascota(petId);
       }
       match /documentos/{docId} {
-        allow read: if ownsPet(petId);
-        allow create: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow update: if ownsPet(petId) && noLongStrings(request.resource.data);
-        allow delete: if ownsPet(petId);
+        allow read: if puedeAccederMascota(petId);
+        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow delete: if puedeAccederMascota(petId);
+      }
+
+      // Hogar temporal: acceso compartido a ESTA mascota, sin cambiar de
+      // dueño. Solo lo crea la Cloud Function aceptarTransferencia (tipo
+      // 'hogar_temporal'), nunca el cliente.
+      match /colaboradores/{colabUid} {
+        allow read:   if puedeAccederMascota(petId);
+        allow create: if false;
+        allow update: if false;
+        // El refugio (dueño/equipo) puede terminar el hogar temporal, o el
+        // colaborador se puede ir solo.
+        allow delete: if puedeOperarComoRefugio(get(/databases/$(database)/documents/mascotas/$(petId)).data.uidUsuario)
+                      || isUser(colabUid);
       }
     }
 
@@ -133,44 +198,48 @@ service cloud.firestore {
 
     match /publicaciones/{postId} {
       // Feed público de adopción/recolección/donación: lo ve cualquiera
-      // (incluso sin cuenta), pero solo un refugio puede publicar, editar
-      // o borrar sus propias publicaciones.
+      // (incluso sin cuenta), pero solo el equipo de un refugio puede
+      // publicar, editar o borrar sus propias publicaciones.
       allow read: if true;
-      allow create: if esRefugio()
-                    && request.resource.data.uidAutor == request.auth.uid
+      allow create: if puedeOperarComoRefugio(request.resource.data.uidAutor)
+                    && esCuentaRefugio(request.resource.data.uidAutor)
                     && request.resource.data.tipo in ['adopcion', 'recoleccion', 'donacion', 'otro']
                     && noLongStrings(request.resource.data);
-      allow update: if esRefugio()
-                    && resource.data.uidAutor == request.auth.uid
-                    && request.resource.data.uidAutor == request.auth.uid
+      allow update: if puedeOperarComoRefugio(resource.data.uidAutor)
+                    && request.resource.data.uidAutor == resource.data.uidAutor
                     && noLongStrings(request.resource.data);
-      allow delete: if esRefugio() && resource.data.uidAutor == request.auth.uid;
+      allow delete: if puedeOperarComoRefugio(resource.data.uidAutor);
     }
 
     match /transferencias/{transferId} {
-      // Un refugio inicia la transferencia de una mascota que le pertenece
-      // hacia el email de un futuro dueño. Rechazar/cancelar es un simple
-      // cambio de estado permitido por el cliente. Aceptar NUNCA lo hace el
-      // cliente: reasigna el uidUsuario de la mascota, y eso solo lo hace
-      // la Cloud Function aceptarTransferencia con el Admin SDK, después de
-      // validar que quien acepta es realmente el destinatario.
+      // Un refugio (dueño o equipo) inicia la transferencia de una mascota
+      // que le pertenece hacia el email de otra persona. tipo='adopcion'
+      // entrega la mascota por completo; tipo='hogar_temporal' solo da
+      // acceso compartido. Rechazar/cancelar es un simple cambio de estado
+      // permitido por el cliente. Aceptar NUNCA lo hace el cliente: reasigna
+      // uidUsuario (adopción) o crea el colaborador (hogar temporal), y eso
+      // solo lo hace la Cloud Function aceptarTransferencia con el Admin
+      // SDK, después de validar que quien acepta es realmente el
+      // destinatario.
       function soloCambiaEstado() {
-        return request.resource.data.mascotaId     == resource.data.mascotaId &&
-               request.resource.data.mascotaNombre == resource.data.mascotaNombre &&
-               request.resource.data.deUid         == resource.data.deUid &&
-               request.resource.data.deNombre      == resource.data.deNombre &&
-               request.resource.data.paraEmail     == resource.data.paraEmail;
+        return request.resource.data.tipo           == resource.data.tipo &&
+               request.resource.data.mascotaId       == resource.data.mascotaId &&
+               request.resource.data.mascotaNombre   == resource.data.mascotaNombre &&
+               request.resource.data.deUid           == resource.data.deUid &&
+               request.resource.data.deNombre        == resource.data.deNombre &&
+               request.resource.data.paraEmail       == resource.data.paraEmail;
       }
 
       allow read: if isAuth() &&
-        (resource.data.deUid == request.auth.uid ||
+        (puedeOperarComoRefugio(resource.data.deUid) ||
          resource.data.paraEmail == request.auth.token.email);
 
-      allow create: if esRefugio()
-                    && request.resource.data.deUid == request.auth.uid
+      allow create: if puedeOperarComoRefugio(request.resource.data.deUid)
+                    && esCuentaRefugio(request.resource.data.deUid)
+                    && request.resource.data.tipo in ['adopcion', 'hogar_temporal']
                     && request.resource.data.estado == 'pendiente'
                     && get(/databases/$(database)/documents/mascotas/$(request.resource.data.mascotaId)).data.uidUsuario
-                       == request.auth.uid
+                       == request.resource.data.deUid
                     && noLongStrings(request.resource.data);
 
       // Rechazar: solo el destinatario, mientras siga pendiente.
@@ -180,12 +249,49 @@ service cloud.firestore {
                     && request.resource.data.estado == 'rechazada'
                     && soloCambiaEstado();
 
-      // Cancelar: solo quien la creó, mientras siga pendiente.
-      allow update: if isAuth()
-                    && request.auth.uid == resource.data.deUid
+      // Cancelar: el refugio (dueño o equipo), mientras siga pendiente.
+      allow update: if puedeOperarComoRefugio(resource.data.deUid)
                     && resource.data.estado == 'pendiente'
                     && request.resource.data.estado == 'cancelada'
                     && soloCambiaEstado();
+
+      allow delete: if false;
+    }
+
+    match /invitacionesEquipo/{inviteId} {
+      // Un refugio (dueño o admin del equipo) invita por email a alguien a
+      // sumarse a operar la cuenta. Aceptar lo resuelve la Cloud Function
+      // aceptarInvitacionEquipo (crea usuarios/{refugioUid}/miembros/{uid}),
+      // nunca el cliente directo.
+      function soloCambiaEstadoInvitacion() {
+        return request.resource.data.refugioUid    == resource.data.refugioUid &&
+               request.resource.data.refugioNombre == resource.data.refugioNombre &&
+               request.resource.data.paraEmail     == resource.data.paraEmail &&
+               request.resource.data.rolEquipo     == resource.data.rolEquipo;
+      }
+
+      allow read: if isAuth() &&
+        (puedeOperarComoRefugio(resource.data.refugioUid) ||
+         resource.data.paraEmail == request.auth.token.email);
+
+      allow create: if esAdminDelRefugio(request.resource.data.refugioUid)
+                    && esCuentaRefugio(request.resource.data.refugioUid)
+                    && request.resource.data.estado == 'pendiente'
+                    && request.resource.data.rolEquipo in ['admin', 'staff']
+                    && noLongStrings(request.resource.data);
+
+      // Rechazar: solo el destinatario, mientras siga pendiente.
+      allow update: if isAuth()
+                    && request.auth.token.email == resource.data.paraEmail
+                    && resource.data.estado == 'pendiente'
+                    && request.resource.data.estado == 'rechazada'
+                    && soloCambiaEstadoInvitacion();
+
+      // Cancelar: el refugio (dueño o admin), mientras siga pendiente.
+      allow update: if esAdminDelRefugio(resource.data.refugioUid)
+                    && resource.data.estado == 'pendiente'
+                    && request.resource.data.estado == 'cancelada'
+                    && soloCambiaEstadoInvitacion();
 
       allow delete: if false;
     }

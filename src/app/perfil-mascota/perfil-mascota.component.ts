@@ -97,11 +97,30 @@ editarPerfil() {
     const m = this.mascota();
     if (!m?.id) return;
 
-    const alert = await this.alertCtrl.create({
+    const tipoAlert = await this.alertCtrl.create({
       header: `Transferir a ${m.nombre}`,
-      message: 'El nuevo dueño recibirá una solicitud en su perfil. La mascota solo pasa a su cuenta cuando él la acepta.',
+      message: 'Adopción: se entrega la mascota por completo, con todo su historial. Hogar temporal: acceso compartido, la mascota sigue siendo tuya.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Hogar temporal', handler: () => this.pedirDatosTransferencia(m, 'hogar_temporal') },
+        { text: 'Adopción completa', handler: () => this.pedirDatosTransferencia(m, 'adopcion') },
+      ]
+    });
+    await tipoAlert.present();
+  }
+
+  private async pedirDatosTransferencia(
+    m: Mascota,
+    tipo: 'adopcion' | 'hogar_temporal'
+  ): Promise<void> {
+    const esAdopcion = tipo === 'adopcion';
+    const alert = await this.alertCtrl.create({
+      header: esAdopcion ? `Adopción de ${m.nombre}` : `Hogar temporal para ${m.nombre}`,
+      message: esAdopcion
+        ? 'El nuevo dueño recibirá una solicitud en su perfil. La mascota (con todo su historial) solo pasa a su cuenta cuando la acepte.'
+        : 'La persona recibirá una solicitud en su perfil. Al aceptar, comparte acceso al perfil e historial de la mascota, pero vos seguís como dueño/a.',
       inputs: [
-        { name: 'email', type: 'email', placeholder: 'Email del nuevo dueño' },
+        { name: 'email', type: 'email', placeholder: `Email de ${esAdopcion ? 'quien la adopta' : 'quien la va a cuidar'}` },
         { name: 'mensaje', type: 'textarea', placeholder: 'Mensaje (opcional)' },
       ],
       buttons: [
@@ -121,16 +140,21 @@ editarPerfil() {
                 || `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
                 || 'Un refugio';
               await this.fs.crearTransferencia(
+                tipo,
                 m.id!,
                 m.nombre,
+                m.uidUsuario,
                 deNombre,
                 email,
                 data.mensaje ? this.security.sanitizeText(data.mensaje, 500) : undefined
               );
-              await this.presentToast('Solicitud de transferencia enviada.', 'success');
+              await this.presentToast(
+                esAdopcion ? 'Solicitud de adopción enviada.' : 'Solicitud de hogar temporal enviada.',
+                'success'
+              );
               return true;
             } catch {
-              await this.presentToast('No se pudo enviar la transferencia. Intenta nuevamente.', 'danger');
+              await this.presentToast('No se pudo enviar la solicitud. Intenta nuevamente.', 'danger');
               return false;
             }
           }

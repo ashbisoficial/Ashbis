@@ -111,6 +111,12 @@ export class PerfilComponent implements OnDestroy {
   transferenciasPendientes: Models.Transferencias.Transferencia[] = [];
   transferenciasEnviadas: Models.Transferencias.Transferencia[] = [];
 
+  invitacionesEquipoPendientes: Models.Equipo.InvitacionEquipo[] = [];
+  invitacionesEquipoEnviadas: Models.Equipo.InvitacionEquipo[] = [];
+  miembrosEquipo: Models.Equipo.MiembroEquipo[] = [];
+  refugiosEnLosQueColaboro: string[] = [];
+  nombresRefugios: Record<string, string> = {};
+
   /** Vista previa local mientras se sube una foto nueva (antes de que Firestore confirme el cambio) */
   fotoPreview: string | null = null;
 
@@ -153,11 +159,16 @@ export class PerfilComponent implements OnDestroy {
           };
           this.getDatosProfile(res.uid);
           this.cargarTransferencias(res.uid, res.email);
+          this.cargarEquipo(res.uid, res.email);
         } else {
           this.user = null;
           this.user_profile = undefined;
           this.transferenciasPendientes = [];
           this.transferenciasEnviadas = [];
+          this.invitacionesEquipoPendientes = [];
+          this.invitacionesEquipoEnviadas = [];
+          this.miembrosEquipo = [];
+          this.refugiosEnLosQueColaboro = [];
           this.cargando = false;
         }
       });
@@ -174,6 +185,33 @@ export class PerfilComponent implements OnDestroy {
     this.firestoreService.getTransferenciasEnviadas(uid)
       .pipe(takeUntil(this.destroy$))
       .subscribe(t => this.transferenciasEnviadas = t.filter(tr => tr.estado === 'pendiente'));
+  }
+
+  private cargarEquipo(uid: string, email: string | null): void {
+    if (email) {
+      this.firestoreService.getInvitacionesEquipoPendientesParaMi(email)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(inv => this.invitacionesEquipoPendientes = inv);
+    }
+    // Mi propio equipo (si soy refugio): invitaciones enviadas + miembros.
+    this.firestoreService.getInvitacionesEquipoEnviadas(uid)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(inv => this.invitacionesEquipoEnviadas = inv.filter(i => i.estado === 'pendiente'));
+    this.firestoreService.getMiembrosEquipo(uid)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(m => this.miembrosEquipo = m);
+    // Equipos de refugios ajenos de los que formo parte.
+    this.firestoreService.getMisRefugios(uid)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(refugios => {
+        this.refugiosEnLosQueColaboro = refugios;
+        refugios.forEach(refugioUid => {
+          if (this.nombresRefugios[refugioUid]) return;
+          this.firestoreService.getDocument(`usuarios/${refugioUid}`).then(perfil => {
+            this.nombresRefugios[refugioUid] = perfil?.nombreRefugio?.trim() || 'Refugio';
+          });
+        });
+      });
   }
 
   ngOnDestroy(): void {
@@ -435,9 +473,12 @@ export class PerfilComponent implements OnDestroy {
   }
 
   async aceptarSolicitud(t: Models.Transferencias.Transferencia): Promise<void> {
+    const esAdopcion = t.tipo === 'adopcion';
     const alert = await this.alertCtrl.create({
-      header: 'Aceptar mascota',
-      message: `${t.deNombre} te está transfiriendo a ${t.mascotaNombre}. Al aceptar, la mascota (con todo su historial) pasa a tu cuenta.`,
+      header: esAdopcion ? 'Aceptar mascota' : 'Aceptar hogar temporal',
+      message: esAdopcion
+        ? `${t.deNombre} te está transfiriendo a ${t.mascotaNombre}. Al aceptar, la mascota (con todo su historial) pasa a tu cuenta.`
+        : `${t.deNombre} te está compartiendo el acceso a ${t.mascotaNombre}. Al aceptar, vas a poder ver y actualizar su perfil e historial, pero ${t.deNombre} sigue como dueño/a.`,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {
@@ -453,13 +494,16 @@ export class PerfilComponent implements OnDestroy {
                 body: JSON.stringify({ transferenciaId: t.id })
               });
               if (res.ok) {
-                await this.showToast(`¡${t.mascotaNombre} ahora es tuya! 🐾`, 'success');
+                await this.showToast(
+                  esAdopcion ? `¡${t.mascotaNombre} ahora es tuya! 🐾` : `Ya tenés acceso a ${t.mascotaNombre}. 🐾`,
+                  'success'
+                );
               } else {
                 const err = await res.json().catch(() => ({}));
-                await this.showToast(err.error || 'No se pudo aceptar la transferencia.', 'danger');
+                await this.showToast(err.error || 'No se pudo aceptar la solicitud.', 'danger');
               }
             } catch {
-              await this.showToast('No se pudo aceptar la transferencia. Intenta nuevamente.', 'danger');
+              await this.showToast('No se pudo aceptar la solicitud. Intenta nuevamente.', 'danger');
             }
           }
         }
@@ -485,6 +529,130 @@ export class PerfilComponent implements OnDestroy {
       await this.showToast('Transferencia cancelada.', 'primary');
     } catch {
       await this.showToast('No se pudo cancelar la transferencia.', 'danger');
+    }
+  }
+
+  // ── Equipo de refugio ────────────────────────────────────────────────────
+
+  async invitarAlEquipo(): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Invitar al equipo',
+      message: 'La persona va a poder crear/editar mascotas y publicaciones en nombre de tu cuenta de refugio.',
+      inputs: [
+        { name: 'email', type: 'email', placeholder: 'Email de la persona' },
+      ],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Como staff', handler: (data) => this.enviarInvitacionEquipo(data.email, 'staff') },
+        { text: 'Como admin', handler: (data) => this.enviarInvitacionEquipo(data.email, 'admin') },
+      ]
+    });
+    await alert.present();
+  }
+
+  private async enviarInvitacionEquipo(rawEmail: string, rolEquipo: Models.Equipo.RolEquipo): Promise<void> {
+    const email = this.security.sanitizeText(rawEmail || '', 200);
+    if (!this.security.isValidEmail(email)) {
+      await this.showToast('Ingresa un email válido.', 'danger');
+      return;
+    }
+    if (!this.user) return;
+    try {
+      const refugioNombre = this.user_profile?.nombreRefugio?.trim()
+        || `${this.user_profile?.nombre ?? ''} ${this.user_profile?.apellido ?? ''}`.trim()
+        || 'Un refugio';
+      await this.firestoreService.crearInvitacionEquipo(this.user.uid, refugioNombre, email, rolEquipo);
+      await this.showToast('Invitación enviada.', 'success');
+    } catch {
+      await this.showToast('No se pudo enviar la invitación.', 'danger');
+    }
+  }
+
+  async aceptarInvitacionEquipo(inv: Models.Equipo.InvitacionEquipo): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Unirte al equipo',
+      message: `${inv.refugioNombre} te invitó a operar su cuenta como ${inv.rolEquipo === 'admin' ? 'administrador/a' : 'staff'}.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Aceptar',
+          handler: async () => {
+            try {
+              const user = this.auth.getCurrentUser();
+              if (!user || !inv.id) return;
+              const token = await user.getIdToken();
+              const res = await fetch('https://us-central1-ashbis-ae5b2.cloudfunctions.net/aceptarInvitacionEquipo', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ invitacionId: inv.id })
+              });
+              if (res.ok) {
+                await this.showToast(`Ahora formás parte del equipo de ${inv.refugioNombre}.`, 'success');
+              } else {
+                const err = await res.json().catch(() => ({}));
+                await this.showToast(err.error || 'No se pudo aceptar la invitación.', 'danger');
+              }
+            } catch {
+              await this.showToast('No se pudo aceptar la invitación. Intenta nuevamente.', 'danger');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async rechazarInvitacionEquipo(inv: Models.Equipo.InvitacionEquipo): Promise<void> {
+    if (!inv.id) return;
+    try {
+      await this.firestoreService.rechazarInvitacionEquipo(inv.id);
+      await this.showToast('Invitación rechazada.', 'primary');
+    } catch {
+      await this.showToast('No se pudo rechazar la invitación.', 'danger');
+    }
+  }
+
+  async cancelarInvitacionEquipo(inv: Models.Equipo.InvitacionEquipo): Promise<void> {
+    if (!inv.id) return;
+    try {
+      await this.firestoreService.cancelarInvitacionEquipo(inv.id);
+      await this.showToast('Invitación cancelada.', 'primary');
+    } catch {
+      await this.showToast('No se pudo cancelar la invitación.', 'danger');
+    }
+  }
+
+  async quitarMiembro(m: Models.Equipo.MiembroEquipo): Promise<void> {
+    if (!this.user) return;
+    const alert = await this.alertCtrl.create({
+      header: 'Quitar del equipo',
+      message: `¿Sacar a ${m.nombre} del equipo? Ya no va a poder operar tu cuenta.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Quitar',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              await this.firestoreService.quitarMiembroEquipo(this.user!.uid, m.uid);
+              await this.showToast('Se quitó del equipo.', 'primary');
+            } catch {
+              await this.showToast('No se pudo quitar del equipo.', 'danger');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async salirDelEquipo(refugioUid: string): Promise<void> {
+    if (!this.user) return;
+    try {
+      await this.firestoreService.quitarMiembroEquipo(refugioUid, this.user.uid);
+      await this.showToast('Saliste del equipo.', 'primary');
+    } catch {
+      await this.showToast('No se pudo salir del equipo.', 'danger');
     }
   }
   async eliminarCuenta(): Promise<void> {

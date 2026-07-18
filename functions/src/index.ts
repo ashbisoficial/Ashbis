@@ -648,10 +648,29 @@ export const aceptarTransferencia = onRequest(
           throw new HttpError(409, 'Esta mascota ya no pertenece a quien inició la transferencia.');
         }
 
-        tx.update(mascotaRef, {
-          uidUsuario: decoded.uid,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        if (t['tipo'] === 'hogar_temporal') {
+          // Acceso compartido: NO cambia de dueño, solo se agrega como
+          // colaborador de esta mascota puntual.
+          const accepterSnap = await tx.get(db.doc(`usuarios/${decoded.uid}`));
+          const accepterData = accepterSnap.exists ? accepterSnap.data()! : {};
+          const nombre = `${accepterData['nombre'] ?? ''} ${accepterData['apellido'] ?? ''}`.trim()
+            || decoded.email || 'Colaborador';
+
+          tx.set(mascotaRef.collection('colaboradores').doc(decoded.uid), {
+            uid: decoded.uid,
+            nombre,
+            email: decoded.email || '',
+            tipo: 'hogar_temporal',
+            agregadoEn: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } else {
+          // Adopción: se entrega la mascota por completo.
+          tx.update(mascotaRef, {
+            uidUsuario: decoded.uid,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+
         tx.update(transferRef, {
           estado: 'aceptada',
           paraUid: decoded.uid,
@@ -667,6 +686,101 @@ export const aceptarTransferencia = onRequest(
         return;
       }
       functions.logger.error('aceptarTransferencia error', error);
+      res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+  }
+);
+
+// ─── Cloud Function: aceptarInvitacionEquipo ─────────────────────────────────
+// Un refugio invita por email a alguien a sumarse a operar su cuenta. El
+// cliente puede crear/rechazar/cancelar la invitación directo (reglas de
+// Firestore), pero aceptarla necesita el Admin SDK: crea
+// usuarios/{refugioUid}/miembros/{uid}, y eso las reglas no dejan hacerlo
+// al cliente. Igual que en aceptarTransferencia, validamos el destinatario
+// por el email del token, no por lo que mande el body.
+export const aceptarInvitacionEquipo = onRequest(
+  { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB', maxInstances: 10 },
+  async (req, res) => {
+    const origin = req.headers.origin;
+    const headers = corsHeaders(origin);
+    Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const authHeader = req.headers.authorization || '';
+    const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/);
+    if (!tokenMatch) { res.status(401).json({ error: 'Token de autenticación requerido.' }); return; }
+
+    let decoded: admin.auth.DecodedIdToken;
+    try {
+      decoded = await admin.auth().verifyIdToken(tokenMatch[1]);
+    } catch {
+      res.status(401).json({ error: 'Token inválido o expirado.' });
+      return;
+    }
+
+    if (hitRateLimit(`teaminvite_${decoded.uid}`)) {
+      res.status(429).json({ error: 'Demasiadas solicitudes. Espera un minuto.' });
+      return;
+    }
+
+    const invitacionId = sanitizeInput(req.body?.invitacionId, 200);
+    if (!invitacionId) {
+      res.status(400).json({ error: 'Falta invitacionId.' });
+      return;
+    }
+
+    try {
+      const db = admin.firestore();
+      const inviteRef = db.doc(`invitacionesEquipo/${invitacionId}`);
+
+      await db.runTransaction(async (tx) => {
+        const inviteSnap = await tx.get(inviteRef);
+        if (!inviteSnap.exists) {
+          throw new HttpError(404, 'Invitación no encontrada.');
+        }
+        const inv = inviteSnap.data()!;
+
+        if (inv['estado'] !== 'pendiente') {
+          throw new HttpError(409, 'Esta invitación ya fue resuelta.');
+        }
+
+        const emailToken = (decoded.email || '').toLowerCase().trim();
+        const paraEmail = String(inv['paraEmail'] || '').toLowerCase().trim();
+        if (!emailToken || emailToken !== paraEmail) {
+          throw new HttpError(403, 'Esta invitación no está dirigida a tu cuenta.');
+        }
+
+        const refugioUid = String(inv['refugioUid'] || '');
+        const accepterSnap = await tx.get(db.doc(`usuarios/${decoded.uid}`));
+        const accepterData = accepterSnap.exists ? accepterSnap.data()! : {};
+        const nombre = `${accepterData['nombre'] ?? ''} ${accepterData['apellido'] ?? ''}`.trim()
+          || decoded.email || 'Miembro';
+
+        tx.set(db.doc(`usuarios/${refugioUid}/miembros/${decoded.uid}`), {
+          uid: decoded.uid,
+          refugioUid,
+          nombre,
+          email: decoded.email || '',
+          rolEquipo: inv['rolEquipo'] === 'admin' ? 'admin' : 'staff',
+          agregadoEn: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        tx.update(inviteRef, {
+          estado: 'aceptada',
+          resueltaEn: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+
+      res.status(200).json({ success: true });
+
+    } catch (error) {
+      if (error instanceof HttpError) {
+        res.status(error.status).json({ error: error.message });
+        return;
+      }
+      functions.logger.error('aceptarInvitacionEquipo error', error);
       res.status(500).json({ error: 'Error interno del servidor.' });
     }
   }
