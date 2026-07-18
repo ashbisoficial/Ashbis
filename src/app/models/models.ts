@@ -5,6 +5,14 @@ export namespace Models {
 
     export const PathUsers = 'usuarios';
 
+    /**
+     * Rol autodeclarado al crear la cuenta, no verificado. No otorga por sí
+     * solo acceso a datos sensibles de otras personas: el refugio solo
+     * puede operar mascotas que le pertenecen, y el veterinario necesita
+     * además el PIN de cada mascota para tocar su historial médico.
+     */
+    export type Rol = 'usuario' | 'refugio' | 'veterinario';
+
     export interface UserProfile {
       uid: string;
       nombre: string;
@@ -22,6 +30,12 @@ export namespace Models {
       provider?: string;
       /** Fecha ISO de creación de la cuenta, usada para mostrar "Miembro desde". */
       fechaRegistro?: string;
+      /** Rol de la cuenta. Si falta, se trata como 'usuario' (cuentas creadas antes de este campo). */
+      rol?: Rol;
+      /** Solo si rol === 'refugio'. Nombre del refugio/organización. */
+      nombreRefugio?: string;
+      /** Solo si rol === 'veterinario'. Nombre de la clínica (informativo, no verificado). */
+      nombreClinica?: string;
     }
   }
 

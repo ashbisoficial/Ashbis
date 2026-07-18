@@ -221,7 +221,12 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       foto: this.security.sanitizeText(user.photoURL || ''),
       fotoOrigen: 'google' as const,
       provider: 'google',
-      fechaRegistro: new Date().toISOString()
+      fechaRegistro: new Date().toISOString(),
+      // El registro con Google no tiene paso para elegir refugio/veterinario;
+      // esos roles solo se autodeclaran en el formulario de registro con
+      // email/contraseña. Quien entra por primera vez con Google queda
+      // como 'usuario' (las reglas de Firestore bloquean cambiarlo después).
+      rol: 'usuario' as const
     };
 
     const userExistente = await this.firestoreService.getDocument(`usuarios/${user.uid}`);

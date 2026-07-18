@@ -31,7 +31,9 @@ import {
   IonSelectOption,
   IonSpinner,
   IonThumbnail,
-  IonCheckbox
+  IonCheckbox,
+  IonRadioGroup,
+  IonRadio
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { eye, eyeOff } from 'ionicons/icons';
@@ -67,7 +69,9 @@ import { SecurityService } from 'src/app/services/security.service';
     IonNote,
     IonSpinner,
     IonThumbnail,
-    IonCheckbox
+    IonCheckbox,
+    IonRadioGroup,
+    IonRadio
   ],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
@@ -100,9 +104,12 @@ export class RegistroComponent {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.pattern(this.passwordRegex)]],
       confirmPassword: ['', Validators.required],
+      rol: ['usuario' as Models.Auth.Rol, Validators.required],
+      nombreRefugio: [''],
+      nombreClinica: [''],
       consentimiento: [false, [Validators.requiredTrue]]
     },
-    { validators: this.passwordsIgualesValidator() }
+    { validators: [this.passwordsIgualesValidator(), this.rolExtraValidator()] }
   );
 
   constructor() {
@@ -118,6 +125,16 @@ export class RegistroComponent {
       const pass = form.get('password')?.value;
       const confirm = form.get('confirmPassword')?.value;
       return pass === confirm ? null : { passwordMismatch: true };
+    };
+  }
+
+  rolExtraValidator(): ValidatorFn {
+    return (form: AbstractControl): ValidationErrors | null => {
+      const rol = form.get('rol')?.value;
+      const nombreRefugio = form.get('nombreRefugio')?.value;
+      return rol === 'refugio' && !nombreRefugio?.trim()
+        ? { nombreRefugioRequerido: true }
+        : null;
     };
   }
 
@@ -146,6 +163,7 @@ export class RegistroComponent {
       const data = this.datosForm.value;
       const cleanEmail = this.security.sanitizeText(data.email!);
       const respuesta = await this.authenticationService.createUser(cleanEmail, data.password!);
+      const rol = (data.rol as Models.Auth.Rol) || 'usuario';
       const datosUser: Models.Auth.UserProfile = {
         uid: respuesta.user.uid,
         nombre: this.security.sanitizeText(data.nombre!),
@@ -156,6 +174,13 @@ export class RegistroComponent {
         email: cleanEmail,
         provider: 'password',
         fechaRegistro: new Date().toISOString(),
+        rol,
+        ...(rol === 'refugio' && data.nombreRefugio?.trim()
+          ? { nombreRefugio: this.security.sanitizeText(data.nombreRefugio) }
+          : {}),
+        ...(rol === 'veterinario' && data.nombreClinica?.trim()
+          ? { nombreClinica: this.security.sanitizeText(data.nombreClinica) }
+          : {}),
         consentGiven: true,
         consentDate: new Date().toISOString(),
         consentVersion: '1.0'

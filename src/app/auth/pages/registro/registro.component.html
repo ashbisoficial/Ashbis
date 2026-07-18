@@ -12,6 +12,47 @@
           <ion-card-content class="si">
             <form [formGroup]="datosForm" (ngSubmit)="registrarse()" novalidate>
               <ion-list class="list" lines="inset">
+                <ion-item lines="none">
+                  <ion-label position="stacked">
+                    Tipo de cuenta <span class="required">*</span>
+                  </ion-label>
+                  <ion-radio-group formControlName="rol" style="width: 100%; margin-top: 8px;">
+                    <ion-item lines="none" style="--padding-start: 0;">
+                      <ion-radio value="usuario" justify="start" labelPlacement="end">
+                        Dueño de mascota
+                      </ion-radio>
+                    </ion-item>
+                    <ion-item lines="none" style="--padding-start: 0;">
+                      <ion-radio value="refugio" justify="start" labelPlacement="end">
+                        Refugio o rescatista
+                      </ion-radio>
+                    </ion-item>
+                    <ion-item lines="none" style="--padding-start: 0;">
+                      <ion-radio value="veterinario" justify="start" labelPlacement="end">
+                        Veterinario/a
+                      </ion-radio>
+                    </ion-item>
+                  </ion-radio-group>
+                </ion-item>
+
+                <ion-item *ngIf="f.rol.value === 'refugio'">
+                  <ion-label position="stacked">
+                    Nombre del refugio/organización <span class="required">*</span>
+                  </ion-label>
+                  <ion-input
+                    formControlName="nombreRefugio"
+                    (ionBlur)="datosForm.get('nombreRefugio')?.markAsTouched()">
+                  </ion-input>
+                </ion-item>
+                <ion-note color="danger" *ngIf="datosForm.touched && datosForm.hasError('nombreRefugioRequerido')">
+                  Ingresa el nombre del refugio u organización
+                </ion-note>
+
+                <ion-item *ngIf="f.rol.value === 'veterinario'">
+                  <ion-label position="stacked">Clínica (opcional)</ion-label>
+                  <ion-input formControlName="nombreClinica"></ion-input>
+                </ion-item>
+
                 <ion-item>
                   <ion-label position="stacked">
                     Nombre <span class="required">*</span>

@@ -36,11 +36,21 @@ service cloud.firestore {
 
     match /usuarios/{uid} {
       allow read:   if isUser(uid);
-      allow create: if isUser(uid) && noLongStrings(request.resource.data);
+      allow create: if isUser(uid) && noLongStrings(request.resource.data)
+                    && request.resource.data.get('rol', 'usuario')
+                       in ['usuario', 'refugio', 'veterinario'];
+      // El rol se autodeclara una sola vez, al crear la cuenta (no hay
+      // verificación de que un "refugio" o "veterinario" lo sean de verdad).
+      // Por eso "update" nunca puede cambiarlo: si se pudiera, cualquier
+      // usuario se auto-otorgaría permisos de refugio/veterinario editando
+      // su propio perfil. El acceso real a datos sensibles (historial
+      // médico) no depende solo del rol, sino también del PIN por mascota.
       allow update: if isUser(uid) && noLongStrings(request.resource.data)
                     && request.resource.data.get('uid', uid) == uid
                     && request.resource.data.get('email', resource.data.get('email',''))
-                       == resource.data.get('email', '');
+                       == resource.data.get('email', '')
+                    && request.resource.data.get('rol', resource.data.get('rol', 'usuario'))
+                       == resource.data.get('rol', 'usuario');
       allow delete: if false;
 
       match /veterinariasFavoritas/{vetId} {
