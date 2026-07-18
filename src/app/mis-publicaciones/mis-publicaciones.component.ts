@@ -84,6 +84,9 @@ export class MisPublicacionesComponent implements OnDestroy {
   publicaciones: Models.Publicaciones.Publicacion[] = [];
   misMascotas: Mascota[] = [];
 
+  fotoFile: File | null = null;
+  fotoPreview: string | null = null;
+
   readonly tipos: { value: Models.Publicaciones.TipoPublicacion; label: string }[] = [
     { value: 'adopcion', label: '🐾 Adopción' },
     { value: 'recoleccion', label: '📋 Recolección' },
@@ -137,7 +140,35 @@ export class MisPublicacionesComponent implements OnDestroy {
 
   toggleForm(): void {
     this.mostrarForm = !this.mostrarForm;
-    if (!this.mostrarForm) this.form.reset({ tipo: 'adopcion', titulo: '', descripcion: '', mascotaId: '' });
+    if (!this.mostrarForm) {
+      this.form.reset({ tipo: 'adopcion', titulo: '', descripcion: '', mascotaId: '' });
+      this.fotoFile = null;
+      this.fotoPreview = null;
+    }
+  }
+
+  onFotoSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    const error = this.security.validateFile(file, {
+      allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      maxMb: 8,
+    });
+    if (error) {
+      this.presentToast(error, 'danger');
+      return;
+    }
+
+    this.fotoFile = file;
+    const reader = new FileReader();
+    reader.onload = () => this.fotoPreview = reader.result as string;
+    reader.readAsDataURL(file);
+  }
+
+  quitarFoto(): void {
+    this.fotoFile = null;
+    this.fotoPreview = null;
   }
 
   async publicar(): Promise<void> {
@@ -151,6 +182,12 @@ export class MisPublicacionesComponent implements OnDestroy {
       const data = this.form.value;
       const mascota = this.misMascotas.find(m => m.id === data.mascotaId);
 
+      // La foto que elige la persona pisa a la de la mascota vinculada;
+      // si no eligió ninguna, se usa la de la mascota (si hay).
+      const fotoUrl = this.fotoFile
+        ? await this.firestoreService.uploadPublicacionPhoto(this.uid, this.fotoFile)
+        : mascota?.fotoUrl;
+
       await this.firestoreService.crearPublicacion({
         uidAutor: this.uid,
         nombreAutor: this.nombreRefugio,
@@ -158,7 +195,7 @@ export class MisPublicacionesComponent implements OnDestroy {
         titulo: this.security.sanitizeText(data.titulo!, 120),
         descripcion: this.security.sanitizeText(data.descripcion!, 1000),
         ...(data.mascotaId ? { mascotaId: data.mascotaId } : {}),
-        ...(mascota?.fotoUrl ? { fotoUrl: mascota.fotoUrl } : {}),
+        ...(fotoUrl ? { fotoUrl } : {}),
       });
 
       this.toggleForm();

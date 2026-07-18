@@ -491,6 +491,15 @@ export class FirestoreService {
     return collectionData(q, { idField: 'id' }) as Observable<Models.Publicaciones.Publicacion[]>;
   }
 
+  async uploadPublicacionPhoto(uid: string, file: File): Promise<string> {
+    this.assertAuthenticated();
+    const safeFilename = this.sanitizeFilename(file.name);
+    const path = `publicaciones/${uid}/${Date.now()}-${safeFilename}`;
+    const r = ref(this.storage, path);
+    await uploadBytes(r, file);
+    return getDownloadURL(r);
+  }
+
   async crearPublicacion(data: Omit<Models.Publicaciones.Publicacion, 'id' | 'activa' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const clean = this.security.sanitizeFirestoreObject(data as any);
     const refDoc = doc(collection(this.firestore, Models.Publicaciones.PathPublicaciones));

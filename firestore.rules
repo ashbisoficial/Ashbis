@@ -112,14 +112,16 @@ service cloud.firestore {
 
       // Equipo del refugio: quiénes operan esta cuenta además del dueño.
       match /miembros/{memberUid} {
-        // La condición "resource.data.uid == request.auth.uid" (además de
-        // "isUser(memberUid)", que es lo mismo pero mirando la ruta) es la
-        // que hace falta para poder correr
-        // collectionGroup('miembros').where('uid','==', miUid) — Firestore
-        // necesita que la regla se pueda validar mirando solo el filtro de
-        // la consulta, no la ruta del documento.
-        allow read:   if isUser(uid) || esMiembroDelRefugio(uid)
-                      || isUser(memberUid) || resource.data.uid == request.auth.uid;
+        // Regla propia y simple para collectionGroup('miembros').where('uid',
+        // '==', miUid): tiene que poder validarse mirando solo el filtro de
+        // la consulta (resource.data.uid), sin exists()/get() de por medio.
+        // Mezclada en el mismo "allow" que las condiciones de abajo (que sí
+        // usan exists()), Firestore rechazaba la consulta con "Missing or
+        // insufficient permissions" aunque esta condición sola alcanzaba.
+        allow read: if resource.data.uid == request.auth.uid;
+        // Lectura directa de la subcolección (dueño, admin o miembro viendo
+        // al resto del equipo).
+        allow read: if isUser(uid) || esMiembroDelRefugio(uid) || isUser(memberUid);
         // Solo la Cloud Function aceptarInvitacionEquipo crea estos docs,
         // después de validar la invitación por email — nunca el cliente.
         allow create: if false;

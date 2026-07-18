@@ -88,8 +88,16 @@
 
   ion-chip {
     --background: transparent;
-    --color: #f3eaea;
+    background: transparent;
+    color: #ffffff;
     border: 1.5px solid #8b0808;
+
+    // El color="danger" que traía ion-chip pintaba el texto en rojo vía
+    // --ion-color-base (no vía --color, que sí sobreescribimos arriba);
+    // por eso se fuerza acá directo sobre el ion-label proyectado.
+    ion-label {
+      color: #ffffff !important;
+    }
   }
 }
 

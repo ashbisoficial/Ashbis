@@ -46,6 +46,26 @@
           </ion-select>
         </ion-item>
 
+        <div class="foto-picker">
+          <input
+            #fotoInput
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            (change)="onFotoSelected($event)"
+          />
+          <div *ngIf="!fotoPreview" class="foto-picker-vacio" (click)="fotoInput.click()">
+            <ion-icon name="add-outline"></ion-icon>
+            <span>Agregar foto (opcional)</span>
+          </div>
+          <div *ngIf="fotoPreview" class="foto-preview">
+            <img [src]="fotoPreview" alt="Vista previa de la foto" />
+            <ion-button size="small" fill="clear" color="danger" (click)="quitarFoto()">
+              <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
         <ion-button expand="block" type="submit" color="danger" class="ion-margin-top"
           [disabled]="form.invalid || guardando">
           <ion-spinner *ngIf="guardando" name="crescent"></ion-spinner>
@@ -64,6 +84,7 @@
   </div>
 
   <ion-card *ngFor="let pub of publicaciones" class="pub-card">
+    <img *ngIf="pub.fotoUrl" [src]="pub.fotoUrl" class="pub-foto" alt="{{ pub.titulo }}" />
     <ion-card-content>
       <div class="pub-header">
         <ion-badge [color]="pub.activa ? 'success' : 'medium'">{{ pub.activa ? 'Activa' : 'Pausada' }}</ion-badge>

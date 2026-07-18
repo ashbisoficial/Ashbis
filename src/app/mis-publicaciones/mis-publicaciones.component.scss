@@ -1,4 +1,47 @@
+.foto-picker {
+  margin: 8px 0 4px;
+
+  .foto-picker-vacio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px;
+    border: 1.5px dashed var(--ion-color-medium);
+    border-radius: 10px;
+    color: var(--ion-color-medium);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .foto-preview {
+    position: relative;
+    display: inline-block;
+
+    img {
+      max-width: 100%;
+      max-height: 180px;
+      border-radius: 10px;
+      display: block;
+    }
+
+    ion-button {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      --background: rgba(0, 0, 0, 0.5);
+      --border-radius: 50%;
+    }
+  }
+}
+
 .pub-card {
+  .pub-foto {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+  }
+
   .pub-header {
     display: flex;
     align-items: center;
