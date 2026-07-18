@@ -27,7 +27,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addOutline, closeOutline, trashOutline, pauseOutline, playOutline } from 'ionicons/icons';
-import { Subject, switchMap, takeUntil } from 'rxjs';
+import { Subject, catchError, of, switchMap, takeUntil } from 'rxjs';
 
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService, Mascota } from '../firebase/firestore';
@@ -77,6 +77,7 @@ export class MisPublicacionesComponent implements OnDestroy {
   private nombreRefugio = 'Refugio';
 
   cargando = true;
+  errorCarga = false;
   guardando = false;
   mostrarForm = false;
 
@@ -114,7 +115,13 @@ export class MisPublicacionesComponent implements OnDestroy {
           this.firestoreService.getUserPets(user.uid)
             .pipe(takeUntil(this.destroy$))
             .subscribe(pets => this.misMascotas = pets);
-          return this.firestoreService.getPublicacionesByUsuario(user.uid);
+          return this.firestoreService.getPublicacionesByUsuario(user.uid).pipe(
+            catchError(err => {
+              console.error('getPublicacionesByUsuario falló:', err);
+              this.errorCarga = true;
+              return of<Models.Publicaciones.Publicacion[]>([]);
+            })
+          );
         })
       )
       .subscribe(pubs => {

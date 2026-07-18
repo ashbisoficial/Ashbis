@@ -1,5 +1,5 @@
 .chat-content {
-  --background: #f5f5f5;
+  --background: #070707;
 }
 
 // ── Contenedor de mensajes ───────────────────────────────────────────────────
@@ -22,25 +22,26 @@
     align-self: flex-end;
 
     .bubble-inner {
-      background: var(--ion-color-primary);
-      color: white;
+      background: #8b0808;
+      color: #ffffff;
       border-radius: 18px 18px 4px 18px;
     }
 
-    .hora { color: rgba(255,255,255,0.7); }
+    .hora { color: rgba(255, 255, 255, 0.7); }
   }
 
   &.ia {
     align-self: flex-start;
 
     .bubble-inner {
-      background: white;
-      color: #333;
+      background: #141414;
+      color: #f3eaea;
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 18px 18px 18px 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
-    .hora { color: #999; }
+    .hora { color: #888888; }
   }
 }
 
@@ -70,13 +71,13 @@
 // ── Panel de chips ────────────────────────────────────────────────────────────
 .chips-panel {
   padding: 12px 16px;
-  background: white;
-  border-top: 1px solid #eee;
+  background: #0c0c0c;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 
   .chips-hint {
     margin: 0 0 10px;
     font-size: 0.85rem;
-    color: var(--ion-color-medium);
+    color: #aaaaaa;
   }
 }
 
@@ -84,6 +85,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+
+  ion-chip {
+    --background: transparent;
+    --color: #f3eaea;
+    border: 1.5px solid #8b0808;
+  }
 }
 
 // ── Panel de input ────────────────────────────────────────────────────────────
@@ -92,11 +99,14 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: white;
-  border-top: 1px solid #eee;
+  background: #0c0c0c;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 
   ion-input.chat-input {
     flex: 1;
-    --background: #f0f0f0;
+    --background: #141414;
+    --color: #ffffff;
+    --placeholder-color: #888888;
+    --border-color: #8b0808;
   }
 }

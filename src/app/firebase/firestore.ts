@@ -7,7 +7,7 @@ import {
   arrayUnion, arrayRemove,
 } from '@angular/fire/firestore';
 import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
-import { Observable, combineLatest, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, combineLatest, map, of, switchMap } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Auth } from '@angular/fire/auth';
 import { SecurityService } from 'src/app/services/security.service';
@@ -167,12 +167,22 @@ export class FirestoreService {
     );
   }
 
-  /** uids de los refugios de cuyo equipo uid forma parte. */
+  /**
+   * uids de los refugios de cuyo equipo uid forma parte. Si la consulta
+   * falla (por ejemplo, el índice de collectionGroup todavía no terminó de
+   * desplegarse), no debe tumbar el resto de la carga de mascotas: se
+   * degrada a "no soy miembro de ningún equipo" en vez de romper la
+   * pantalla entera.
+   */
   getMisRefugios(uid: string): Observable<string[]> {
     const r = collectionGroup(this.firestore, Models.Equipo.PathMiembros);
     const q = query(r, where('uid', '==', uid));
     return collectionData(q).pipe(
-      map(docs => (docs as Models.Equipo.MiembroEquipo[]).map(d => d.refugioUid))
+      map(docs => (docs as Models.Equipo.MiembroEquipo[]).map(d => d.refugioUid)),
+      catchError(err => {
+        console.error('getMisRefugios falló, sigo solo con mascotas propias:', err);
+        return of<string[]>([]);
+      })
     );
   }
 

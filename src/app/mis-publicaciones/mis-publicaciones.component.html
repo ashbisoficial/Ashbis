@@ -59,6 +59,10 @@
     <ion-spinner name="crescent"></ion-spinner>
   </div>
 
+  <div *ngIf="!cargando && errorCarga" class="ion-text-center ion-padding" style="color: var(--ion-color-danger);">
+    <p>No se pudieron cargar tus publicaciones. Intenta recargar la página.</p>
+  </div>
+
   <ion-card *ngFor="let pub of publicaciones" class="pub-card">
     <ion-card-content>
       <div class="pub-header">
