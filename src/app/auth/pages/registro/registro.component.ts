@@ -31,9 +31,7 @@ import {
   IonSelectOption,
   IonSpinner,
   IonThumbnail,
-  IonCheckbox,
-  IonRadioGroup,
-  IonRadio
+  IonCheckbox
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { eye, eyeOff } from 'ionicons/icons';
@@ -69,9 +67,7 @@ import { SecurityService } from 'src/app/services/security.service';
     IonNote,
     IonSpinner,
     IonThumbnail,
-    IonCheckbox,
-    IonRadioGroup,
-    IonRadio
+    IonCheckbox
   ],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
@@ -118,6 +114,10 @@ export class RegistroComponent {
 
   get f() {
     return this.datosForm.controls;
+  }
+
+  elegirTipoCuenta(rol: Models.Auth.Rol): void {
+    this.datosForm.get('rol')?.setValue(rol);
   }
 
   passwordsIgualesValidator(): ValidatorFn {
