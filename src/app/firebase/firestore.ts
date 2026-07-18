@@ -438,6 +438,99 @@ export class FirestoreService {
     return url;
   }
 
+  // ── Publicaciones (refugio: adopción/recolección/donación) ─────────────────
+
+  getPublicacionesActivas(): Observable<Models.Publicaciones.Publicacion[]> {
+    const r = collection(this.firestore, Models.Publicaciones.PathPublicaciones);
+    const q = query(r, where('activa', '==', true), orderBy('createdAt', 'desc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Publicaciones.Publicacion[]>;
+  }
+
+  getPublicacionesByUsuario(uid: string): Observable<Models.Publicaciones.Publicacion[]> {
+    const r = collection(this.firestore, Models.Publicaciones.PathPublicaciones);
+    const q = query(r, where('uidAutor', '==', uid), orderBy('createdAt', 'desc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Publicaciones.Publicacion[]>;
+  }
+
+  async crearPublicacion(data: Omit<Models.Publicaciones.Publicacion, 'id' | 'activa' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const clean = this.security.sanitizeFirestoreObject(data as any);
+    const refDoc = doc(collection(this.firestore, Models.Publicaciones.PathPublicaciones));
+    await setDoc(refDoc, {
+      ...clean,
+      activa: true,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return refDoc.id;
+  }
+
+  async actualizarPublicacion(id: string, data: Partial<Models.Publicaciones.Publicacion>): Promise<void> {
+    const clean = this.security.sanitizeFirestoreObject(data as any);
+    clean['updatedAt'] = serverTimestamp();
+    await updateDoc(doc(this.firestore, `${Models.Publicaciones.PathPublicaciones}/${id}`), clean);
+  }
+
+  async eliminarPublicacion(id: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, `${Models.Publicaciones.PathPublicaciones}/${id}`));
+  }
+
+  // ── Transferencias de dueño (refugio → nuevo dueño) ─────────────────────────
+  // Aceptar una transferencia NO se hace desde acá: requiere la Cloud
+  // Function aceptarTransferencia, porque reasigna mascotas/{id}.uidUsuario
+  // y eso las reglas de Firestore no se lo permiten hacer al cliente.
+
+  async crearTransferencia(
+    mascotaId: string,
+    mascotaNombre: string,
+    deNombre: string,
+    paraEmail: string,
+    mensaje?: string
+  ): Promise<string> {
+    const uid = this.assertAuthenticated();
+    const clean = this.security.sanitizeFirestoreObject({
+      mascotaId,
+      mascotaNombre,
+      deUid: uid,
+      deNombre,
+      paraEmail: paraEmail.trim().toLowerCase(),
+      estado: 'pendiente' as const,
+      ...(mensaje?.trim() ? { mensaje } : {}),
+    });
+    const refDoc = doc(collection(this.firestore, Models.Transferencias.PathTransferencias));
+    await setDoc(refDoc, { ...clean, createdAt: serverTimestamp() });
+    return refDoc.id;
+  }
+
+  getTransferenciasEnviadas(uid: string): Observable<Models.Transferencias.Transferencia[]> {
+    const r = collection(this.firestore, Models.Transferencias.PathTransferencias);
+    const q = query(r, where('deUid', '==', uid), orderBy('createdAt', 'desc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Transferencias.Transferencia[]>;
+  }
+
+  getTransferenciasPendientesParaMi(email: string): Observable<Models.Transferencias.Transferencia[]> {
+    const r = collection(this.firestore, Models.Transferencias.PathTransferencias);
+    const q = query(
+      r,
+      where('paraEmail', '==', email.trim().toLowerCase()),
+      where('estado', '==', 'pendiente')
+    );
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Transferencias.Transferencia[]>;
+  }
+
+  async rechazarTransferencia(id: string): Promise<void> {
+    await updateDoc(doc(this.firestore, `${Models.Transferencias.PathTransferencias}/${id}`), {
+      estado: 'rechazada',
+      resueltaEn: serverTimestamp(),
+    });
+  }
+
+  async cancelarTransferencia(id: string): Promise<void> {
+    await updateDoc(doc(this.firestore, `${Models.Transferencias.PathTransferencias}/${id}`), {
+      estado: 'cancelada',
+      resueltaEn: serverTimestamp(),
+    });
+  }
+
   // ── Privados ───────────────────────────────────────────────────────────────
 
   private assertAuthenticated(): string {

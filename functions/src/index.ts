@@ -69,6 +69,13 @@ function hitRateLimit(uid: string): boolean {
   return cur.count > RATE_LIMIT_MAX;
 }
 
+// ─── Error HTTP con status propio, para usar dentro de transacciones ──────────
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
 // ─── Sanitización de texto ─────────────────────────────────────────────────────
 function sanitizeInput(input: unknown, maxLen = 2000): string {
   if (typeof input !== 'string') return '';
@@ -567,6 +574,100 @@ export const contactFormProxy = onRequest(
     } catch (error) {
       functions.logger.error('contactFormProxy error', error);
       res.status(500).json({ error: 'Error interno' });
+    }
+  }
+);
+
+// ─── Cloud Function: aceptarTransferencia ────────────────────────────────────
+// Un refugio crea la solicitud de transferencia directo en Firestore (las
+// reglas ya validan que sea dueño de la mascota). Aceptarla es lo único que
+// requiere el Admin SDK: reasigna mascotas/{id}.uidUsuario al nuevo dueño de
+// forma atómica, y solo después de comprobar que quien acepta es realmente
+// el destinatario (por email verificado en el token, no por lo que mande el
+// cliente en el body).
+export const aceptarTransferencia = onRequest(
+  { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB', maxInstances: 10 },
+  async (req, res) => {
+    const origin = req.headers.origin;
+    const headers = corsHeaders(origin);
+    Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const authHeader = req.headers.authorization || '';
+    const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/);
+    if (!tokenMatch) { res.status(401).json({ error: 'Token de autenticación requerido.' }); return; }
+
+    let decoded: admin.auth.DecodedIdToken;
+    try {
+      decoded = await admin.auth().verifyIdToken(tokenMatch[1]);
+    } catch {
+      res.status(401).json({ error: 'Token inválido o expirado.' });
+      return;
+    }
+
+    if (hitRateLimit(`transfer_${decoded.uid}`)) {
+      res.status(429).json({ error: 'Demasiadas solicitudes. Espera un minuto.' });
+      return;
+    }
+
+    const transferenciaId = sanitizeInput(req.body?.transferenciaId, 200);
+    if (!transferenciaId) {
+      res.status(400).json({ error: 'Falta transferenciaId.' });
+      return;
+    }
+
+    try {
+      const db = admin.firestore();
+      const transferRef = db.doc(`transferencias/${transferenciaId}`);
+
+      await db.runTransaction(async (tx) => {
+        const transferSnap = await tx.get(transferRef);
+        if (!transferSnap.exists) {
+          throw new HttpError(404, 'Transferencia no encontrada.');
+        }
+        const t = transferSnap.data()!;
+
+        if (t['estado'] !== 'pendiente') {
+          throw new HttpError(409, 'Esta transferencia ya fue resuelta.');
+        }
+
+        const emailToken = (decoded.email || '').toLowerCase().trim();
+        const paraEmail = String(t['paraEmail'] || '').toLowerCase().trim();
+        if (!emailToken || emailToken !== paraEmail) {
+          throw new HttpError(403, 'Esta transferencia no está dirigida a tu cuenta.');
+        }
+
+        const mascotaRef = db.doc(`mascotas/${t['mascotaId']}`);
+        const mascotaSnap = await tx.get(mascotaRef);
+        if (!mascotaSnap.exists) {
+          throw new HttpError(404, 'La mascota ya no existe.');
+        }
+        if (mascotaSnap.data()!['uidUsuario'] !== t['deUid']) {
+          throw new HttpError(409, 'Esta mascota ya no pertenece a quien inició la transferencia.');
+        }
+
+        tx.update(mascotaRef, {
+          uidUsuario: decoded.uid,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        tx.update(transferRef, {
+          estado: 'aceptada',
+          paraUid: decoded.uid,
+          resueltaEn: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+
+      res.status(200).json({ success: true });
+
+    } catch (error) {
+      if (error instanceof HttpError) {
+        res.status(error.status).json({ error: error.message });
+        return;
+      }
+      functions.logger.error('aceptarTransferencia error', error);
+      res.status(500).json({ error: 'Error interno del servidor.' });
     }
   }
 );

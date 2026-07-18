@@ -202,10 +202,13 @@ export class CrearMascotasComponent implements OnInit {
       return;
     }
 
-    // Verificar límite de mascotas
+    // Verificar límite de mascotas. Un refugio/rescatista maneja varias
+    // mascotas a la vez, así que arranca con un tope mucho más alto que
+    // una cuenta normal (que sigue en el plan free de 2).
     const userSnap = await getDoc(doc(this.firestore, `usuarios/${user.uid}`));
     const userData = userSnap.data() as any;
-    const maxPets = userData?.maxPets ?? 2;
+    const maxPetsPorDefecto = userData?.rol === 'refugio' ? 50 : 2;
+    const maxPets = userData?.maxPets ?? maxPetsPorDefecto;
 
     const mascotasSnap = await getDocs(
       query(collection(this.firestore, 'mascotas'), where('uidUsuario', '==', user.uid))

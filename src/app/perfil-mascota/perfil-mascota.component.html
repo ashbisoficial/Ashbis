@@ -53,6 +53,9 @@
             <ion-button fill="outline" color="medium" (click)="editarPerfil()">Editar perfil</ion-button>
             <ion-button fill="outline" color="medium" (click)="verHistorial()">Historial</ion-button>
             <ion-button color="danger" (click)="verQR()">QR</ion-button>
+            <ion-button *ngIf="esRefugio()" fill="outline" color="tertiary" (click)="transferirMascota()">
+              Transferir a nuevo dueño
+            </ion-button>
           </div>
 
           <!-- Galería -->

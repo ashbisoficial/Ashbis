@@ -87,6 +87,13 @@ export const routes: Routes = [
           import('./perfil/perfil.component').then((m) => m.PerfilComponent),
       },
       {
+        path: 'mis-publicaciones',
+        loadComponent: () =>
+          import('./mis-publicaciones/mis-publicaciones.component').then(
+            (m) => m.MisPublicacionesComponent
+          ),
+      },
+      {
         path: 'perfil-mascota/:id',
         loadComponent: () =>
           import('./perfil-mascota/perfil-mascota.component').then(

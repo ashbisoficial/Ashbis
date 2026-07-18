@@ -21,6 +21,15 @@ service cloud.firestore {
           == request.auth.uid;
     }
 
+    // El rol es autodeclarado (ver reglas de /usuarios más abajo): no es una
+    // verificación de identidad real, solo evita que cuentas 'usuario'
+    // normales usen las funciones de refugio.
+    function esRefugio() {
+      return isAuth() &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('rol', 'usuario')
+          == 'refugio';
+    }
+
     function noLongStrings(data) {
       return !data.keys().hasAny(['__proto__', 'constructor', 'prototype']) &&
         (
@@ -120,6 +129,65 @@ service cloud.firestore {
     match /lugares/{placeId} {
       allow read:  if isAuth();
       allow write: if isAuth() && noLongStrings(request.resource.data);
+    }
+
+    match /publicaciones/{postId} {
+      // Feed público de adopción/recolección/donación: lo ve cualquiera
+      // (incluso sin cuenta), pero solo un refugio puede publicar, editar
+      // o borrar sus propias publicaciones.
+      allow read: if true;
+      allow create: if esRefugio()
+                    && request.resource.data.uidAutor == request.auth.uid
+                    && request.resource.data.tipo in ['adopcion', 'recoleccion', 'donacion', 'otro']
+                    && noLongStrings(request.resource.data);
+      allow update: if esRefugio()
+                    && resource.data.uidAutor == request.auth.uid
+                    && request.resource.data.uidAutor == request.auth.uid
+                    && noLongStrings(request.resource.data);
+      allow delete: if esRefugio() && resource.data.uidAutor == request.auth.uid;
+    }
+
+    match /transferencias/{transferId} {
+      // Un refugio inicia la transferencia de una mascota que le pertenece
+      // hacia el email de un futuro dueño. Rechazar/cancelar es un simple
+      // cambio de estado permitido por el cliente. Aceptar NUNCA lo hace el
+      // cliente: reasigna el uidUsuario de la mascota, y eso solo lo hace
+      // la Cloud Function aceptarTransferencia con el Admin SDK, después de
+      // validar que quien acepta es realmente el destinatario.
+      function soloCambiaEstado() {
+        return request.resource.data.mascotaId     == resource.data.mascotaId &&
+               request.resource.data.mascotaNombre == resource.data.mascotaNombre &&
+               request.resource.data.deUid         == resource.data.deUid &&
+               request.resource.data.deNombre      == resource.data.deNombre &&
+               request.resource.data.paraEmail     == resource.data.paraEmail;
+      }
+
+      allow read: if isAuth() &&
+        (resource.data.deUid == request.auth.uid ||
+         resource.data.paraEmail == request.auth.token.email);
+
+      allow create: if esRefugio()
+                    && request.resource.data.deUid == request.auth.uid
+                    && request.resource.data.estado == 'pendiente'
+                    && get(/databases/$(database)/documents/mascotas/$(request.resource.data.mascotaId)).data.uidUsuario
+                       == request.auth.uid
+                    && noLongStrings(request.resource.data);
+
+      // Rechazar: solo el destinatario, mientras siga pendiente.
+      allow update: if isAuth()
+                    && request.auth.token.email == resource.data.paraEmail
+                    && resource.data.estado == 'pendiente'
+                    && request.resource.data.estado == 'rechazada'
+                    && soloCambiaEstado();
+
+      // Cancelar: solo quien la creó, mientras siga pendiente.
+      allow update: if isAuth()
+                    && request.auth.uid == resource.data.deUid
+                    && resource.data.estado == 'pendiente'
+                    && request.resource.data.estado == 'cancelada'
+                    && soloCambiaEstado();
+
+      allow delete: if false;
     }
 
     match /public_qr/{tipo}/tokens/{token} {

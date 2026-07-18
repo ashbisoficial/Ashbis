@@ -1,4 +1,4 @@
-import { DatePipe, NgIf } from '@angular/common';
+import { DatePipe, NgIf, NgFor } from '@angular/common';
 import { Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
 import {
   AbstractControl,
@@ -60,6 +60,7 @@ interface UsuarioActual {
   styleUrls: ['./perfil.component.scss'],
   imports: [
     NgIf,
+    NgFor,
     ReactiveFormsModule,
     IonContent,
     IonCard,
@@ -107,6 +108,9 @@ export class PerfilComponent implements OnDestroy {
   subiendoFoto = false;
   guardando = false;
 
+  transferenciasPendientes: Models.Transferencias.Transferencia[] = [];
+  transferenciasEnviadas: Models.Transferencias.Transferencia[] = [];
+
   /** Vista previa local mientras se sube una foto nueva (antes de que Firestore confirme el cambio) */
   fotoPreview: string | null = null;
 
@@ -148,12 +152,28 @@ export class PerfilComponent implements OnDestroy {
             providerId: res.providerData?.[0]?.providerId ?? null
           };
           this.getDatosProfile(res.uid);
+          this.cargarTransferencias(res.uid, res.email);
         } else {
           this.user = null;
           this.user_profile = undefined;
+          this.transferenciasPendientes = [];
+          this.transferenciasEnviadas = [];
           this.cargando = false;
         }
       });
+  }
+
+  private cargarTransferencias(uid: string, email: string | null): void {
+    if (email) {
+      this.firestoreService.getTransferenciasPendientesParaMi(email)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(t => this.transferenciasPendientes = t);
+    }
+    // Solo relevante para refugios, pero es barato pedirlo siempre y
+    // mostrarlo condicionado en la plantilla al rol.
+    this.firestoreService.getTransferenciasEnviadas(uid)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(t => this.transferenciasEnviadas = t.filter(tr => tr.estado === 'pendiente'));
   }
 
   ngOnDestroy(): void {
@@ -408,6 +428,64 @@ export class PerfilComponent implements OnDestroy {
   async logout(): Promise<void> {
     await this.auth.logout();
     this.router.navigate(['/login'], { replaceUrl: true });
+  }
+
+  irAMisPublicaciones(): void {
+    this.router.navigate(['/tabs/mis-publicaciones']);
+  }
+
+  async aceptarSolicitud(t: Models.Transferencias.Transferencia): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Aceptar mascota',
+      message: `${t.deNombre} te está transfiriendo a ${t.mascotaNombre}. Al aceptar, la mascota (con todo su historial) pasa a tu cuenta.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Aceptar',
+          handler: async () => {
+            try {
+              const user = this.auth.getCurrentUser();
+              if (!user || !t.id) return;
+              const token = await user.getIdToken();
+              const res = await fetch('https://us-central1-ashbis-ae5b2.cloudfunctions.net/aceptarTransferencia', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transferenciaId: t.id })
+              });
+              if (res.ok) {
+                await this.showToast(`¡${t.mascotaNombre} ahora es tuya! 🐾`, 'success');
+              } else {
+                const err = await res.json().catch(() => ({}));
+                await this.showToast(err.error || 'No se pudo aceptar la transferencia.', 'danger');
+              }
+            } catch {
+              await this.showToast('No se pudo aceptar la transferencia. Intenta nuevamente.', 'danger');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async rechazarSolicitud(t: Models.Transferencias.Transferencia): Promise<void> {
+    if (!t.id) return;
+    try {
+      await this.firestoreService.rechazarTransferencia(t.id);
+      await this.showToast('Solicitud rechazada.', 'primary');
+    } catch {
+      await this.showToast('No se pudo rechazar la solicitud.', 'danger');
+    }
+  }
+
+  async cancelarTransferenciaEnviada(t: Models.Transferencias.Transferencia): Promise<void> {
+    if (!t.id) return;
+    try {
+      await this.firestoreService.cancelarTransferencia(t.id);
+      await this.showToast('Transferencia cancelada.', 'primary');
+    } catch {
+      await this.showToast('No se pudo cancelar la transferencia.', 'danger');
+    }
   }
   async eliminarCuenta(): Promise<void> {
     const alert = await this.alertCtrl.create({

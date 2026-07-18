@@ -1,0 +1,32 @@
+.pub-card {
+  .pub-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+
+    .pub-tipo {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--ion-color-medium);
+      letter-spacing: 0.5px;
+    }
+  }
+
+  h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 4px 0;
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--ion-color-medium-shade);
+  }
+
+  .pub-acciones {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+}

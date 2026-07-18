@@ -1,0 +1,87 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/perfil"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Mis publicaciones</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="toggleForm()">
+        <ion-icon [name]="mostrarForm ? 'close-outline' : 'add-outline'" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <ion-card *ngIf="mostrarForm">
+    <ion-card-header>
+      <ion-card-title>Nueva publicación</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="form" (ngSubmit)="publicar()">
+        <ion-item>
+          <ion-label position="stacked">Tipo</ion-label>
+          <ion-select formControlName="tipo" interface="popover">
+            <ion-select-option *ngFor="let t of tipos" [value]="t.value">{{ t.label }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Título</ion-label>
+          <ion-input formControlName="titulo" placeholder="Ej: Luna busca hogar"></ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Descripción</ion-label>
+          <ion-textarea formControlName="descripcion" [autoGrow]="true" rows="3"
+            placeholder="Contanos la historia, edad, temperamento, qué necesita..."></ion-textarea>
+        </ion-item>
+
+        <ion-item *ngIf="misMascotas.length">
+          <ion-label position="stacked">Vincular a una mascota (opcional)</ion-label>
+          <ion-select formControlName="mascotaId" interface="popover" placeholder="Ninguna">
+            <ion-select-option value="">Ninguna</ion-select-option>
+            <ion-select-option *ngFor="let m of misMascotas" [value]="m.id">{{ m.nombre }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-button expand="block" type="submit" color="danger" class="ion-margin-top"
+          [disabled]="form.invalid || guardando">
+          <ion-spinner *ngIf="guardando" name="crescent"></ion-spinner>
+          <ng-container *ngIf="!guardando">Publicar</ng-container>
+        </ion-button>
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+  <div *ngIf="cargando" class="ion-text-center ion-padding">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ion-card *ngFor="let pub of publicaciones" class="pub-card">
+    <ion-card-content>
+      <div class="pub-header">
+        <ion-badge [color]="pub.activa ? 'success' : 'medium'">{{ pub.activa ? 'Activa' : 'Pausada' }}</ion-badge>
+        <span class="pub-tipo">{{ pub.tipo }}</span>
+      </div>
+      <h2>{{ pub.titulo }}</h2>
+      <p>{{ pub.descripcion }}</p>
+      <div class="pub-acciones">
+        <ion-button size="small" fill="outline" color="medium" (click)="toggleActiva(pub)">
+          <ion-icon [name]="pub.activa ? 'pause-outline' : 'play-outline'" slot="start"></ion-icon>
+          {{ pub.activa ? 'Pausar' : 'Reactivar' }}
+        </ion-button>
+        <ion-button size="small" fill="outline" color="danger" (click)="eliminar(pub)">
+          <ion-icon name="trash-outline" slot="start"></ion-icon>
+          Eliminar
+        </ion-button>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <div *ngIf="!cargando && !publicaciones.length" class="ion-text-center ion-padding" style="color: var(--ion-color-medium);">
+    <p>Todavía no tienes publicaciones. Tocá el "+" para crear la primera.</p>
+  </div>
+
+</ion-content>

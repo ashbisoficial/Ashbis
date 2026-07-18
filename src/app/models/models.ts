@@ -142,6 +142,57 @@ export namespace Models {
     }
   }
 
+  // ─── TRANSFERENCIAS DE DUEÑO (adopción/hogar temporal) ─────────────────────
+  export namespace Transferencias {
+    export const PathTransferencias = 'transferencias';
+
+    export type EstadoTransferencia = 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada';
+
+    /**
+     * Solicitud de cambio de dueño de una mascota (típicamente iniciada por
+     * un refugio al dar una mascota en adopción u hogar temporal). Solo
+     * cambia el uidUsuario de la mascota cuando el destinatario la acepta
+     * — nunca se reasigna de forma unilateral.
+     */
+    export interface Transferencia {
+      id?: string;
+      mascotaId: string;
+      mascotaNombre: string;
+      deUid: string;
+      deNombre: string;
+      /** Email de quien recibe la mascota. Así se puede invitar sin conocer el uid de antemano. */
+      paraEmail: string;
+      /** Se completa recién cuando la transferencia se acepta. */
+      paraUid?: string;
+      estado: EstadoTransferencia;
+      mensaje?: string;
+      createdAt?: any;
+      resueltaEn?: any;
+    }
+  }
+
+  // ─── PUBLICACIONES (adopción / recolección / donaciones) ───────────────────
+  export namespace Publicaciones {
+    export const PathPublicaciones = 'publicaciones';
+
+    export type TipoPublicacion = 'adopcion' | 'recoleccion' | 'donacion' | 'otro';
+
+    export interface Publicacion {
+      id?: string;
+      uidAutor: string;
+      nombreAutor: string;
+      tipo: TipoPublicacion;
+      titulo: string;
+      descripcion: string;
+      fotoUrl?: string;
+      /** Opcional: vincula la publicación a una ficha de mascota ya creada. */
+      mascotaId?: string;
+      activa: boolean;
+      createdAt?: any;
+      updatedAt?: any;
+    }
+  }
+
   // ─── VETERINARIAS FAVORITAS ────────────────────────────────────────────────
   export namespace Veterinarias {
     export interface VeterinariaFavorita {

@@ -279,6 +279,52 @@
         </div>
       </form>
 
+      <!-- Solicitudes de adopción/transferencia pendientes para mí -->
+      <ion-card class="seccion-card" *ngIf="transferenciasPendientes.length">
+        <ion-card-header>
+          <ion-card-title>Solicitudes de adopción</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-item lines="none" *ngFor="let t of transferenciasPendientes">
+            <ion-label class="ion-text-wrap">
+              <h2>{{ t.mascotaNombre }}</h2>
+              <p>{{ t.deNombre }} quiere transferírtela</p>
+              <p *ngIf="t.mensaje">"{{ t.mensaje }}"</p>
+            </ion-label>
+            <ion-button slot="end" size="small" color="danger" (click)="aceptarSolicitud(t)">Aceptar</ion-button>
+            <ion-button slot="end" size="small" fill="outline" color="medium" (click)="rechazarSolicitud(t)">Rechazar</ion-button>
+          </ion-item>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Solo refugios: publicaciones y transferencias enviadas -->
+      <ion-card class="seccion-card" *ngIf="user_profile.rol === 'refugio'">
+        <ion-card-header>
+          <ion-card-title>Refugio</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-button expand="block" fill="outline" color="danger" (click)="irAMisPublicaciones()">
+            <ion-icon name="document-text-outline" slot="start"></ion-icon>
+            Mis publicaciones
+          </ion-button>
+
+          <ng-container *ngIf="transferenciasEnviadas.length">
+            <p class="ion-padding-top" style="font-size: 13px; color: var(--ion-color-medium);">
+              Transferencias esperando respuesta:
+            </p>
+            <ion-item lines="none" *ngFor="let t of transferenciasEnviadas">
+              <ion-label class="ion-text-wrap">
+                <h2>{{ t.mascotaNombre }}</h2>
+                <p>Enviada a {{ t.paraEmail }}</p>
+              </ion-label>
+              <ion-button slot="end" size="small" fill="outline" color="medium" (click)="cancelarTransferenciaEnviada(t)">
+                Cancelar
+              </ion-button>
+            </ion-item>
+          </ng-container>
+        </ion-card-content>
+      </ion-card>
+
       <!-- 🚪 Botón de Cerrar Sesión -->
       <ion-button class="btn-cerrar" expand="block" (click)="logout()">
         <ion-icon name="log-out-outline" slot="start"></ion-icon>
