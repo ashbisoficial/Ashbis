@@ -112,15 +112,9 @@ service cloud.firestore {
 
       // Equipo del refugio: quiénes operan esta cuenta además del dueño.
       match /miembros/{memberUid} {
-        // Regla propia y simple para collectionGroup('miembros').where('uid',
-        // '==', miUid): tiene que poder validarse mirando solo el filtro de
-        // la consulta (resource.data.uid), sin exists()/get() de por medio.
-        // Mezclada en el mismo "allow" que las condiciones de abajo (que sí
-        // usan exists()), Firestore rechazaba la consulta con "Missing or
-        // insufficient permissions" aunque esta condición sola alcanzaba.
-        allow read: if resource.data.uid == request.auth.uid;
         // Lectura directa de la subcolección (dueño, admin o miembro viendo
-        // al resto del equipo).
+        // al resto del equipo). La lectura para collectionGroup('miembros')
+        // NO se resuelve acá — ver la regla con wildcard más abajo.
         allow read: if isUser(uid) || esMiembroDelRefugio(uid) || isUser(memberUid);
         // Solo la Cloud Function aceptarInvitacionEquipo crea estos docs,
         // después de validar la invitación por email — nunca el cliente.
@@ -129,6 +123,15 @@ service cloud.firestore {
         // El dueño/admin puede sacar a cualquiera; un miembro se puede ir solo.
         allow delete: if esAdminDelRefugio(uid) || isUser(memberUid);
       }
+    }
+
+    // Las reglas anidadas de arriba (usuarios/{uid}/miembros/{memberUid}) NO
+    // se aplican a consultas collectionGroup('miembros') — Firestore exige
+    // una regla aparte con el patrón wildcard {path=**} para poder validar
+    // ese tipo de consulta. Esta es la que usa
+    // collectionGroup('miembros').where('uid','==', miUid) en getMisRefugios().
+    match /{path=**}/miembros/{memberUid} {
+      allow read: if resource.data.uid == request.auth.uid;
     }
 
     match /mascotas/{petId} {
