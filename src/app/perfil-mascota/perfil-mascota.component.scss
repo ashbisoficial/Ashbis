@@ -24,9 +24,16 @@
 
 .acciones {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
   margin: 12px 0 16px;
+
+  ion-button {
+    flex: 0 1 auto;
+    margin: 0;
+    font-size: clamp(12px, 3.4vw, 14px);
+  }
 }
 
 .foto-wrap {

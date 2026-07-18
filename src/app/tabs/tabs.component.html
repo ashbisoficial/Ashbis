@@ -14,10 +14,16 @@
       <ion-label>Mis Mascotas</ion-label>
     </ion-tab-button>
 
-    <!-- 3. Pestaña Crear Mascotas -->
+    <!-- 3. Pestaña Crear Mascotas (centro) -->
     <ion-tab-button tab="crear-mascotas" href="/tabs/crear-mascotas">
       <ion-icon name="add-circle-outline"></ion-icon>
       <ion-label>Agregar</ion-label>
+    </ion-tab-button>
+
+    <!-- 4. Pestaña Publicar (solo cuentas de refugio) -->
+    <ion-tab-button *ngIf="esRefugio" tab="mis-publicaciones" href="/tabs/mis-publicaciones">
+      <ion-icon name="megaphone-outline"></ion-icon>
+      <ion-label>Publicar</ion-label>
     </ion-tab-button>
 
     <!-- 5. Pestaña Perfil -->

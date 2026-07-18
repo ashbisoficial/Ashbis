@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 
@@ -16,9 +16,11 @@ import {
   homeOutline,
   listOutline,
   addCircleOutline,
-  qrCodeOutline,
+  megaphoneOutline,
   personOutline
 } from 'ionicons/icons';
+import { AuthenticationService } from '../firebase/authentication';
+import { FirestoreService } from '../firebase/firestore';
 
 @Component({
   selector: 'app-tabs',
@@ -35,15 +37,25 @@ import {
   ]
 })
 export class TabsComponent {
+  private auth = inject(AuthenticationService);
+  private fs = inject(FirestoreService);
+
+  esRefugio = false;
 
   constructor() {
-    // 4. Añadir todos los iconos que usa el HTML
     addIcons({
       homeOutline,
       listOutline,
       addCircleOutline,
-      qrCodeOutline, // <-- El nuevo icono
+      megaphoneOutline,
       personOutline
     });
+
+    const uid = this.auth.getCurrentUser()?.uid;
+    if (uid) {
+      this.fs.getDocument(`usuarios/${uid}`).then(perfil => {
+        this.esRefugio = perfil?.rol === 'refugio';
+      });
+    }
   }
 }

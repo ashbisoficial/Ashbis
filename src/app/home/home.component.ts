@@ -551,7 +551,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   irAlChatIA() {
-    this.router.navigate(['/chat-ia']);
+    this.router.navigate(['/tabs/chat-ia']);
   }
 
   irAQR() {
