@@ -485,6 +485,13 @@ export class FirestoreService {
     return collectionData(q, { idField: 'id' }) as Observable<Models.Publicaciones.Publicacion[]>;
   }
 
+  getPublicacionById(id: string): Observable<Models.Publicaciones.Publicacion | undefined> {
+    return docData(
+      doc(this.firestore, `${Models.Publicaciones.PathPublicaciones}/${id}`),
+      { idField: 'id' }
+    ) as Observable<Models.Publicaciones.Publicacion | undefined>;
+  }
+
   getPublicacionesByUsuario(uid: string): Observable<Models.Publicaciones.Publicacion[]> {
     const r = collection(this.firestore, Models.Publicaciones.PathPublicaciones);
     const q = query(r, where('uidAutor', '==', uid), orderBy('createdAt', 'desc'));

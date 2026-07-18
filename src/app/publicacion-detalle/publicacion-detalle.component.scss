@@ -1,0 +1,56 @@
+.detalle-content {
+  --background: #070707;
+}
+
+.estado-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  color: #aaaaaa;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.foto-grande {
+  display: block;
+  width: 100%;
+  max-height: 55vh;
+  object-fit: cover;
+}
+
+.cuerpo {
+  padding: 18px 18px 32px;
+}
+
+.badge-tipo {
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.autor {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #999999;
+}
+
+.descripcion {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #f3eaea;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.fecha {
+  font-size: 12px;
+  color: #777777;
+}

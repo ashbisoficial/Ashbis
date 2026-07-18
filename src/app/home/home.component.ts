@@ -8,7 +8,7 @@ import {
   IonCard, IonButton, IonIcon, IonCardContent, IonContent, IonSpinner,
   IonInput, IonItem, IonLabel, IonTextarea
 } from '@ionic/angular/standalone';
-import { AlertController, ToastController } from '@ionic/angular';
+import { ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { map, switchMap, take } from 'rxjs/operators';
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -87,7 +87,7 @@ addIcons({
     IonCard, IonButton, IonIcon, IonCardContent, IonContent, IonSpinner,
     IonInput, IonItem, IonLabel, IonTextarea
   ],
-  providers: [ToastController, AlertController],
+  providers: [ToastController],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class HomePage implements OnInit, OnDestroy {
@@ -95,7 +95,6 @@ export class HomePage implements OnInit, OnDestroy {
   private auth            = inject(AuthenticationService);
   private router          = inject(Router);
   private toastController = inject(ToastController);
-  private alertController = inject(AlertController);
   private firestoreService= inject(FirestoreService);
   private injector        = inject(EnvironmentInjector);
 
@@ -164,20 +163,9 @@ export class HomePage implements OnInit, OnDestroy {
       .subscribe(pubs => this.publicacionesActivas = pubs);
   }
 
-  async verPublicacion(pub: Models.Publicaciones.Publicacion): Promise<void> {
-    const etiquetasTipo: Record<Models.Publicaciones.TipoPublicacion, string> = {
-      adopcion: '🐾 Adopción',
-      recoleccion: '📋 Recolección',
-      donacion: '💛 Donación',
-      otro: '📌 Otro',
-    };
-    const alert = await this.alertController.create({
-      header: pub.titulo,
-      subHeader: `${etiquetasTipo[pub.tipo]} · ${pub.nombreAutor}`,
-      message: pub.descripcion,
-      buttons: ['Cerrar'],
-    });
-    await alert.present();
+  verPublicacion(pub: Models.Publicaciones.Publicacion): void {
+    if (!pub.id) return;
+    this.router.navigate(['/tabs/publicacion', pub.id]);
   }
 
   ngOnDestroy() {

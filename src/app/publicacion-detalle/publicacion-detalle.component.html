@@ -1,0 +1,41 @@
+<ion-header translucent="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Publicación</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="detalle-content">
+
+  <div *ngIf="cargando" class="estado-center">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <div *ngIf="!cargando && noEncontrada" class="estado-center">
+    <p>Esta publicación ya no está disponible.</p>
+  </div>
+
+  <div *ngIf="!cargando && publicacion as pub" class="detalle">
+    <img
+      class="foto-grande"
+      [src]="pub.fotoUrl || 'assets/img/9.jpg'"
+      [alt]="pub.titulo"
+    />
+
+    <div class="cuerpo">
+      <ion-badge color="danger" class="badge-tipo">{{ etiquetasTipo[pub.tipo] }}</ion-badge>
+
+      <h1>{{ pub.titulo }}</h1>
+      <p class="autor">Publicado por {{ pub.nombreAutor }}</p>
+
+      <p class="descripcion">{{ pub.descripcion }}</p>
+
+      <p class="fecha" *ngIf="pub.createdAt">
+        {{ pub.createdAt.toDate ? (pub.createdAt.toDate() | date:'dd/MM/yyyy') : '' }}
+      </p>
+    </div>
+  </div>
+
+</ion-content>
