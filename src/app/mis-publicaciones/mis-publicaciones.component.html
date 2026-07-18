@@ -66,6 +66,15 @@
           </div>
         </div>
 
+        <div class="veracidad-check">
+          <ion-checkbox formControlName="aceptaVeracidad" labelPlacement="end" justify="start">
+            Confirmo que la información y las fotos de esta publicación son reales y
+            verídicas. Entiendo que si se determina que se trata de una estafa, un
+            fraude, o un intento de dañar la imagen de Ashbis o de sus usuarios,
+            seré responsable legal y podré ser sancionado con una multa y una demanda.
+          </ion-checkbox>
+        </div>
+
         <ion-button expand="block" type="submit" color="danger" class="ion-margin-top"
           [disabled]="form.invalid || guardando">
           <ion-spinner *ngIf="guardando" name="crescent"></ion-spinner>

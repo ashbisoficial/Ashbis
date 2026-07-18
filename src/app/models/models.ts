@@ -256,6 +256,12 @@ export namespace Models {
       activa: boolean;
       createdAt?: any;
       updatedAt?: any;
+      /** Se calcula al crear (createdAt + 30 días); habilita el borrado
+       *  automático vía política de TTL de Firestore sobre este campo. */
+      expiraEn?: any;
+      /** Debe ser true: quien publica confirma que los datos son reales y
+       *  acepta responsabilidad legal en caso de estafa/fraude/difamación. */
+      aceptaVeracidad: boolean;
     }
   }
 

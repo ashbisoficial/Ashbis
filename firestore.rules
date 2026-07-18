@@ -209,9 +209,25 @@ service cloud.firestore {
       allow create: if puedeOperarComoRefugio(request.resource.data.uidAutor)
                     && esCuentaRefugio(request.resource.data.uidAutor)
                     && request.resource.data.tipo in ['adopcion', 'recoleccion', 'donacion', 'otro']
+                    // Quien publica tiene que confirmar explícitamente que
+                    // los datos son reales (checkbox obligatorio en el
+                    // formulario) — no se puede crear la publicación sin
+                    // marcarla, ni siquiera llamando a la API directo.
+                    && request.resource.data.aceptaVeracidad == true
+                    // expiraEn se usa para el borrado automático por TTL a
+                    // los 30 días; se acepta un margen de un día para
+                    // absorber diferencias de reloj entre cliente y
+                    // servidor, pero no permite fijar una fecha arbitraria.
+                    && request.resource.data.expiraEn > request.time + duration.value(29, 'd')
+                    && request.resource.data.expiraEn < request.time + duration.value(31, 'd')
                     && noLongStrings(request.resource.data);
+      // expiraEn y aceptaVeracidad quedan fijos desde la creación: si se
+      // pudieran editar, un refugio podría estirar la fecha de borrado
+      // indefinidamente actualizando la publicación.
       allow update: if puedeOperarComoRefugio(resource.data.uidAutor)
                     && request.resource.data.uidAutor == resource.data.uidAutor
+                    && request.resource.data.expiraEn == resource.data.expiraEn
+                    && request.resource.data.aceptaVeracidad == resource.data.aceptaVeracidad
                     && noLongStrings(request.resource.data);
       allow delete: if puedeOperarComoRefugio(resource.data.uidAutor);
     }

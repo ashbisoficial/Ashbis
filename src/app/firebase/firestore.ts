@@ -3,7 +3,7 @@ import {
   Firestore,
   collection, collectionData, collectionGroup, deleteDoc, doc, getDoc,
   serverTimestamp, setDoc, updateDoc, docData, addDoc,
-  query, where, orderBy, CollectionReference,
+  query, where, orderBy, CollectionReference, Timestamp,
   arrayUnion, arrayRemove,
 } from '@angular/fire/firestore';
 import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
@@ -500,14 +500,24 @@ export class FirestoreService {
     return getDownloadURL(r);
   }
 
-  async crearPublicacion(data: Omit<Models.Publicaciones.Publicacion, 'id' | 'activa' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async crearPublicacion(
+    data: Omit<Models.Publicaciones.Publicacion, 'id' | 'activa' | 'createdAt' | 'updatedAt' | 'expiraEn'>
+  ): Promise<string> {
+    if (!data.aceptaVeracidad) {
+      throw new Error('Falta confirmar que la información publicada es real.');
+    }
+    // sanitizeFirestoreObject() destruiría un Timestamp real si viajara
+    // dentro de "data" (lo trataría como objeto plano a limpiar), así que
+    // expiraEn se agrega después, igual que createdAt/updatedAt.
     const clean = this.security.sanitizeFirestoreObject(data as any);
+    const treintaDiasMs = 30 * 24 * 60 * 60 * 1000;
     const refDoc = doc(collection(this.firestore, Models.Publicaciones.PathPublicaciones));
     await setDoc(refDoc, {
       ...clean,
       activa: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      expiraEn: Timestamp.fromMillis(Date.now() + treintaDiasMs),
     });
     return refDoc.id;
   }

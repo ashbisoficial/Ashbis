@@ -22,6 +22,7 @@ import {
   IonIcon,
   IonBadge,
   IonSpinner,
+  IonCheckbox,
   AlertController,
   ToastController
 } from '@ionic/angular/standalone';
@@ -61,7 +62,8 @@ import { SecurityService } from '../services/security.service';
     IonButton,
     IonIcon,
     IonBadge,
-    IonSpinner
+    IonSpinner,
+    IonCheckbox
   ]
 })
 export class MisPublicacionesComponent implements OnDestroy {
@@ -99,6 +101,7 @@ export class MisPublicacionesComponent implements OnDestroy {
     titulo: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
     descripcion: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(1000)]],
     mascotaId: [''],
+    aceptaVeracidad: [false, Validators.requiredTrue],
   });
 
   constructor() {
@@ -141,7 +144,7 @@ export class MisPublicacionesComponent implements OnDestroy {
   toggleForm(): void {
     this.mostrarForm = !this.mostrarForm;
     if (!this.mostrarForm) {
-      this.form.reset({ tipo: 'adopcion', titulo: '', descripcion: '', mascotaId: '' });
+      this.form.reset({ tipo: 'adopcion', titulo: '', descripcion: '', mascotaId: '', aceptaVeracidad: false });
       this.fotoFile = null;
       this.fotoPreview = null;
     }
@@ -194,6 +197,7 @@ export class MisPublicacionesComponent implements OnDestroy {
         tipo: data.tipo!,
         titulo: this.security.sanitizeText(data.titulo!, 120),
         descripcion: this.security.sanitizeText(data.descripcion!, 1000),
+        aceptaVeracidad: data.aceptaVeracidad === true,
         ...(data.mascotaId ? { mascotaId: data.mascotaId } : {}),
         ...(fotoUrl ? { fotoUrl } : {}),
       });

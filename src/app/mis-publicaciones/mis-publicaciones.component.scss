@@ -1,3 +1,18 @@
+.veracidad-check {
+  margin: 14px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--ion-color-medium);
+  border-radius: 10px;
+
+  ion-checkbox {
+    --size: 20px;
+    align-items: flex-start;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--ion-color-medium-shade);
+  }
+}
+
 .foto-picker {
   margin: 8px 0 4px;
 
