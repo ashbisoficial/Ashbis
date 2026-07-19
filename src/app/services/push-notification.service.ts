@@ -10,6 +10,11 @@ import { Firestore, deleteDoc, doc, serverTimestamp, setDoc } from '@angular/fir
  * Cloud Functions (onInvitacionEquipoCreada, onTransferenciaCreada) con el
  * Admin SDK — este servicio solo se encarga del lado del dispositivo.
  *
+ * Usa @capacitor-firebase/messaging (no @capacitor/push-notifications) porque
+ * en iOS necesitamos que el token entregado sea un token FCM real (el SDK de
+ * Firebase hace el puente APNs→FCM internamente); el plugin core de
+ * Capacitor solo entrega el token crudo de APNs, que el backend no entiende.
+ *
  * Solo funciona en la app nativa (Android/iOS): la contraparte web (push en
  * navegador/PWA) necesitaría además un service worker de Firebase Messaging
  * y una VAPID key, que no está configurada todavía.
@@ -32,31 +37,28 @@ export class PushNotificationService {
     this.inicializado = true;
 
     try {
-      const { PushNotifications } = await import('@capacitor/push-notifications');
+      const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
 
-      let estado = (await PushNotifications.checkPermissions()).receive;
+      let estado = (await FirebaseMessaging.checkPermissions()).receive;
       if (estado === 'prompt' || estado === 'prompt-with-rationale') {
-        estado = (await PushNotifications.requestPermissions()).receive;
+        estado = (await FirebaseMessaging.requestPermissions()).receive;
       }
       if (estado !== 'granted') return;
 
-      PushNotifications.addListener('registration', (token) => {
-        this.guardarToken(token.value).catch(err =>
+      FirebaseMessaging.addListener('tokenReceived', (event) => {
+        this.guardarToken(event.token).catch(err =>
           console.error('No se pudo guardar el token de push', err)
         );
       });
 
-      PushNotifications.addListener('registrationError', (err) => {
-        console.error('Error registrando push notifications', err);
-      });
-
       // Notificación tocada estando la app en segundo plano o cerrada: la
       // llevamos a la pantalla de notificaciones.
-      PushNotifications.addListener('pushNotificationActionPerformed', () => {
+      FirebaseMessaging.addListener('notificationActionPerformed', () => {
         this.router.navigate(['/tabs/notificaciones']);
       });
 
-      await PushNotifications.register();
+      const { token } = await FirebaseMessaging.getToken();
+      await this.guardarToken(token);
     } catch (err) {
       console.error('No se pudo inicializar push notifications', err);
     }
@@ -81,13 +83,16 @@ export class PushNotificationService {
   async olvidarTokenActual(): Promise<void> {
     if (!this.isNative || !this.tokenActual) return;
     const uid = this.auth.currentUser?.uid;
+    const token = this.tokenActual;
+    this.tokenActual = null;
     if (!uid) return;
     try {
-      await deleteDoc(doc(this.firestore, `usuarios/${uid}/fcmTokens/${this.tokenActual}`));
+      const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+      await FirebaseMessaging.deleteToken();
+      await deleteDoc(doc(this.firestore, `usuarios/${uid}/fcmTokens/${token}`));
     } catch {
-      /* no crítico */
-    } finally {
-      this.tokenActual = null;
+      /* no crítico: en el peor caso el token queda huérfano hasta que la
+       * Cloud Function lo limpie sola al detectar que ya no es válido */
     }
   }
 }
