@@ -484,26 +484,15 @@ export class PerfilComponent implements OnDestroy {
         {
           text: 'Aceptar',
           handler: async () => {
+            if (!t.id) return;
             try {
-              const user = this.auth.getCurrentUser();
-              if (!user || !t.id) return;
-              const token = await user.getIdToken();
-              const res = await fetch('https://us-central1-ashbis-ae5b2.cloudfunctions.net/aceptarTransferencia', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ transferenciaId: t.id })
-              });
-              if (res.ok) {
-                await this.showToast(
-                  esAdopcion ? `¡${t.mascotaNombre} ahora es tuya! 🐾` : `Ya tenés acceso a ${t.mascotaNombre}. 🐾`,
-                  'success'
-                );
-              } else {
-                const err = await res.json().catch(() => ({}));
-                await this.showToast(err.error || 'No se pudo aceptar la solicitud.', 'danger');
-              }
-            } catch {
-              await this.showToast('No se pudo aceptar la solicitud. Intenta nuevamente.', 'danger');
+              await this.firestoreService.aceptarTransferencia(t.id);
+              await this.showToast(
+                esAdopcion ? `¡${t.mascotaNombre} ahora es tuya! 🐾` : `Ya tenés acceso a ${t.mascotaNombre}. 🐾`,
+                'success'
+              );
+            } catch (error: any) {
+              await this.showToast(error?.message || 'No se pudo aceptar la solicitud.', 'danger');
             }
           }
         }
@@ -577,23 +566,12 @@ export class PerfilComponent implements OnDestroy {
         {
           text: 'Aceptar',
           handler: async () => {
+            if (!inv.id) return;
             try {
-              const user = this.auth.getCurrentUser();
-              if (!user || !inv.id) return;
-              const token = await user.getIdToken();
-              const res = await fetch('https://us-central1-ashbis-ae5b2.cloudfunctions.net/aceptarInvitacionEquipo', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ invitacionId: inv.id })
-              });
-              if (res.ok) {
-                await this.showToast(`Ahora formás parte del equipo de ${inv.refugioNombre}.`, 'success');
-              } else {
-                const err = await res.json().catch(() => ({}));
-                await this.showToast(err.error || 'No se pudo aceptar la invitación.', 'danger');
-              }
-            } catch {
-              await this.showToast('No se pudo aceptar la invitación. Intenta nuevamente.', 'danger');
+              await this.firestoreService.aceptarInvitacionEquipo(inv.id);
+              await this.showToast(`Ahora formás parte del equipo de ${inv.refugioNombre}.`, 'success');
+            } catch (error: any) {
+              await this.showToast(error?.message || 'No se pudo aceptar la invitación.', 'danger');
             }
           }
         }

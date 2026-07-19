@@ -604,6 +604,31 @@ export class FirestoreService {
     });
   }
 
+  // Aceptar NUNCA se hace desde el cliente directo: reasigna uidUsuario o
+  // crea un colaborador, y eso solo lo hace esta Cloud Function con el
+  // Admin SDK, después de validar que quien acepta es el destinatario real.
+  async aceptarTransferencia(transferenciaId: string): Promise<void> {
+    await this.postToCloudFunction(
+      'https://us-central1-ashbis-ae5b2.cloudfunctions.net/aceptarTransferencia',
+      { transferenciaId }
+    );
+  }
+
+  private async postToCloudFunction(url: string, body: Record<string, string>): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('Usuario no autenticado');
+    const token = await user.getIdToken();
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'No se pudo completar la operación.');
+    }
+  }
+
   // ── Equipo de refugio ────────────────────────────────────────────────────────
   // Aceptar una invitación NO se hace desde acá: requiere la Cloud Function
   // aceptarInvitacionEquipo, que crea usuarios/{refugioUid}/miembros/{uid}
@@ -656,6 +681,16 @@ export class FirestoreService {
       estado: 'cancelada',
       resueltaEn: serverTimestamp(),
     });
+  }
+
+  // Aceptar NUNCA se hace desde el cliente directo: crea
+  // usuarios/{refugioUid}/miembros/{uid}, y eso solo lo hace esta Cloud
+  // Function con el Admin SDK, después de validar la invitación por email.
+  async aceptarInvitacionEquipo(invitacionId: string): Promise<void> {
+    await this.postToCloudFunction(
+      'https://us-central1-ashbis-ae5b2.cloudfunctions.net/aceptarInvitacionEquipo',
+      { invitacionId }
+    );
   }
 
   getMiembrosEquipo(refugioUid: string): Observable<Models.Equipo.MiembroEquipo[]> {

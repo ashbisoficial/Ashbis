@@ -50,6 +50,21 @@
   --ion-color-danger-shade: #7a0707;
   --ion-color-danger-tint: #9c1f1f;
 
+  /* Los componentes por defecto de Ionic (ion-alert, ion-checkbox,
+     ion-radio, ion-toggle, ion-segment, el spinner de ion-loading...) usan
+     --ion-color-primary para su color activo/seleccionado, no
+     --ion-color-danger. Como en Ashbis nunca se usa color="primary" a
+     propósito (todo lo de marca es color="danger"), lo más simple y
+     correcto es que "primary" sea el mismo rojo de marca, así cualquier
+     componente sin estilo propio también sale rojo en vez del azul por
+     defecto de Ionic. */
+  --ion-color-primary: #8b0808;
+  --ion-color-primary-rgb: 139, 8, 8;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #7a0707;
+  --ion-color-primary-tint: #9c1f1f;
+
   --ashbis-red: #8b0808;
   --ashbis-red-hover: #b91c1c;
   --ashbis-red-activated: #991b1b;
@@ -207,4 +222,35 @@ ion-button[color="medium"] {
   ion-button {
     font-size: 13px !important;
   }
+}
+
+/* ===========================================================
+   IDENTIDAD ASHBIS EN LOS OVERLAYS POR DEFECTO DE IONIC
+   ion-alert/ion-toast/ion-loading se renderizan en un portal fuera del
+   árbol de cada componente, con su contenido interno encapsulado en
+   shadow DOM y sin CSS Shadow Parts expuestas en esta versión de Ionic
+   (verificado contra el código fuente instalado: no hay ::part() en
+   alert/toast/loading). Solo las custom properties documentadas cruzan
+   ese límite, así que el override real es acá + la variable
+   --ion-color-primary de arriba, que es la que alert/toast/loading usan
+   internamente para colorear botones y el spinner — por eso ahora salen
+   rojo marca en vez del azul por defecto de Ionic.
+   =========================================================== */
+ion-alert {
+  --background: #141414;
+  --backdrop-opacity: .68;
+  --max-width: 340px;
+}
+
+ion-toast {
+  --border-radius: 12px;
+  --box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  --button-color: #ffffff;
+  font-weight: 600;
+}
+
+ion-loading {
+  --background: #141414;
+  --backdrop-opacity: .68;
+  --spinner-color: #8b0808;
 }
