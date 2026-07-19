@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 import {
   IonBadge,
   IonButton,
+  IonButtons,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -21,6 +22,7 @@ import {
   IonCol,
   IonContent,
   IonGrid,
+  IonHeader,
   IonIcon,
   IonInput,
   IonItem,
@@ -31,7 +33,9 @@ import {
   IonSelectOption,
   IonSkeletonText,
   IonSpinner,
-  IonTextarea
+  IonTextarea,
+  IonTitle,
+  IonToolbar
 } from '@ionic/angular/standalone';
 import { AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -65,6 +69,10 @@ interface UsuarioActual {
     NgIf,
     NgFor,
     ReactiveFormsModule,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
     IonContent,
     IonCard,
     IonCardHeader,

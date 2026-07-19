@@ -4,6 +4,12 @@ ion-content.perfil {
   color: #ffffff !important;
 }
 
+.perfil-header-toolbar ion-toolbar {
+  --background: #000000;
+  --color: #ffffff;
+  --border-color: #8b0808;
+}
+
 /* ====== CONTENEDOR GENERAL ====== */
 .container {
   width: 100%;
@@ -402,18 +408,9 @@ ion-button[color="medium"] {
   --border-radius: 24px;
 }
 
-/* ====== CUENTA: CONFIGURACIÓN + CERRAR SESIÓN ====== */
+/* ====== CUENTA: CERRAR SESIÓN ====== */
 .zona-cuenta {
   margin-top: 8px;
-}
-
-.btn-config {
-  --border-radius: 24px;
-  width: 90%;
-  max-width: 360px;
-  height: 46px;
-  margin: 10px auto 0;
-  display: block;
 }
 
 .btn-cerrar {

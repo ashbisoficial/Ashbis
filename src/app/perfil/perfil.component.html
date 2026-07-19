@@ -1,3 +1,14 @@
+<ion-header translucent="true" class="perfil-header-toolbar">
+  <ion-toolbar>
+    <ion-title>Perfil</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="irAConfiguracion()" aria-label="Configuración">
+        <ion-icon name="settings-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
 <ion-content [fullscreen]="true" class="perfil">
   <div class="container">
 
@@ -437,14 +448,10 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Cuenta: configuración de la app y cerrar sesión. La zona
-           irreversible (eliminar cuenta) vive en Configuración, no acá. -->
+      <!-- Cuenta: cerrar sesión. La configuración de la app está en el
+           ícono de engranaje del header, y la zona irreversible (eliminar
+           cuenta) vive ahí, no acá. -->
       <div class="zona-cuenta">
-        <ion-button class="btn-config" expand="block" fill="outline" color="medium" (click)="irAConfiguracion()">
-          <ion-icon name="settings-outline" slot="start"></ion-icon>
-          Configuración de la app
-        </ion-button>
-
         <ion-button class="btn-cerrar" expand="block" (click)="logout()">
           <ion-icon name="log-out-outline" slot="start"></ion-icon>
           Cerrar sesión
