@@ -39,7 +39,7 @@ import {
   cameraOutline, createOutline, logoGoogle, closeOutline, trashOutline,
   checkmarkOutline, logOutOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-  documentTextOutline, refreshOutline, addOutline, medkitOutline
+  documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
@@ -187,7 +187,8 @@ export class PerfilComponent implements OnDestroy {
       cameraOutline, createOutline, logoGoogle, closeOutline,
       checkmarkOutline, logOutOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-      documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline
+      documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline,
+      settingsOutline
     });
 
     this.cargando = true;
@@ -528,6 +529,10 @@ export class PerfilComponent implements OnDestroy {
     this.router.navigate(['/login'], { replaceUrl: true });
   }
 
+  irAConfiguracion(): void {
+    this.router.navigate(['/tabs/configuracion']);
+  }
+
   irAMisPublicaciones(): void {
     this.router.navigate(['/tabs/mis-publicaciones']);
   }
@@ -624,43 +629,6 @@ export class PerfilComponent implements OnDestroy {
     } catch {
       await this.showToast('No se pudo salir del equipo.', 'danger');
     }
-  }
-  async eliminarCuenta(): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Eliminar cuenta',
-      message: 'Esta acción eliminará permanentemente tu cuenta y todos los datos de tus mascotas. No se puede deshacer.',
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Eliminar',
-          role: 'destructive',
-          handler: async () => {
-            try {
-              const user = this.auth.getCurrentUser();
-              if (!user) return;
-              const token = await user.getIdToken();
-              const res = await fetch('https://us-central1-ashbis-ae5b2.cloudfunctions.net/eliminarCuenta', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-              if (res.ok) {
-                await this.auth.logout();
-                await this.router.navigate(['/login'], { replaceUrl: true });
-              } else {
-                const err = await res.json();
-                console.error('Error al eliminar cuenta:', err);
-              }
-            } catch (e) {
-              console.error('Error al eliminar cuenta:', e);
-            }
-          }
-        }
-      ]
-    });
-    await alert.present();
   }
 
 }

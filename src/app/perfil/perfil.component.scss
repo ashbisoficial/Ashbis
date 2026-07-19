@@ -402,9 +402,18 @@ ion-button[color="medium"] {
   --border-radius: 24px;
 }
 
-/* ====== CUENTA: CERRAR SESIÓN + ZONA IRREVERSIBLE ====== */
+/* ====== CUENTA: CONFIGURACIÓN + CERRAR SESIÓN ====== */
 .zona-cuenta {
   margin-top: 8px;
+}
+
+.btn-config {
+  --border-radius: 24px;
+  width: 90%;
+  max-width: 360px;
+  height: 46px;
+  margin: 10px auto 0;
+  display: block;
 }
 
 .btn-cerrar {
@@ -426,21 +435,6 @@ ion-button[color="medium"] {
 
 .btn-cerrar:hover {
   --background: #8b080860;
-}
-
-.zona-peligro {
-  padding: 18px 16px 30px;
-  border-top: 1px solid rgba(139, 8, 8, 0.3);
-}
-
-.zona-peligro-titulo {
-  margin: 0 0 10px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: #8b0808;
-  text-align: center;
 }
 
 /* ====== RESPONSIVE ====== */

@@ -18,7 +18,7 @@ import {
   chatbubblesOutline, heartOutline, heart, closeOutline, createOutline,
   callOutline, globeOutline, timeOutline, starOutline,
   chevronBackOutline, chevronForwardOutline, paw, bag,
-  qrCodeOutline, addCircleOutline
+  qrCodeOutline, addCircleOutline, navigateOutline, expandOutline, contractOutline
 } from 'ionicons/icons';
 import { register } from 'swiper/element/bundle';
 import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
@@ -75,7 +75,7 @@ addIcons({
   chatbubblesOutline, heartOutline, heart, closeOutline, createOutline,
   callOutline, globeOutline, timeOutline, starOutline,
   chevronBackOutline, chevronForwardOutline, paw, bag,
-  qrCodeOutline, addCircleOutline
+  qrCodeOutline, addCircleOutline, navigateOutline, expandOutline, contractOutline
 });
 
 @Component({
@@ -117,6 +117,11 @@ export class HomePage implements OnInit, OnDestroy {
   private userMarker: any;
   private markerRefs = new Map<string, L.Marker>();
   userPositionMarker: { lat: number; lng: number } | undefined;
+
+  // El mapa arranca "bloqueado" (sin arrastre/zoom con rueda/pinch) para que
+  // hacer scroll de la página cerca del mapa no lo termine moviendo por
+  // accidente. Se desbloquea al expandirlo (botón o doble click/doble tap).
+  mapaExpandido = false;
 
   // Favoritos
   private destroy$ = new Subject<void>();
@@ -216,6 +221,10 @@ export class HomePage implements OnInit, OnDestroy {
         center: [-33.4378, -70.6504],
         zoom: 13,
         zoomControl: true,
+        dragging: false,
+        scrollWheelZoom: false,
+        touchZoom: false,
+        doubleClickZoom: false,
       });
 
       // ── Estilo del mapa: Carto Dark ──
@@ -226,7 +235,38 @@ export class HomePage implements OnInit, OnDestroy {
       }).addTo(this.map);
 
       this.markersLayer = L.layerGroup().addTo(this.map);
+
+      // Doble click/doble tap expande o colapsa el mapa (doubleClickZoom
+      // queda deshabilitado a propósito para que el doble click/tap sea
+      // siempre esto, nunca un zoom accidental).
+      this.map.on('dblclick', () => this.toggleExpandirMapa());
     }, 300);
+  }
+
+  /** Expande el mapa a pantalla completa (y habilita arrastre/zoom) o lo
+   *  vuelve a su tamaño embebido (y los vuelve a bloquear). */
+  toggleExpandirMapa(): void {
+    this.mapaExpandido = !this.mapaExpandido;
+    if (!this.map) return;
+
+    const metodo: 'enable' | 'disable' = this.mapaExpandido ? 'enable' : 'disable';
+    this.map.dragging[metodo]();
+    this.map.scrollWheelZoom[metodo]();
+    this.map.touchZoom[metodo]();
+
+    // El contenedor cambia de tamaño con la clase .expandido (ver scss);
+    // Leaflet necesita recalcular sus dimensiones después de la transición.
+    setTimeout(() => this.map?.invalidateSize(), 320);
+  }
+
+  /** Centra el mapa en la ubicación del usuario. Si todavía no la tenemos
+   *  (no se buscó nada aún), la pide igual que "Veterinaria"/"Tienda". */
+  centrarEnUsuario(): void {
+    if (this.userPositionMarker && this.map) {
+      this.map.setView([this.userPositionMarker.lat, this.userPositionMarker.lng], 14);
+    } else {
+      this.getCurrentLocation();
+    }
   }
 
   // ── Toast ────────────────────────────────────────────

@@ -98,8 +98,31 @@
 
     <!-- MAPA LEAFLET -->
     <ion-card-content>
-      <div class="map-container">
+      <div class="map-container" [class.expandido]="mapaExpandido">
         <div id="leaflet-map"></div>
+
+        <div class="map-botones">
+          <button
+            type="button"
+            class="map-btn"
+            (click)="centrarEnUsuario()"
+            aria-label="Centrar en mi ubicación"
+            title="Centrar en mi ubicación"
+          >
+            <ion-icon name="navigate-outline"></ion-icon>
+          </button>
+          <button
+            type="button"
+            class="map-btn"
+            (click)="toggleExpandirMapa()"
+            [attr.aria-label]="mapaExpandido ? 'Achicar mapa' : 'Expandir mapa'"
+            [attr.title]="mapaExpandido ? 'Achicar mapa' : 'Expandir mapa'"
+          >
+            <ion-icon [name]="mapaExpandido ? 'contract-outline' : 'expand-outline'"></ion-icon>
+          </button>
+        </div>
+
+        <p class="map-hint" *ngIf="!mapaExpandido">Doble click/tap para expandir</p>
       </div>
     </ion-card-content>
 

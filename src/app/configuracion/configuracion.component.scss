@@ -1,0 +1,111 @@
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 16px 32px;
+}
+
+.seccion-card {
+  --background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border);
+  border-radius: 14px;
+  margin-bottom: 16px;
+  box-shadow: none;
+
+  ion-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+
+    ion-icon {
+      font-size: 17px;
+      color: var(--ashbis-red, #8b0808);
+    }
+  }
+}
+
+.seccion-subtitulo {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ion-color-medium);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.seccion-peligro {
+  border-color: rgba(139, 8, 8, .3);
+}
+
+.campo-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+.campo-label-mt {
+  margin-top: 18px;
+}
+
+.campo-nota {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ion-color-medium);
+
+  a {
+    color: var(--ashbis-red, #8b0808);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+ion-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+
+  ion-label p {
+    font-size: 12px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.item-toggle ion-label p {
+  margin-top: 2px;
+}
+
+.estado-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  white-space: nowrap;
+
+  &[data-estado="concedido"] {
+    background: rgba(45, 211, 111, .16);
+    color: #2dd36f;
+  }
+  &[data-estado="denegado"] {
+    background: rgba(139, 8, 8, .16);
+    color: #ff5b5b;
+  }
+  &[data-estado="no-pedido"],
+  &[data-estado="no-soportado"] {
+    background: rgba(255, 255, 255, .08);
+    color: var(--ion-color-medium);
+  }
+}
+
+ion-segment {
+  --background: rgba(255, 255, 255, .04);
+  border-radius: 10px;
+}

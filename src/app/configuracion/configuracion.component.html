@@ -1,0 +1,194 @@
+<ion-header translucent="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/perfil"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Configuración</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="configuracion">
+  <div class="container">
+
+    <!-- ═══════════ APARIENCIA ═══════════ -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="color-palette-outline"></ion-icon>
+          Apariencia
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="campo-label">Tema</p>
+        <ion-segment [value]="tema" (ionChange)="cambiarTema($event.detail.value)">
+          <ion-segment-button value="oscuro">
+            <ion-icon name="moon-outline"></ion-icon>
+            <ion-label>Oscuro</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="claro">
+            <ion-icon name="sunny-outline"></ion-icon>
+            <ion-label>Claro</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+        <p class="campo-nota" *ngIf="tema === 'claro'">
+          El tema claro ya se aplica al menú y a esta pantalla. Algunas pantallas todavía se ven oscuras — las estamos actualizando.
+        </p>
+
+        <p class="campo-label campo-label-mt">
+          <ion-icon name="text-outline"></ion-icon>
+          Tamaño de letra
+        </p>
+        <ion-segment [value]="tamanoTexto" (ionChange)="cambiarTamanoTexto($event.detail.value)">
+          <ion-segment-button value="pequeno">
+            <ion-label>A</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="normal">
+            <ion-label>A</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="grande">
+            <ion-label>A</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="muy-grande">
+            <ion-label>A</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- ═══════════ NOTIFICACIONES ═══════════ -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="notifications-outline"></ion-icon>
+          Notificaciones
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" class="item-toggle">
+          <ion-label>
+            Notificaciones push
+            <p>Invitaciones de equipo, solicitudes de transferencia/adopción.</p>
+          </ion-label>
+          <ion-spinner *ngIf="cargandoNotificaciones" name="crescent" slot="end"></ion-spinner>
+          <ion-toggle
+            *ngIf="!cargandoNotificaciones"
+            slot="end"
+            [checked]="estadoNotificaciones === 'concedido'"
+            [disabled]="estadoNotificaciones === 'no-soportado' || estadoNotificaciones === 'denegado'"
+            (ionChange)="alternarNotificaciones($event.detail.checked)"
+          ></ion-toggle>
+        </ion-item>
+
+        <p class="campo-nota" *ngIf="estadoNotificaciones === 'denegado'">
+          Las bloqueaste desde el navegador/sistema. Para reactivarlas, cambia el permiso de notificaciones de Ashbis en la configuración de tu dispositivo.
+        </p>
+        <p class="campo-nota" *ngIf="estadoNotificaciones === 'no-soportado'">
+          Tu navegador no soporta notificaciones push (o el sitio no está instalado como app en pantalla de inicio).
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- ═══════════ PERMISOS ═══════════ -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+          Permisos
+        </ion-card-title>
+        <p class="seccion-subtitulo">
+          Ashbis no puede cambiar estos permisos por ti — si querés modificarlos, hacelo desde la configuración de tu navegador o sistema operativo.
+        </p>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none">
+          <ion-icon name="camera-outline" slot="start"></ion-icon>
+          <ion-label>Cámara</ion-label>
+          <span class="estado-chip" [attr.data-estado]="estadoCamara" slot="end">
+            {{ estadoCamara === 'concedido' ? 'Concedido' : estadoCamara === 'denegado' ? 'Bloqueado' : estadoCamara === 'no-soportado' ? 'No disponible' : 'Sin pedir' }}
+          </span>
+        </ion-item>
+        <ion-item lines="none">
+          <ion-icon name="location-outline" slot="start"></ion-icon>
+          <ion-label>Ubicación</ion-label>
+          <span class="estado-chip" [attr.data-estado]="estadoUbicacion" slot="end">
+            {{ estadoUbicacion === 'concedido' ? 'Concedido' : estadoUbicacion === 'denegado' ? 'Bloqueado' : estadoUbicacion === 'no-soportado' ? 'No disponible' : 'Sin pedir' }}
+          </span>
+        </ion-item>
+        <ion-item lines="none">
+          <ion-icon name="notifications-outline" slot="start"></ion-icon>
+          <ion-label>Notificaciones</ion-label>
+          <span class="estado-chip" [attr.data-estado]="estadoNotificaciones" slot="end">
+            {{ estadoNotificaciones === 'concedido' ? 'Concedido' : estadoNotificaciones === 'denegado' ? 'Bloqueado' : estadoNotificaciones === 'no-soportado' ? 'No disponible' : 'Sin pedir' }}
+          </span>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- ═══════════ CUENTA ═══════════ -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="person-outline"></ion-icon>
+          Cuenta
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" button (click)="irAEditarPerfil()">
+          <ion-label>
+            Editar perfil
+            <p>{{ email }}</p>
+          </ion-label>
+          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+        </ion-item>
+
+        <ion-item lines="none" button *ngIf="!esCuentaGoogle" [disabled]="enviandoResetPassword" (click)="cambiarContrasena()">
+          <ion-icon name="key-outline" slot="start"></ion-icon>
+          <ion-label>Cambiar contraseña</ion-label>
+          <ion-spinner *ngIf="enviandoResetPassword" name="crescent" slot="end"></ion-spinner>
+          <ion-icon *ngIf="!enviandoResetPassword" name="chevron-forward-outline" slot="end"></ion-icon>
+        </ion-item>
+        <p class="campo-nota" *ngIf="esCuentaGoogle">
+          Iniciás sesión con Google — la contraseña la administrás desde tu cuenta de Google.
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- ═══════════ MASCOTAS ═══════════ -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="paw-outline"></ion-icon>
+          Perfiles de mascotas
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" button (click)="irAMisMascotas()">
+          <ion-label>Gestionar mis mascotas</ion-label>
+          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+        </ion-item>
+        <p class="campo-nota">
+          El estado "perdida" de cada mascota (y qué datos de contacto se muestran en su QR público) se controla desde el perfil de esa mascota.
+          <a (click)="irAPrivacidad()">Ver qué se comparte públicamente</a>.
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- ═══════════ ZONA IRREVERSIBLE ═══════════ -->
+    <ion-card class="seccion-card seccion-peligro">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="warning-outline"></ion-icon>
+          Zona irreversible
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-button expand="block" fill="outline" color="danger" [disabled]="eliminando" (click)="eliminarCuenta()">
+          <ion-icon slot="start" name="trash-outline"></ion-icon>
+          <ng-container *ngIf="!eliminando">Eliminar mi cuenta y datos</ng-container>
+          <ion-spinner *ngIf="eliminando" name="crescent"></ion-spinner>
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+</ion-content>

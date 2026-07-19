@@ -32,16 +32,11 @@
  * https://ionicframework.com/docs/theming/dark-mode
  */
 
-/* La app usa un único diseño oscuro (ver justificación en el plan de
-   estabilización): dark.always.css aplica siempre la paleta oscura de Ionic
-   sin importar `prefers-color-scheme` del sistema. dark.system.css (la
-   variante anterior) seguía el tema del SO, lo que dejaba en modo claro del
-   teléfono los componentes que no tienen un override propio (ion-alert,
-   ion-toast, ion-modal — ver abajo) con el tema claro por defecto de Ionic,
-   mientras el resto de la app se queda oscuro a la fuerza. */
-@import "@ionic/angular/css/palettes/dark.always.css";
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
-/* @import '@ionic/angular/css/palettes/dark.system.css'; */
+/* Paleta oscura por clase: PreferenciasService pone/saca "ion-palette-dark"
+   en <html> según la preferencia guardada (Configuración → Apariencia).
+   Arranca en oscuro por defecto (mismo comportamiento que antes, cuando
+   era siempre oscuro con dark.always.css) hasta que el usuario elija claro. */
+@import "@ionic/angular/css/palettes/dark.class.css";
 
 :root {
   --ion-color-danger: #8b0808;
@@ -68,6 +63,39 @@
   --ashbis-red: #8b0808;
   --ashbis-red-hover: #b91c1c;
   --ashbis-red-activated: #991b1b;
+
+  /* Tarjetas/superficies elevadas, tema oscuro (default). PreferenciasService
+     alterna la clase .ashbis-light en <html>, que redefine estas dos más
+     abajo — así los componentes nuevos (Configuración) usan var(--ashbis-*)
+     en vez de hex fijo y responden solos al cambio de tema. */
+  --ashbis-surface: #111111;
+  --ashbis-surface-border: rgba(255, 255, 255, .06);
+}
+
+/* Tamaño de texto (Configuración → Apariencia → Tamaño de letra).
+   --ashbis-font-scale lo pone PreferenciasService; con Ionic usando rem/em
+   en casi todos sus componentes, escalar el font-size raíz escala la app
+   entera de forma consistente. */
+html {
+  font-size: var(--ashbis-font-scale, 100%);
+}
+
+/* ===========================================================
+   MODO CLARO
+   Cubre el chrome compartido de toda la app (alerts/toasts/loading, la
+   pantalla de carga inicial) y las pantallas nuevas que ya usan
+   var(--ashbis-surface)/var(--ion-*-color) en vez de hex fijo (por ahora:
+   Configuración). Login/Registro mantienen su diseño oscuro de marca a
+   propósito — son pantallas previas a tener sesión iniciada, así que no hay
+   preferencia de cuenta que aplicarles todavía.
+   =========================================================== */
+html.ashbis-light {
+  --ashbis-surface: #ffffff;
+  --ashbis-surface-border: rgba(0, 0, 0, .08);
+
+  #boot-splash {
+    background: #f4f4f4;
+  }
 }
 
 /* ===========================================================
@@ -297,4 +325,16 @@ ion-loading {
   --background: #141414;
   --backdrop-opacity: .68;
   --spinner-color: #8b0808;
+}
+
+html.ashbis-light {
+  ion-alert,
+  ion-loading {
+    --background: #ffffff;
+    --color: #1a1a1a;
+  }
+
+  ion-toast {
+    --button-color: #8b0808;
+  }
 }

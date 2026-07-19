@@ -437,25 +437,18 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Cuenta: cerrar sesión y, separado por una línea, la zona
-           irreversible (eliminar cuenta). -->
+      <!-- Cuenta: configuración de la app y cerrar sesión. La zona
+           irreversible (eliminar cuenta) vive en Configuración, no acá. -->
       <div class="zona-cuenta">
+        <ion-button class="btn-config" expand="block" fill="outline" color="medium" (click)="irAConfiguracion()">
+          <ion-icon name="settings-outline" slot="start"></ion-icon>
+          Configuración de la app
+        </ion-button>
+
         <ion-button class="btn-cerrar" expand="block" (click)="logout()">
           <ion-icon name="log-out-outline" slot="start"></ion-icon>
           Cerrar sesión
         </ion-button>
-
-        <div class="zona-peligro">
-          <p class="zona-peligro-titulo">Zona irreversible</p>
-          <ion-button
-            expand="block"
-            fill="outline"
-            color="danger"
-            (click)="eliminarCuenta()">
-            <ion-icon slot="start" name="trash-outline"></ion-icon>
-            Eliminar mi cuenta y datos
-          </ion-button>
-        </div>
       </div>
 
     </ng-container>

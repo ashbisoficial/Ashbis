@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { Router, NavigationStart } from '@angular/router';
+import { PreferenciasService } from './services/preferencias.service';
 
 @Component({
   selector: 'app-root',
@@ -9,6 +10,9 @@ import { Router, NavigationStart } from '@angular/router';
 })
 export class AppComponent {
   private readonly router = inject(Router);
+  // Solo se inyecta para que el constructor de PreferenciasService corra ya
+  // (aplica tema/tamaño de texto guardados) apenas arranca la app.
+  private readonly preferencias = inject(PreferenciasService);
 
   constructor() {
     // Ionic oculta la página saliente con aria-hidden="true" durante la

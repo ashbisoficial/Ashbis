@@ -634,6 +634,23 @@ export class FirestoreService {
     );
   }
 
+  // Elimina la cuenta y todos los datos asociados. Solo lo puede hacer la
+  // Cloud Function (Admin SDK): borra subcolecciones, mascotas, tokens de
+  // push, etc. — un borrado directo desde el cliente dejaría huérfanos.
+  async eliminarCuenta(): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('Usuario no autenticado');
+    const token = await user.getIdToken();
+    const res = await fetch('https://us-central1-ashbis-ae5b2.cloudfunctions.net/eliminarCuenta', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'No se pudo eliminar la cuenta.');
+    }
+  }
+
   private async postToCloudFunction(url: string, body: Record<string, string>): Promise<void> {
     const user = this.auth.currentUser;
     if (!user) throw new Error('Usuario no autenticado');

@@ -110,6 +110,37 @@ export class PushNotificationService {
     }
   }
 
+  /** Estado actual del permiso de notificaciones, para mostrar en
+   *  Configuración sin volver a pedirlo. */
+  async obtenerEstadoPermiso(): Promise<'concedido' | 'denegado' | 'no-pedido' | 'no-soportado'> {
+    if (this.isNative) {
+      try {
+        const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        const estado = (await FirebaseMessaging.checkPermissions()).receive;
+        if (estado === 'granted') return 'concedido';
+        if (estado === 'denied') return 'denegado';
+        return 'no-pedido';
+      } catch {
+        return 'no-soportado';
+      }
+    }
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return 'no-soportado';
+    }
+    if (Notification.permission === 'granted') return 'concedido';
+    if (Notification.permission === 'denied') return 'denegado';
+    return 'no-pedido';
+  }
+
+  /** Activa el push desde el toggle de Configuración: fuerza un nuevo
+   *  intento aunque ya se haya llamado init() antes en esta sesión (p. ej.
+   *  el usuario lo había rechazado al loguearse y ahora lo quiere activar). */
+  async activar(): Promise<boolean> {
+    this.inicializado = false;
+    await this.init();
+    return !!this.tokenActual;
+  }
+
   private async guardarToken(token: string): Promise<void> {
     const uid = this.auth.currentUser?.uid;
     if (!uid || !token) return;

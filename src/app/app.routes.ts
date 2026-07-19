@@ -87,6 +87,13 @@ export const routes: Routes = [
           import('./perfil/perfil.component').then((m) => m.PerfilComponent),
       },
       {
+        path: 'configuracion',
+        loadComponent: () =>
+          import('./configuracion/configuracion.component').then(
+            (m) => m.ConfiguracionComponent
+          ),
+      },
+      {
         path: 'mis-publicaciones',
         loadComponent: () =>
           import('./mis-publicaciones/mis-publicaciones.component').then(
