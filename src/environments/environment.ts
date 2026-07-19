@@ -42,6 +42,13 @@ export const environment = {
   // Actívalo en Firebase Console → App Check → Registrar app
   appCheckSiteKey: '6LdcheUsAAAAAIup4YqAAxTuwnXiRqEJ7dYf7XD6',
 
+  // Clave pública VAPID para notificaciones push en Web (Safari/iOS agregado a
+  // pantalla de inicio, Chrome, Edge, Firefox).
+  // Sácala de: Firebase Console → Configuración del proyecto → Cloud Messaging
+  // → pestaña "Configuración web" → "Generar par de claves".
+  // Mientras esté vacía, el push en la versión web queda desactivado sin dar error.
+  webPushVapidKey: '',
+
   // Web Client ID de OAuth para "Sign in with Google" (Google Identity Services).
   // Sácalo de: Firebase Console → Authentication → Sign-in method → Google →
   // "Web SDK configuration" → "Web client ID" (termina en .apps.googleusercontent.com).
