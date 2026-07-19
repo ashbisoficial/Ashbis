@@ -21,7 +21,7 @@ export const environment = {
 
   // Misma clave VAPID que en environment.ts (Firebase Console → Cloud Messaging
   // → Configuración web → Generar par de claves).
-  webPushVapidKey: '',
+  webPushVapidKey: 'BDj6Ftrfb1LpSgmhVqDZaS0YWrFqwYLGqpqZSID22POwJ7EII9R407oC50CTJYPh0ZWlJtJzAoeObkt2YpSP8Qo',
 
   // Mismo Web Client ID que en environment.ts (es público, no es un secreto)
   googleWebClientId: '691736988474-1k8beq55v07k8tsbj3d1rsle52q5s12l.apps.googleusercontent.com',

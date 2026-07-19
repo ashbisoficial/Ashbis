@@ -47,7 +47,7 @@ export const environment = {
   // Sácala de: Firebase Console → Configuración del proyecto → Cloud Messaging
   // → pestaña "Configuración web" → "Generar par de claves".
   // Mientras esté vacía, el push en la versión web queda desactivado sin dar error.
-  webPushVapidKey: '',
+  webPushVapidKey: 'BDj6Ftrfb1LpSgmhVqDZaS0YWrFqwYLGqpqZSID22POwJ7EII9R407oC50CTJYPh0ZWlJtJzAoeObkt2YpSP8Qo',
 
   // Web Client ID de OAuth para "Sign in with Google" (Google Identity Services).
   // Sácalo de: Firebase Console → Authentication → Sign-in method → Google →
