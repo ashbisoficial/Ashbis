@@ -46,6 +46,7 @@ import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
+import { PushNotificationService } from '../services/push-notification.service';
 
 interface UsuarioActual {
   uid: string;
@@ -92,6 +93,7 @@ export class PerfilComponent implements OnDestroy {
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
   private readonly alertCtrl = inject(AlertController);
+  private readonly pushNotifications = inject(PushNotificationService);
   private readonly security = inject(SecurityService);
 
   authenticationService: AuthenticationService = inject(AuthenticationService);
@@ -521,6 +523,7 @@ export class PerfilComponent implements OnDestroy {
   }
 
   async logout(): Promise<void> {
+    await this.pushNotifications.olvidarTokenActual();
     await this.auth.logout();
     this.router.navigate(['/login'], { replaceUrl: true });
   }

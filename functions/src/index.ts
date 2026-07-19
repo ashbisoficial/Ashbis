@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { onRequest } from 'firebase-functions/v2/https';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
 
 admin.initializeApp();
@@ -462,6 +463,13 @@ export const eliminarCuenta = onRequest(
         await batch.commit();
       }
 
+      const fcmSnap = await db.collection(`usuarios/${uid}/fcmTokens`).get();
+      if (fcmSnap.docs.length > 0) {
+        const batch = db.batch();
+        fcmSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+
       await db.doc(`usuarios/${uid}`).delete();
 
       // 4. Eliminar cuenta de Firebase Auth
@@ -782,6 +790,101 @@ export const aceptarInvitacionEquipo = onRequest(
       }
       functions.logger.error('aceptarInvitacionEquipo error', error);
       res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+  }
+);
+
+// ─── Push notifications (FCM) ────────────────────────────────────────────────
+// Cuando llega una invitación de equipo o una solicitud de transferencia, le
+// mandamos un push al destinatario (identificado por email) en todos los
+// dispositivos donde tenga la app instalada y haya aceptado notificaciones.
+// El token de cada dispositivo lo guarda PushNotificationService (Angular) en
+// usuarios/{uid}/fcmTokens/{token}.
+
+async function enviarPushPorEmail(
+  email: string,
+  payload: { title: string; body: string; ruta?: string }
+): Promise<void> {
+  const emailNormalizado = (email || '').trim().toLowerCase();
+  if (!emailNormalizado) return;
+
+  // Se busca el uid por Firebase Auth (no por el campo "email" de
+  // Firestore): es la misma fuente de verdad que ya usan
+  // aceptarTransferencia/aceptarInvitacionEquipo para validar al
+  // destinatario, y evita depender de que el campo en Firestore esté
+  // guardado con exactamente la misma capitalización.
+  let uid: string;
+  try {
+    const userRecord = await admin.auth().getUserByEmail(emailNormalizado);
+    uid = userRecord.uid;
+  } catch {
+    // Todavía no tiene cuenta en Ashbis con ese correo — nada que notificar.
+    return;
+  }
+
+  const db = admin.firestore();
+  const tokensSnap = await db.collection(`usuarios/${uid}/fcmTokens`).get();
+  if (tokensSnap.empty) return;
+
+  const tokens = tokensSnap.docs.map(d => d.id);
+
+  const res = await admin.messaging().sendEachForMulticast({
+    tokens,
+    notification: { title: payload.title, body: payload.body },
+    data: payload.ruta ? { ruta: payload.ruta } : {},
+    android: { priority: 'high' },
+  });
+
+  // Limpia tokens inválidos (app desinstalada, token vencido, etc.) para no
+  // seguir intentando mandarles push ni acumular basura en Firestore.
+  const invalidos: string[] = [];
+  res.responses.forEach((r, i) => {
+    const code = r.error?.code;
+    if (!r.success && (
+      code === 'messaging/registration-token-not-registered' ||
+      code === 'messaging/invalid-registration-token'
+    )) {
+      invalidos.push(tokens[i]);
+    }
+  });
+  if (invalidos.length) {
+    const batch = db.batch();
+    invalidos.forEach(t => batch.delete(db.doc(`usuarios/${uid}/fcmTokens/${t}`)));
+    await batch.commit();
+  }
+}
+
+export const onInvitacionEquipoCreada = onDocumentCreated(
+  { document: 'invitacionesEquipo/{id}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    try {
+      await enviarPushPorEmail(data['paraEmail'], {
+        title: 'Invitación a un equipo',
+        body: `${data['refugioNombre']} te invitó a operar su cuenta.`,
+        ruta: '/tabs/notificaciones',
+      });
+    } catch (error) {
+      functions.logger.error('onInvitacionEquipoCreada: error enviando push', error);
+    }
+  }
+);
+
+export const onTransferenciaCreada = onDocumentCreated(
+  { document: 'transferencias/{id}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    const esAdopcion = data['tipo'] === 'adopcion';
+    try {
+      await enviarPushPorEmail(data['paraEmail'], {
+        title: esAdopcion ? 'Solicitud de adopción' : 'Solicitud de hogar temporal',
+        body: `${data['deNombre']} quiere ${esAdopcion ? 'transferirte' : 'compartirte el acceso a'} ${data['mascotaNombre']}.`,
+        ruta: '/tabs/notificaciones',
+      });
+    } catch (error) {
+      functions.logger.error('onTransferenciaCreada: error enviando push', error);
     }
   }
 );

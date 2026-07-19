@@ -21,6 +21,7 @@ import {
 } from 'ionicons/icons';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
+import { PushNotificationService } from '../services/push-notification.service';
 
 @Component({
   selector: 'app-tabs',
@@ -39,6 +40,7 @@ import { FirestoreService } from '../firebase/firestore';
 export class TabsComponent {
   private auth = inject(AuthenticationService);
   private fs = inject(FirestoreService);
+  private push = inject(PushNotificationService);
 
   esRefugio = false;
 
@@ -57,5 +59,9 @@ export class TabsComponent {
         this.esRefugio = perfil?.rol === 'refugio';
       });
     }
+
+    // No hace nada en web (isNative=false); en la app nativa pide permiso
+    // (si no se pidió antes) y registra el token del dispositivo.
+    this.push.init();
   }
 }

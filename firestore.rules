@@ -100,6 +100,16 @@ service cloud.firestore {
         allow delete: if isUser(uid);
       }
 
+      // Tokens de push (FCM) de los dispositivos donde el usuario inició
+      // sesión. Cada doc = un token; el id del doc es el token mismo. Solo
+      // el dueño los lee/escribe; las Cloud Functions que envían el push
+      // usan el Admin SDK y no pasan por estas reglas.
+      match /fcmTokens/{token} {
+        allow read:   if isUser(uid);
+        allow create, update: if isUser(uid) && noLongStrings(request.resource.data);
+        allow delete: if isUser(uid);
+      }
+
       match /publico/{docId} {
         // La ficha pública del carnet/QR la sirve la Cloud Function
         // getCarnetPublico con el Admin SDK (que ignora estas reglas), así
