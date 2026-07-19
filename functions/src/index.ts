@@ -7,6 +7,7 @@ import { defineSecret } from 'firebase-functions/params';
 admin.initializeApp();
 
 const DISCORD_WEBHOOK = defineSecret('DISCORD_WEBHOOK');
+const ANTHROPIC_KEY = defineSecret('ANTHROPIC_KEY');
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = new Set([
@@ -131,6 +132,7 @@ export const aiProxy = onRequest(
     timeoutSeconds: 30,
     memory: '256MiB',
     maxInstances: 20,
+    secrets: [ANTHROPIC_KEY],
   },
   async (req, res) => {
     const origin = req.headers.origin;
@@ -209,9 +211,9 @@ export const aiProxy = onRequest(
       }
 
       // ── Llamada a Claude API ───────────────────────────────────────────────
-      const anthropicKey = functions.config()?.anthropic?.key;
+      const anthropicKey = ANTHROPIC_KEY.value();
       if (!anthropicKey) {
-        functions.logger.error('Anthropic API key no configurada');
+        functions.logger.error('Anthropic API key no configurada (secret ANTHROPIC_KEY)');
         res.status(200).json({
           text: 'El servicio de IA está en mantenimiento temporal. Ante síntomas graves en tu mascota, acude urgente al veterinario. 🏥',
         });

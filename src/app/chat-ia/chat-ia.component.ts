@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -140,10 +141,24 @@ export class ChatIaComponent implements OnInit {
       this.agregarMensaje('Ashbis IA', resp?.text || 'No obtuve respuesta, intenta nuevamente.');
     } catch (error) {
       console.error(error);
-      this.agregarMensaje('Ashbis IA', 'Hubo un error al procesar tu pregunta. Intenta de nuevo.');
+      this.agregarMensaje('Ashbis IA', this.mensajeDeError(error));
     } finally {
       this.cargando = false;
     }
+  }
+
+  /** El backend manda mensajes específicos (límite de mensajes, sesión
+   *  expirada, etc.) en el cuerpo del error — sin esto, cualquier falla
+   *  (incluida la genuina) se veía siempre con el mismo texto genérico. */
+  private mensajeDeError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const backendMsg = error.error?.error;
+      if (typeof backendMsg === 'string' && backendMsg.trim()) return backendMsg;
+      if (error.status === 0) {
+        return 'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.';
+      }
+    }
+    return 'Hubo un error al procesar tu pregunta. Intenta de nuevo.';
   }
 
   reiniciarChat(): void {
