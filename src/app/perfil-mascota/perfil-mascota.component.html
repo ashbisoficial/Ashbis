@@ -60,14 +60,17 @@
 
           <ion-card [color]="estaPerdida ? 'warning' : undefined" class="estado-perdida-card">
             <ion-card-content>
-              <ion-icon [name]="estaPerdida ? 'alert-circle-outline' : 'checkmark-circle-outline'"></ion-icon>
-              <div class="estado-perdida-texto">
-                <strong *ngIf="estaPerdida">Reportada como perdida</strong>
-                <strong *ngIf="!estaPerdida">No está reportada como perdida</strong>
-                <p *ngIf="estaPerdida">Tu contacto es visible en la ficha pública del QR.</p>
-                <p *ngIf="!estaPerdida">Tu contacto NO se muestra en la ficha pública del QR.</p>
+              <div class="estado-perdida-fila">
+                <ion-icon [name]="estaPerdida ? 'alert-circle-outline' : 'checkmark-circle-outline'"></ion-icon>
+                <div class="estado-perdida-texto">
+                  <strong *ngIf="estaPerdida">Reportada como perdida</strong>
+                  <strong *ngIf="!estaPerdida">No está reportada como perdida</strong>
+                  <p *ngIf="estaPerdida">Tu contacto es visible en la ficha pública del QR.</p>
+                  <p *ngIf="!estaPerdida">Tu contacto NO se muestra en la ficha pública del QR.</p>
+                </div>
               </div>
               <ion-button
+                expand="block"
                 size="small"
                 [fill]="estaPerdida ? 'outline' : 'solid'"
                 [color]="estaPerdida ? 'medium' : 'warning'"

@@ -26,7 +26,14 @@
 
 <body>
   <app-root></app-root>
-  
+
+  <!-- Pantalla de carga con marca, visible hasta que Angular termina de
+       arrancar (login/carga inicial). Se oculta sola por CSS apenas
+       <app-root> tiene contenido — ver global.scss. -->
+  <div id="boot-splash" aria-hidden="true">
+    <img src="assets/img/logo_ashbis.jpeg" alt="" class="boot-splash-logo" />
+    <div class="boot-splash-spinner"></div>
+  </div>
 </body>
 
 </html>

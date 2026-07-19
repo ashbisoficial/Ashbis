@@ -249,6 +249,50 @@ ion-toast {
   font-weight: 600;
 }
 
+/* ===========================================================
+   PANTALLA DE CARGA INICIAL (index.html)
+   Vive fuera de Angular a propósito: cubre el hueco entre "se pinta
+   el HTML" y "Angular termina de arrancar" (bundle + primer chequeo
+   de sesión), que si no se cubre se ve como un flash negro sin nada.
+   Se oculta sola cuando <app-root> deja de estar vacío — sin JS.
+   =========================================================== */
+#boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: #070707;
+}
+
+.boot-splash-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+}
+
+.boot-splash-spinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid rgba(139, 8, 8, .25);
+  border-top-color: var(--ashbis-red);
+  animation: boot-splash-spin .8s linear infinite;
+}
+
+@keyframes boot-splash-spin {
+  to { transform: rotate(360deg); }
+}
+
+app-root:not(:empty) ~ #boot-splash {
+  display: none;
+}
+
 ion-loading {
   --background: #141414;
   --backdrop-opacity: .68;
