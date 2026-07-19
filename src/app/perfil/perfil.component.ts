@@ -472,43 +472,8 @@ export class PerfilComponent implements OnDestroy {
     this.router.navigate(['/tabs/mis-publicaciones']);
   }
 
-  async aceptarSolicitud(t: Models.Transferencias.Transferencia): Promise<void> {
-    const esAdopcion = t.tipo === 'adopcion';
-    const alert = await this.alertCtrl.create({
-      header: esAdopcion ? 'Aceptar mascota' : 'Aceptar hogar temporal',
-      message: esAdopcion
-        ? `${t.deNombre} te está transfiriendo a ${t.mascotaNombre}. Al aceptar, la mascota (con todo su historial) pasa a tu cuenta.`
-        : `${t.deNombre} te está compartiendo el acceso a ${t.mascotaNombre}. Al aceptar, vas a poder ver y actualizar su perfil e historial, pero ${t.deNombre} sigue como dueño/a.`,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Aceptar',
-          handler: async () => {
-            if (!t.id) return;
-            try {
-              await this.firestoreService.aceptarTransferencia(t.id);
-              await this.showToast(
-                esAdopcion ? `¡${t.mascotaNombre} ahora es tuya! 🐾` : `Ya tenés acceso a ${t.mascotaNombre}. 🐾`,
-                'success'
-              );
-            } catch (error: any) {
-              await this.showToast(error?.message || 'No se pudo aceptar la solicitud.', 'danger');
-            }
-          }
-        }
-      ]
-    });
-    await alert.present();
-  }
-
-  async rechazarSolicitud(t: Models.Transferencias.Transferencia): Promise<void> {
-    if (!t.id) return;
-    try {
-      await this.firestoreService.rechazarTransferencia(t.id);
-      await this.showToast('Solicitud rechazada.', 'primary');
-    } catch {
-      await this.showToast('No se pudo rechazar la solicitud.', 'danger');
-    }
+  irANotificaciones(): void {
+    this.router.navigate(['/tabs/notificaciones']);
   }
 
   async cancelarTransferenciaEnviada(t: Models.Transferencias.Transferencia): Promise<void> {
@@ -554,39 +519,6 @@ export class PerfilComponent implements OnDestroy {
       await this.showToast('Invitación enviada.', 'success');
     } catch {
       await this.showToast('No se pudo enviar la invitación.', 'danger');
-    }
-  }
-
-  async aceptarInvitacionEquipo(inv: Models.Equipo.InvitacionEquipo): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Unirte al equipo',
-      message: `${inv.refugioNombre} te invitó a operar su cuenta como ${inv.rolEquipo === 'admin' ? 'administrador/a' : 'staff'}.`,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Aceptar',
-          handler: async () => {
-            if (!inv.id) return;
-            try {
-              await this.firestoreService.aceptarInvitacionEquipo(inv.id);
-              await this.showToast(`Ahora formás parte del equipo de ${inv.refugioNombre}.`, 'success');
-            } catch (error: any) {
-              await this.showToast(error?.message || 'No se pudo aceptar la invitación.', 'danger');
-            }
-          }
-        }
-      ]
-    });
-    await alert.present();
-  }
-
-  async rechazarInvitacionEquipo(inv: Models.Equipo.InvitacionEquipo): Promise<void> {
-    if (!inv.id) return;
-    try {
-      await this.firestoreService.rechazarInvitacionEquipo(inv.id);
-      await this.showToast('Invitación rechazada.', 'primary');
-    } catch {
-      await this.showToast('No se pudo rechazar la invitación.', 'danger');
     }
   }
 

@@ -94,6 +94,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'notificaciones',
+        loadComponent: () =>
+          import('./notificaciones/notificaciones.component').then(
+            (m) => m.NotificacionesComponent
+          ),
+      },
+      {
         path: 'publicacion/:id',
         loadComponent: () =>
           import('./publicacion-detalle/publicacion-detalle.component').then(

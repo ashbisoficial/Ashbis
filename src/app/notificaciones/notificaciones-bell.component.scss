@@ -1,0 +1,16 @@
+.bell-button {
+  --color: #ffffff;
+  position: relative;
+  margin: 0;
+}
+
+.bell-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff3b30;
+  border: 2px solid #000000;
+}

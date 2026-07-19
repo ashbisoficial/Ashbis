@@ -1,0 +1,58 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Notificaciones</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding notif-content">
+
+  <div *ngIf="cargando" class="ion-text-center ion-padding">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ng-container *ngIf="!cargando">
+
+    <ion-card class="notif-card" *ngIf="transferenciasPendientes.length">
+      <ion-card-header>
+        <ion-card-title>Solicitudes de mascotas</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" class="notif-item" *ngFor="let t of transferenciasPendientes">
+          <ion-label class="ion-text-wrap">
+            <h2>{{ t.mascotaNombre }}</h2>
+            <p>{{ t.deNombre }} quiere {{ t.tipo === 'adopcion' ? 'transferírtela' : 'compartirte el acceso (hogar temporal)' }}</p>
+            <p *ngIf="t.mensaje">"{{ t.mensaje }}"</p>
+          </ion-label>
+          <ion-button slot="end" size="small" color="danger" (click)="aceptarSolicitud(t)">Aceptar</ion-button>
+          <ion-button slot="end" size="small" fill="outline" color="medium" (click)="rechazarSolicitud(t)">Rechazar</ion-button>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="notif-card" *ngIf="invitacionesPendientes.length">
+      <ion-card-header>
+        <ion-card-title>Invitaciones de equipo</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" class="notif-item" *ngFor="let inv of invitacionesPendientes">
+          <ion-label class="ion-text-wrap">
+            <h2>{{ inv.refugioNombre }}</h2>
+            <p>Te invita como {{ inv.rolEquipo === 'admin' ? 'administrador/a' : 'staff' }}</p>
+          </ion-label>
+          <ion-button slot="end" size="small" color="danger" (click)="aceptarInvitacionEquipo(inv)">Aceptar</ion-button>
+          <ion-button slot="end" size="small" fill="outline" color="medium" (click)="rechazarInvitacionEquipo(inv)">Rechazar</ion-button>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <div *ngIf="!transferenciasPendientes.length && !invitacionesPendientes.length" class="notif-vacio">
+      <p>🔔</p>
+      <p>No tienes notificaciones pendientes.</p>
+    </div>
+
+  </ng-container>
+
+</ion-content>

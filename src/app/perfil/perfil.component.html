@@ -279,40 +279,16 @@
         </div>
       </form>
 
-      <!-- Solicitudes de adopción/hogar temporal pendientes para mí -->
-      <ion-card class="seccion-card" *ngIf="transferenciasPendientes.length">
-        <ion-card-header>
-          <ion-card-title>Solicitudes de mascotas</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-item lines="none" class="fila-accion" *ngFor="let t of transferenciasPendientes">
-            <ion-label class="ion-text-wrap">
-              <h2>{{ t.mascotaNombre }}</h2>
-              <p>{{ t.deNombre }} quiere {{ t.tipo === 'adopcion' ? 'transferírtela' : 'compartirte el acceso (hogar temporal)' }}</p>
-              <p *ngIf="t.mensaje">"{{ t.mensaje }}"</p>
-            </ion-label>
-            <ion-button slot="end" size="small" color="danger" (click)="aceptarSolicitud(t)">Aceptar</ion-button>
-            <ion-button slot="end" size="small" fill="outline" color="medium" (click)="rechazarSolicitud(t)">Rechazar</ion-button>
-          </ion-item>
-        </ion-card-content>
-      </ion-card>
-
-      <!-- Invitaciones a equipos de refugio pendientes para mí -->
-      <ion-card class="seccion-card" *ngIf="invitacionesEquipoPendientes.length">
-        <ion-card-header>
-          <ion-card-title>Invitaciones de equipo</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-item lines="none" class="fila-accion" *ngFor="let inv of invitacionesEquipoPendientes">
-            <ion-label class="ion-text-wrap">
-              <h2>{{ inv.refugioNombre }}</h2>
-              <p>Te invita como {{ inv.rolEquipo === 'admin' ? 'administrador/a' : 'staff' }}</p>
-            </ion-label>
-            <ion-button slot="end" size="small" color="danger" (click)="aceptarInvitacionEquipo(inv)">Aceptar</ion-button>
-            <ion-button slot="end" size="small" fill="outline" color="medium" (click)="rechazarInvitacionEquipo(inv)">Rechazar</ion-button>
-          </ion-item>
-        </ion-card-content>
-      </ion-card>
+      <!-- Aviso de notificaciones pendientes (solicitudes de mascotas +
+           invitaciones de equipo): la lista completa con Aceptar/Rechazar
+           vive en /tabs/notificaciones, accesible también desde la
+           campanita del home. -->
+      <ion-button
+        *ngIf="transferenciasPendientes.length || invitacionesEquipoPendientes.length"
+        expand="block" fill="outline" color="danger" class="ion-margin-bottom"
+        (click)="irANotificaciones()">
+        🔔 Tienes {{ transferenciasPendientes.length + invitacionesEquipoPendientes.length }} notificación(es) pendiente(s)
+      </ion-button>
 
       <!-- Equipos ajenos de los que formo parte -->
       <ion-card class="seccion-card" *ngIf="refugiosEnLosQueColaboro.length">

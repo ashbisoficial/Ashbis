@@ -5,7 +5,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  IonCard, IonButton, IonIcon, IonCardContent, IonContent, IonSpinner,
+  IonCard, IonButton, IonButtons, IonIcon, IonCardContent, IonContent, IonSpinner,
   IonInput, IonItem, IonLabel, IonTextarea
 } from '@ionic/angular/standalone';
 import { ToastController } from '@ionic/angular';
@@ -23,6 +23,7 @@ import {
 import { register } from 'swiper/element/bundle';
 import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
 import { Models } from '../models/models';
+import { NotificacionesBellComponent } from '../notificaciones/notificaciones-bell.component';
 import { firstValueFrom, of, Subject, takeUntil } from 'rxjs';
 import { User } from '@angular/fire/auth';
 import { environment } from 'src/environments/environment';
@@ -84,8 +85,9 @@ addIcons({
   standalone: true,
   imports: [
     CommonModule, FormsModule,
-    IonCard, IonButton, IonIcon, IonCardContent, IonContent, IonSpinner,
-    IonInput, IonItem, IonLabel, IonTextarea
+    IonCard, IonButton, IonButtons, IonIcon, IonCardContent, IonContent, IonSpinner,
+    IonInput, IonItem, IonLabel, IonTextarea,
+    NotificacionesBellComponent
   ],
   providers: [ToastController],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

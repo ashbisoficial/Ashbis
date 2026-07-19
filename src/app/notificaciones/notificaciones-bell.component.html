@@ -1,0 +1,4 @@
+<ion-button fill="clear" class="bell-button" (click)="irANotificaciones()" [attr.aria-label]="cantidad ? 'Notificaciones, ' + cantidad + ' sin leer' : 'Notificaciones'">
+  <ion-icon name="notifications-outline" slot="icon-only"></ion-icon>
+  <span class="bell-dot" *ngIf="cantidad"></span>
+</ion-button>
