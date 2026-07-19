@@ -4,10 +4,13 @@ import {
   IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
   IonContent, IonGrid, IonRow, IonCol,
   IonItem, IonLabel, IonButton, IonIcon, IonAvatar, IonList, IonSkeletonText,
+  IonCard, IonCardContent,
   AlertController, ToastController
 } from '@ionic/angular/standalone';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { addIcons } from 'ionicons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -20,7 +23,8 @@ import { SecurityService } from 'src/app/services/security.service';
     NgIf, NgFor,
     IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
     IonContent, IonGrid, IonRow, IonCol,
-    IonItem, IonLabel, IonButton, IonAvatar, IonList, IonSkeletonText
+    IonItem, IonLabel, IonButton, IonIcon, IonAvatar, IonList, IonSkeletonText,
+    IonCard, IonCardContent
   ],
   templateUrl: './perfil-mascota.component.html',
   styleUrls: ['./perfil-mascota.component.scss']
@@ -40,8 +44,11 @@ export class MascotaPerfilComponent implements OnDestroy {
   mascota = signal<Mascota | null>(null);
   loading = signal(true);
   esRefugio = signal(false);
+  actualizandoEstado = false;
 
   constructor() {
+    addIcons({ alertCircleOutline, checkmarkCircleOutline });
+
     // 1) intenta tomar desde router state (rápido)
     const st = this.router.getCurrentNavigation()?.extras?.state as { mascota?: Mascota } | undefined;
     if (st?.mascota) {
@@ -84,14 +91,56 @@ editarPerfil() {
     this.router.navigate(['/tabs/mascota-editar', id, 'editar']);
   }
 }
-  verHistorial() { 
+  verHistorial() {
     const id = this.mascota()?.id;
     if (id) {
-      // La ruta correcta al dashboard de tu equipo
-      this.router.navigate(['/tabs/mascota-detalle', id]);
-    }
+      // Va directo al carnet (mismo link que el QR), no a una página que
+      // primero muestra un QR para escanear.
+      this.router.navigate(['/carnet', id]);
+    }
   }
   verQR() { this.router.navigate(['/tabs/mascota-qr',]) }
+
+  get estaPerdida(): boolean {
+    return this.mascota()?.estado === 'perdida';
+  }
+
+  async toggleEstadoPerdida(): Promise<void> {
+    if (this.estaPerdida) {
+      // Marcar como encontrada no expone nada, se hace directo.
+      await this.actualizarEstado('normal', 'Marcada como encontrada. Ya no se muestra tu contacto en la ficha.');
+      return;
+    }
+
+    // Activar el reporte de pérdida expone tu contacto en la ficha pública
+    // del QR, así que se pide confirmación antes.
+    const alert = await this.alertCtrl.create({
+      header: 'Reportar como perdida',
+      message: 'A partir de ahora, quien escanee el QR de "mascota perdida" va a poder ver tu nombre y teléfono de contacto para ayudarte a encontrarla. Podés desactivarlo cuando quieras.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Reportar perdida',
+          handler: () => this.actualizarEstado('perdida', 'Mascota reportada como perdida. Tu contacto ya es visible en la ficha del QR.')
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  private async actualizarEstado(estado: 'normal' | 'perdida', mensajeExito: string): Promise<void> {
+    const id = this.mascota()?.id;
+    if (!id || this.actualizandoEstado) return;
+    this.actualizandoEstado = true;
+    try {
+      await this.fs.updatePet(id, { estado });
+      await this.presentToast(mensajeExito, 'success');
+    } catch {
+      await this.presentToast('No se pudo actualizar el estado. Intenta nuevamente.', 'danger');
+    } finally {
+      this.actualizandoEstado = false;
+    }
+  }
 
   async transferirMascota(): Promise<void> {
     const m = this.mascota();

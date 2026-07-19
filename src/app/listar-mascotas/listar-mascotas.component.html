@@ -33,6 +33,11 @@
       <ion-list>
         <ion-item *ngFor="let m of mascotas(); trackBy: trackById" class="pet-card">
 
+          <!-- ESTADO (no es un botón, solo informa) -->
+          <span class="estado-badge" [class.perdida]="m.estado === 'perdida'">
+            {{ m.estado === 'perdida' ? 'Perdida' : 'Normal' }}
+          </span>
+
           <!-- FOTO -->
           <ion-avatar slot="start" class="pet-avatar">
             <img [src]="m.fotoUrl || 'assets/img/logo_ashbis.jpeg'" alt="foto" />
@@ -56,7 +61,7 @@
             </button>
 
             <button class="btn btn-red" (click)="goEditar(m)">
-              Ficha Completa
+              Editar Ficha
             </button>
 
           </div>

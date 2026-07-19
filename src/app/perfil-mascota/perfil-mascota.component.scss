@@ -36,6 +36,37 @@
   }
 }
 
+.estado-perdida-card {
+  margin: 4px 0 16px;
+  text-align: left;
+
+  ion-card-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    ion-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.estado-perdida-texto {
+  flex: 1;
+  min-width: 0;
+
+  strong {
+    display: block;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 12px;
+  }
+}
+
 .foto-wrap {
   width: 100%;
   aspect-ratio: 1/1;
