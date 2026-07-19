@@ -205,14 +205,14 @@
                     <p style="font-size: 12px; color: var(--ion-color-medium);
                               margin: 0; line-height: 1.6;">
                       Acepto los
-                      <a href="/terminos" target="_blank"
-                         style="color: #8b0808; text-decoration: none; font-weight: 500;">
+                      <a href="/terminos" (click)="abrirTerminos($event)"
+                         style="color: #8b0808; text-decoration: underline; font-weight: 500;">
                         Términos y Condiciones
                       </a>
                       <br>
                       y la
-                      <a href="/privacidad" target="_blank"
-                         style="color: #8b0808; text-decoration: none; font-weight: 500;">
+                      <a href="/privacidad" (click)="abrirPrivacidad($event)"
+                         style="color: #8b0808; text-decoration: underline; font-weight: 500;">
                         Política de Privacidad
                       </a>
                       de Ashbis, incluyendo el procesamiento de datos en servidores de Google.
@@ -249,3 +249,39 @@
     </ion-row>
   </ion-grid>
 </ion-content>
+
+<ion-modal [isOpen]="mostrarModalTerminos" (didDismiss)="mostrarModalTerminos = false">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Términos y Condiciones</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="mostrarModalTerminos = false">
+            <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding legal-content">
+      <app-terminos-contenido></app-terminos-contenido>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<ion-modal [isOpen]="mostrarModalPrivacidad" (didDismiss)="mostrarModalPrivacidad = false">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Política de Privacidad</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="mostrarModalPrivacidad = false">
+            <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding legal-content">
+      <app-privacidad-contenido></app-privacidad-contenido>
+    </ion-content>
+  </ng-template>
+</ion-modal>

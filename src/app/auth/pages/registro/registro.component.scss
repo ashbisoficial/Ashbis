@@ -223,3 +223,10 @@ ion-button[fill="clear"] {
   font-size: 12px;
   text-transform: none;
 }
+
+/* Fondo oscuro del contenido de los modales de Términos/Privacidad (el
+   estilo del texto en sí vive en app-terminos-contenido/app-privacidad-
+   contenido, que ya traen su propio encapsulamiento). */
+.legal-content {
+  --background: #070707;
+}

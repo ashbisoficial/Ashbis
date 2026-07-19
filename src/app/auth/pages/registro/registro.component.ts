@@ -12,6 +12,7 @@ import {
 import { Router } from '@angular/router';
 import {
   IonButton,
+  IonButtons,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -19,26 +20,32 @@ import {
   IonCol,
   IonContent,
   IonGrid,
+  IonHeader,
   IonIcon,
   IonImg,
   IonInput,
   IonItem,
   IonLabel,
   IonList,
+  IonModal,
   IonNote,
   IonRow,
   IonSelect,
   IonSelectOption,
   IonSpinner,
   IonThumbnail,
+  IonTitle,
+  IonToolbar,
   IonCheckbox
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { eye, eyeOff } from 'ionicons/icons';
+import { eye, eyeOff, closeOutline } from 'ionicons/icons';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
 import { Models } from 'src/app/models/models';
 import { SecurityService } from 'src/app/services/security.service';
+import { TerminosContenidoComponent } from 'src/app/terminos/terminos-contenido.component';
+import { PrivacidadContenidoComponent } from 'src/app/privacidad/privacidad-contenido.component';
 
 @Component({
   selector: 'app-registro',
@@ -62,12 +69,19 @@ import { SecurityService } from 'src/app/services/security.service';
     IonSelect,
     IonSelectOption,
     IonButton,
+    IonButtons,
     IonIcon,
     IonImg,
     IonNote,
     IonSpinner,
     IonThumbnail,
-    IonCheckbox
+    IonCheckbox,
+    IonModal,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    TerminosContenidoComponent,
+    PrivacidadContenidoComponent
   ],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
@@ -83,6 +97,8 @@ export class RegistroComponent {
   mostrarPass2 = false;
   cargando = false;
   errorRegistro: string | null = null;
+  mostrarModalTerminos = false;
+  mostrarModalPrivacidad = false;
 
   nombreRegex = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]+$/;
   telefonoRegex = /^\+569\d{8}$/;
@@ -109,11 +125,21 @@ export class RegistroComponent {
   );
 
   constructor() {
-    addIcons({ eye, eyeOff });
+    addIcons({ eye, eyeOff, closeOutline });
   }
 
   get f() {
     return this.datosForm.controls;
+  }
+
+  abrirTerminos(event: Event): void {
+    event.preventDefault();
+    this.mostrarModalTerminos = true;
+  }
+
+  abrirPrivacidad(event: Event): void {
+    event.preventDefault();
+    this.mostrarModalPrivacidad = true;
   }
 
   elegirTipoCuenta(rol: Models.Auth.Rol): void {
@@ -183,7 +209,7 @@ export class RegistroComponent {
           : {}),
         consentGiven: true,
         consentDate: new Date().toISOString(),
-        consentVersion: '1.0'
+        consentVersion: '2.0'
       } as any;
 
       await this.firestoreService.createDocument(Models.Auth.PathUsers, datosUser, respuesta.user.uid);
