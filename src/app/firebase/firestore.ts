@@ -456,11 +456,31 @@ export class FirestoreService {
    * pública del carnet de mascota perdida para mostrar a quién contactar
    * sin exponer el email, la dirección o la fecha de nacimiento del dueño.
    */
-  async setPublicContact(uid: string, datos: { nombre: string; apellido: string; telefono?: string }): Promise<void> {
-    const clean = this.security.sanitizeFirestoreObject(datos);
+  async setPublicContact(
+    uid: string,
+    datos: {
+      nombre: string;
+      apellido: string;
+      telefono?: string;
+      contactosEmergencia?: Models.Auth.ContactoEmergencia[];
+    }
+  ): Promise<void> {
+    const { contactosEmergencia, ...resto } = datos;
+    const clean = this.security.sanitizeFirestoreObject(resto);
+    // sanitizeFirestoreObject() no sanea a fondo un array de objetos (solo
+    // strings sueltos), y este doc es de lectura pública, así que cada
+    // campo de cada contacto se limpia acá a mano.
+    const contactosLimpios = (contactosEmergencia ?? [])
+      .slice(0, 2)
+      .map(c => ({
+        nombre: this.security.sanitizeText(c.nombre ?? '', 60),
+        telefono: this.security.sanitizeText(c.telefono ?? '', 20),
+      }))
+      .filter(c => c.nombre && c.telefono);
+
     await setDoc(
       doc(this.firestore, `usuarios/${uid}/publico/contacto`),
-      { ...clean, actualizadoEn: serverTimestamp() },
+      { ...clean, contactosEmergencia: contactosLimpios, actualizadoEn: serverTimestamp() },
       { merge: true }
     );
   }

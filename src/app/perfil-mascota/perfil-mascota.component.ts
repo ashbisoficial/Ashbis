@@ -15,6 +15,7 @@ import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { SecurityService } from 'src/app/services/security.service';
+import { PublicQrService } from 'src/app/services/public-qr.service';
 
 @Component({
   selector: 'app-mascota-perfil',
@@ -37,6 +38,7 @@ export class MascotaPerfilComponent implements OnDestroy {
   private alertCtrl = inject(AlertController);
   private toastCtrl = inject(ToastController);
   private security = inject(SecurityService);
+  private publicQrSvc = inject(PublicQrService);
 
   veterinariasFavoritas: VeterinariaFavorita[] = [];
   private auth = inject(AuthenticationService);
@@ -91,13 +93,31 @@ editarPerfil() {
     this.router.navigate(['/tabs/mascota-editar', id, 'editar']);
   }
 }
-  verHistorial() {
-    const id = this.mascota()?.id;
-    if (id) {
-      // Va directo al carnet (mismo link que el QR), no a una página que
-      // primero muestra un QR para escanear.
-      this.router.navigate(['/carnet', id]);
+  async verHistorial(): Promise<void> {
+    const m = this.mascota();
+    if (!m?.id) return;
+
+    // La ruta /carnet/:id espera el TOKEN del QR (public_qr/carnet/tokens/{token}),
+    // no el id del documento de la mascota — son cosas distintas. Casi
+    // siempre ya existe (se crea al dar de alta la mascota); esto es solo
+    // el resguardo para mascotas viejas que no lo tengan todavía.
+    let token = m.qrCarnetToken;
+    if (!token) {
+      const uid = this.auth.getCurrentUser()?.uid;
+      if (!uid) return;
+      try {
+        token = this.publicQrSvc.generateToken();
+        await this.publicQrSvc.createQrToken(m.id, uid, 'carnet', token);
+        await this.fs.updatePet(m.id, { qrCarnetToken: token });
+      } catch {
+        await this.presentToast('No se pudo abrir el carnet. Intenta nuevamente.', 'danger');
+        return;
+      }
     }
+
+    // Va directo al carnet (mismo link que el QR), no a una página que
+    // primero muestra un QR para escanear.
+    this.router.navigate(['/carnet', token]);
   }
   verQR() { this.router.navigate(['/tabs/mascota-qr',]) }
 

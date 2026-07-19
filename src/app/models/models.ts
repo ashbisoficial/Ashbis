@@ -36,6 +36,16 @@ export namespace Models {
       nombreRefugio?: string;
       /** Solo si rol === 'veterinario'. Nombre de la clínica (informativo, no verificado). */
       nombreClinica?: string;
+      /** Hasta 2 contactos adicionales de emergencia. Se exponen en el
+       *  carnet público de una mascota en las mismas condiciones que el
+       *  teléfono del dueño (siempre en el carnet médico; en el QR de
+       *  "mascota perdida" solo mientras esté marcada como perdida). */
+      contactosEmergencia?: ContactoEmergencia[];
+    }
+
+    export interface ContactoEmergencia {
+      nombre: string;
+      telefono: string;
     }
   }
 

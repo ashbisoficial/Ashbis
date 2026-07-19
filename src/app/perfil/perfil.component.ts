@@ -2,7 +2,9 @@ import { DatePipe, NgIf, NgFor } from '@angular/common';
 import { Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
 import {
   AbstractControl,
+  FormArray,
   FormBuilder,
+  FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
   ValidatorFn,
@@ -37,7 +39,7 @@ import {
   cameraOutline, createOutline, logoGoogle, closeOutline, trashOutline,
   checkmarkOutline, logOutOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-  documentTextOutline, refreshOutline
+  documentTextOutline, refreshOutline, addOutline, medkitOutline
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
@@ -124,25 +126,66 @@ export class PerfilComponent implements OnDestroy {
 
   readonly defaultPhoto = 'assets/img/foto_avatar.jpg';
   readonly maxDescripcionLen = 300;
+  readonly maxContactos = 2;
+
+  private readonly nombreRegex = /^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s'-]+$/;
+  private readonly telefonoRegex = /^[+\d\s\-()]{6,20}$/;
 
   profileForm = this.fb.group({
-    nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60), Validators.pattern(/^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s'-]+$/)]],
-    apellido: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60), Validators.pattern(/^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s'-]+$/)]],
+    nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60), Validators.pattern(this.nombreRegex)]],
+    apellido: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60), Validators.pattern(this.nombreRegex)]],
     email: [{ value: '', disabled: true }, [Validators.required, Validators.email]],
-    telefono: ['', [Validators.pattern(/^[+\d\s\-()]{6,20}$/)]],
+    telefono: ['', [Validators.pattern(this.telefonoRegex)]],
     fechaNacimiento: ['', [this.validarFechaNoFutura()]],
     region: ['', [Validators.maxLength(60)]],
     comuna: ['', [Validators.maxLength(60)]],
     direccion: ['', [Validators.minLength(5), Validators.maxLength(150)]],
-    descripcion: ['', [Validators.maxLength(this.maxDescripcionLen)]]
+    descripcion: ['', [Validators.maxLength(this.maxDescripcionLen)]],
+    contactosEmergencia: this.fb.array<FormGroup>([])
   });
+
+  get contactosArray(): FormArray {
+    return this.profileForm.get('contactosEmergencia') as FormArray;
+  }
+
+  private crearContactoGroup(nombre = '', telefono = ''): FormGroup {
+    return this.fb.group({
+      nombre: [nombre, [Validators.required, Validators.minLength(2), Validators.maxLength(60), Validators.pattern(this.nombreRegex)]],
+      telefono: [telefono, [Validators.required, Validators.pattern(this.telefonoRegex)]]
+    });
+  }
+
+  agregarContacto(): void {
+    if (this.contactosArray.length >= this.maxContactos) return;
+    this.contactosArray.push(this.crearContactoGroup());
+  }
+
+  quitarContacto(index: number): void {
+    this.contactosArray.removeAt(index);
+  }
+
+  /** Mensaje de error legible para un campo de un contacto de emergencia. */
+  getContactoError(index: number, campo: 'nombre' | 'telefono'): string | null {
+    const control = this.contactosArray.at(index)?.get(campo);
+    if (!control || !control.touched || control.valid) return null;
+    const errors = control.errors;
+    if (!errors) return null;
+
+    if (errors['required']) return 'Este campo es obligatorio.';
+    if (errors['minlength']) return `Mínimo ${errors['minlength'].requiredLength} caracteres.`;
+    if (errors['maxlength']) return `Máximo ${errors['maxlength'].requiredLength} caracteres.`;
+    if (errors['pattern']) {
+      return campo === 'telefono' ? 'Formato de teléfono inválido. Ej: +56 9 1234 5678' : 'Solo se permiten letras y espacios.';
+    }
+    return 'Valor inválido.';
+  }
 
   constructor() {
     addIcons({
       cameraOutline, createOutline, logoGoogle, closeOutline,
       checkmarkOutline, logOutOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-      documentTextOutline, refreshOutline, trashOutline
+      documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline
     });
 
     this.cargando = true;
@@ -261,6 +304,11 @@ export class PerfilComponent implements OnDestroy {
       direccion: perfil.direccion ?? '',
       descripcion: perfil.descripcion ?? ''
     });
+
+    this.contactosArray.clear();
+    (perfil.contactosEmergencia ?? []).slice(0, this.maxContactos).forEach(c => {
+      this.contactosArray.push(this.crearContactoGroup(c.nombre, c.telefono));
+    });
   }
 
   reintentarCarga(): void {
@@ -349,6 +397,13 @@ export class PerfilComponent implements OnDestroy {
     await loading.present();
 
     const valores = this.profileForm.getRawValue();
+    const contactosEmergencia = (valores.contactosEmergencia as { nombre: string; telefono: string }[])
+      .map(c => ({
+        nombre: this.security.sanitizeText(c.nombre?.trim() ?? '', 60),
+        telefono: this.security.sanitizeText(c.telefono?.trim() ?? '', 20)
+      }))
+      .filter((c): c is Models.Auth.ContactoEmergencia => !!(c.nombre && c.telefono));
+
     const payload = {
       nombre: this.security.sanitizeText(valores.nombre?.trim() ?? ''),
       apellido: this.security.sanitizeText(valores.apellido?.trim() ?? ''),
@@ -357,7 +412,8 @@ export class PerfilComponent implements OnDestroy {
       region: this.security.sanitizeText(valores.region ?? ''),
       comuna: this.security.sanitizeText(valores.comuna ?? ''),
       direccion: this.security.sanitizeText(valores.direccion ?? ''),
-      descripcion: this.security.sanitizeText(valores.descripcion ?? '', this.maxDescripcionLen)
+      descripcion: this.security.sanitizeText(valores.descripcion ?? '', this.maxDescripcionLen),
+      contactosEmergencia
     };
 
     try {
@@ -365,7 +421,8 @@ export class PerfilComponent implements OnDestroy {
       await this.firestoreService.setPublicContact(this.user.uid, {
         nombre: payload.nombre,
         apellido: payload.apellido,
-        telefono: payload.telefono
+        telefono: payload.telefono,
+        contactosEmergencia: payload.contactosEmergencia
       });
       this.editMode = false;
       this.showToast('Perfil actualizado correctamente.', 'success');

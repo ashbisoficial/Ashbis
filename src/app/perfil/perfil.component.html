@@ -232,6 +232,77 @@
 
         <ion-card class="seccion-card">
           <ion-card-header>
+            <ion-card-title>
+              <ion-icon name="medkit-outline"></ion-icon>
+              Contactos de emergencia
+            </ion-card-title>
+            <p class="seccion-subtitulo">
+              Además de tu teléfono, se muestran en el carnet de tus mascotas cuando alguien
+              escanea el QR (y en el QR de "mascota perdida", solo mientras esté reportada como perdida).
+            </p>
+          </ion-card-header>
+          <ion-card-content>
+            <div formArrayName="contactosEmergencia">
+              <div class="contacto-row" *ngFor="let c of contactosArray.controls; let i = index" [formGroupName]="i">
+                <div class="contacto-campos">
+                  <ion-item>
+                    <ion-icon name="person-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Nombre</ion-label>
+                    <ion-input
+                      formControlName="nombre"
+                      [readonly]="!editMode"
+                      (ionBlur)="c.get('nombre')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getContactoError(i, 'nombre')">{{ getContactoError(i, 'nombre') }}</ion-note>
+
+                  <ion-item>
+                    <ion-icon name="call-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">Celular</ion-label>
+                    <ion-input
+                      formControlName="telefono"
+                      [readonly]="!editMode"
+                      inputmode="tel"
+                      placeholder="+56 9 1234 5678"
+                      (ionBlur)="c.get('telefono')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getContactoError(i, 'telefono')">{{ getContactoError(i, 'telefono') }}</ion-note>
+                </div>
+
+                <ion-button
+                  *ngIf="editMode"
+                  fill="clear"
+                  color="danger"
+                  class="contacto-quitar"
+                  (click)="quitarContacto(i)"
+                  [attr.aria-label]="'Quitar contacto ' + (i + 1)"
+                >
+                  <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+                </ion-button>
+              </div>
+            </div>
+
+            <p *ngIf="!contactosArray.length" class="sin-contactos">
+              No has agregado contactos de emergencia todavía.
+            </p>
+
+            <ion-button
+              *ngIf="editMode && contactosArray.length < maxContactos"
+              fill="outline"
+              color="medium"
+              size="small"
+              type="button"
+              (click)="agregarContacto()"
+            >
+              <ion-icon name="add-outline" slot="start"></ion-icon>
+              Agregar contacto
+            </ion-button>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="seccion-card">
+          <ion-card-header>
             <ion-card-title>Sobre mí</ion-card-title>
           </ion-card-header>
           <ion-card-content>
@@ -366,23 +437,27 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- 🚪 Botón de Cerrar Sesión -->
-      <ion-button class="btn-cerrar" expand="block" (click)="logout()">
-        <ion-icon name="log-out-outline" slot="start"></ion-icon>
-        Cerrar sesión
-      </ion-button>
+      <!-- Cuenta: cerrar sesión y, separado por una línea, la zona
+           irreversible (eliminar cuenta). -->
+      <div class="zona-cuenta">
+        <ion-button class="btn-cerrar" expand="block" (click)="logout()">
+          <ion-icon name="log-out-outline" slot="start"></ion-icon>
+          Cerrar sesión
+        </ion-button>
+
+        <div class="zona-peligro">
+          <p class="zona-peligro-titulo">Zona irreversible</p>
+          <ion-button
+            expand="block"
+            fill="outline"
+            color="danger"
+            (click)="eliminarCuenta()">
+            <ion-icon slot="start" name="trash-outline"></ion-icon>
+            Eliminar mi cuenta y datos
+          </ion-button>
+        </div>
+      </div>
 
     </ng-container>
   </div>
-
-<div style="padding: 24px 16px 40px;">
-  <ion-button
-    expand="block"
-    fill="outline"
-    color="danger"
-    (click)="eliminarCuenta()">
-    <ion-icon slot="start" name="trash-outline"></ion-icon>
-    Eliminar mi cuenta y datos
-  </ion-button>
-</div>
 </ion-content>

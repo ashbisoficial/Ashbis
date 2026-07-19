@@ -230,10 +230,55 @@ ion-content.perfil {
 }
 
 .seccion-card ion-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 15px;
   color: #fff9f9;
   letter-spacing: 0.3px;
   text-transform: uppercase;
+
+  ion-icon {
+    font-size: 16px;
+    color: #8b0808;
+  }
+}
+
+.seccion-subtitulo {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #888888;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ====== CONTACTOS DE EMERGENCIA ====== */
+.contacto-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 0;
+
+  &:not(:last-of-type) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+
+.contacto-campos {
+  flex: 1;
+  min-width: 0;
+}
+
+.contacto-quitar {
+  flex-shrink: 0;
+  margin-top: 18px;
+}
+
+.sin-contactos {
+  margin: 4px 0 12px;
+  font-size: 13px;
+  color: #777777;
 }
 
 /* ====== CAMPOS ====== */
@@ -357,7 +402,11 @@ ion-button[color="medium"] {
   --border-radius: 24px;
 }
 
-/* ====== BOTÓN CERRAR SESIÓN ====== */
+/* ====== CUENTA: CERRAR SESIÓN + ZONA IRREVERSIBLE ====== */
+.zona-cuenta {
+  margin-top: 8px;
+}
+
 .btn-cerrar {
   --background: transparent;
   --color: #ffffff;
@@ -377,6 +426,21 @@ ion-button[color="medium"] {
 
 .btn-cerrar:hover {
   --background: #8b080860;
+}
+
+.zona-peligro {
+  padding: 18px 16px 30px;
+  border-top: 1px solid rgba(139, 8, 8, 0.3);
+}
+
+.zona-peligro-titulo {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #8b0808;
+  text-align: center;
 }
 
 /* ====== RESPONSIVE ====== */
