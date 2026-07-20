@@ -1,0 +1,96 @@
+<ion-header translucent="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/perfil"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ nombreRefugio() }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content fullscreen>
+  <div class="ion-text-center ion-padding" *ngIf="cargando()">
+    <ion-spinner></ion-spinner>
+  </div>
+
+  <div class="container" *ngIf="!cargando()">
+
+    <!-- Mascotas del refugio -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="paw-outline"></ion-icon>
+          Mascotas del refugio
+        </ion-card-title>
+        <p class="seccion-subtitulo">{{ mascotas().length }} mascota(s) registrada(s) a nombre del refugio.</p>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list *ngIf="mascotas().length; else sinMascotas">
+          <ion-item *ngFor="let m of mascotas(); trackBy: trackById" button (click)="verMascota(m)">
+            <ion-avatar slot="start">
+              <img [src]="m.fotoUrl || 'assets/img/logo_ashbis.jpeg'" alt="foto" />
+            </ion-avatar>
+            <ion-label>
+              <h2>{{ m.nombre }}</h2>
+              <p>{{ m.especie }} · {{ m.raza || '—' }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <ng-template #sinMascotas>
+          <p class="vacio">El refugio todavía no tiene mascotas registradas.</p>
+        </ng-template>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Veterinarias asociadas -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="medkit-outline"></ion-icon>
+          Veterinarias asociadas
+        </ion-card-title>
+        <p class="seccion-subtitulo">Clínicas con las que trabaja habitualmente el refugio.</p>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list *ngIf="veterinarias().length">
+          <ion-item lines="none" class="fila-accion" *ngFor="let v of veterinarias()">
+            <ion-label class="ion-text-wrap">
+              <h2>{{ v.nombre }}</h2>
+              <p>{{ v.direccion }}</p>
+            </ion-label>
+            <ion-button slot="end" size="small" fill="clear" color="danger" (click)="quitarVeterinaria(v)">
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+          </ion-item>
+        </ion-list>
+        <p class="vacio" *ngIf="!veterinarias().length">Aún no agregaste veterinarias asociadas.</p>
+        <ion-button expand="block" fill="outline" color="medium" (click)="agregarVeterinaria()">
+          <ion-icon name="add-outline" slot="start"></ion-icon>
+          Agregar veterinaria
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Equipo -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="people-outline"></ion-icon>
+          Equipo
+        </ion-card-title>
+        <p class="seccion-subtitulo">Personas que operan la cuenta del refugio. Se gestiona desde el perfil del refugio.</p>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list *ngIf="miembros().length">
+          <ion-item lines="none" class="fila-accion" *ngFor="let m of miembros()">
+            <ion-label class="ion-text-wrap">
+              <h2>{{ m.nombre }}</h2>
+              <p>{{ m.email }} · {{ m.rolEquipo === 'admin' ? 'Admin' : 'Staff' }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <p class="vacio" *ngIf="!miembros().length">Todavía no hay nadie más en el equipo.</p>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+</ion-content>

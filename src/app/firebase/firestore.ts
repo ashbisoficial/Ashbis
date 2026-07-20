@@ -141,7 +141,13 @@ export class FirestoreService {
 
   // ── Mascotas ─────────────────────────────────────────────────────────────────
 
-  private getUserPetsPropios(uid: string): Observable<Mascota[]> {
+  /**
+   * Mascotas cuyo dueño legal es exactamente uid (sin sumar mascotas de
+   * otros refugios ni de hogar temporal). Pública para poder mostrar el
+   * panel de UN refugio puntual (ver refugio-panel.component.ts), a
+   * diferencia de getUserPets que mezcla todo lo que ve el usuario logueado.
+   */
+  getUserPetsPropios(uid: string): Observable<Mascota[]> {
     const r = collection(this.firestore, 'mascotas') as CollectionReference<Mascota>;
     const q = query(r, where('uidUsuario', '==', uid), orderBy('date', 'desc'));
     return collectionData(q, { idField: 'id' }) as Observable<Mascota[]>;

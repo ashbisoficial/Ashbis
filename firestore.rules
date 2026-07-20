@@ -73,7 +73,10 @@ service cloud.firestore {
     }
 
     match /usuarios/{uid} {
-      allow read:   if isUser(uid);
+      // El dueño lee su propio perfil, y también cualquier miembro del
+      // equipo de un refugio necesita leer el perfil del refugio (por
+      // ejemplo nombreRefugio) para mostrarlo en el panel del refugio.
+      allow read:   if isUser(uid) || esMiembroDelRefugio(uid);
       allow create: if isUser(uid) && noLongStrings(request.resource.data)
                     && request.resource.data.get('rol', 'usuario')
                        in ['usuario', 'refugio', 'veterinario'];
@@ -91,13 +94,16 @@ service cloud.firestore {
                        == resource.data.get('rol', 'usuario');
       allow delete: if false;
 
+      // Si uid es un refugio, esta lista también funciona como "veterinarias
+      // con las que trabaja el refugio": cualquiera del equipo puede
+      // verla/editarla, igual que con mascotas o publicaciones.
       match /veterinariasFavoritas/{vetId} {
-        allow read:   if isUser(uid);
-        allow create: if isUser(uid)
+        allow read:   if puedeOperarComoRefugio(uid);
+        allow create: if puedeOperarComoRefugio(uid)
                       && request.resource.data.uidUsuario == uid
                       && noLongStrings(request.resource.data);
-        allow update: if isUser(uid) && noLongStrings(request.resource.data);
-        allow delete: if isUser(uid);
+        allow update: if puedeOperarComoRefugio(uid) && noLongStrings(request.resource.data);
+        allow delete: if puedeOperarComoRefugio(uid);
       }
 
       // Tokens de push (FCM) de los dispositivos donde el usuario inició

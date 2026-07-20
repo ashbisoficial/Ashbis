@@ -10,7 +10,7 @@ import {
   ValidatorFn,
   Validators
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   IonBadge,
   IonButton,
@@ -43,7 +43,8 @@ import {
   cameraOutline, createOutline, logoGoogle, closeOutline, trashOutline,
   checkmarkOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-  documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline
+  documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline,
+  businessOutline
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
@@ -67,6 +68,7 @@ interface UsuarioActual {
   imports: [
     NgIf,
     NgFor,
+    RouterLink,
     ReactiveFormsModule,
     IonHeader,
     IonToolbar,
@@ -194,7 +196,7 @@ export class PerfilComponent implements OnDestroy {
       checkmarkOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
       documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline,
-      settingsOutline
+      settingsOutline, businessOutline
     });
 
     this.cargando = true;

@@ -139,6 +139,12 @@ export const routes: Routes = [
           import('./mascota-detalle/mascota-detalle.component')
             .then(m => m.MascotaDetalleComponent),
       },
+      {
+        path: 'refugio-panel/:refugioUid',
+        loadComponent: () =>
+          import('./refugio-panel/refugio-panel.component')
+            .then(m => m.RefugioPanelComponent),
+      },
       // ── Chat IA dentro de tabs (mantiene navbar) ─────────────────────────
       {
         path: 'chat-ia',
