@@ -1,9 +1,9 @@
 .notif-content {
-  --background: #070707;
+  --background: var(--ion-background-color);
 }
 
 .notif-card {
-  --background: #141414;
+  --background: var(--ashbis-surface);
 }
 
 .notif-item {
@@ -21,7 +21,7 @@
   align-items: center;
   justify-content: center;
   height: 50vh;
-  color: #888888;
+  color: var(--ion-color-medium);
   text-align: center;
 
   p:first-child {

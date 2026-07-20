@@ -65,11 +65,21 @@
   --ashbis-red-activated: #991b1b;
 
   /* Tarjetas/superficies elevadas, tema oscuro (default). PreferenciasService
-     alterna la clase .ashbis-light en <html>, que redefine estas dos más
-     abajo — así los componentes nuevos (Configuración) usan var(--ashbis-*)
-     en vez de hex fijo y responden solos al cambio de tema. */
+     alterna la clase .ashbis-light en <html>, que redefine estas más abajo
+     — así los componentes usan var(--ashbis-*) en vez de hex fijo y
+     responden solos al cambio de tema. */
   --ashbis-surface: #111111;
   --ashbis-surface-border: rgba(255, 255, 255, .06);
+  --ashbis-surface-2: #1c1c1c;
+  --ashbis-danger-surface: #150707;
+  --ashbis-warning-surface: #2e2600;
+  --ashbis-warning-accent: #f5d76e;
+  --ashbis-input-border: #3a3a3a;
+
+  /* Botón "alternativo" de alto contraste (ej. "Crear cuenta" en login):
+     claro sobre fondo oscuro, oscuro sobre fondo claro — se invierte solo. */
+  --ashbis-btn-alt-bg: #ffffff;
+  --ashbis-btn-alt-color: #000000;
 }
 
 /* Tamaño de texto (Configuración → Apariencia → Tamaño de letra).
@@ -80,18 +90,38 @@ html {
   font-size: var(--ashbis-font-scale, 100%);
 }
 
+/* dark.class.css trae su propio --ion-background-color (#121212 en modo
+   md), pero la identidad de marca de Ashbis siempre fue negro puro — se
+   sobreescribe acá para que las pantallas que ya migraron a
+   var(--ion-background-color)/var(--ion-text-color) se vean exactamente
+   igual que antes en oscuro. Misma especificidad que las reglas de
+   dark.class.css (dos clases) para ganarles por orden de aparición. */
+.ion-palette-dark.md,
+.ion-palette-dark.ios {
+  --ion-background-color: #070707;
+  --ion-background-color-rgb: 7, 7, 7;
+  --ion-text-color: #ffffff;
+  --ion-text-color-rgb: 255, 255, 255;
+}
+
 /* ===========================================================
    MODO CLARO
-   Cubre el chrome compartido de toda la app (alerts/toasts/loading, la
-   pantalla de carga inicial) y las pantallas nuevas que ya usan
-   var(--ashbis-surface)/var(--ion-*-color) en vez de hex fijo (por ahora:
-   Configuración). Login/Registro mantienen su diseño oscuro de marca a
-   propósito — son pantallas previas a tener sesión iniciada, así que no hay
-   preferencia de cuenta que aplicarles todavía.
+   Se aplica a toda la app: cada pantalla que usaba colores fijos
+   (background:#070707/#fff !important) se migró a var(--ion-background-
+   color)/var(--ion-text-color)/var(--ashbis-surface), que responden solas
+   al toggle de Configuración → Apariencia.
    =========================================================== */
 html.ashbis-light {
   --ashbis-surface: #ffffff;
   --ashbis-surface-border: rgba(0, 0, 0, .08);
+  --ashbis-surface-2: #f0f0f0;
+  --ashbis-danger-surface: #fdecec;
+  --ashbis-warning-surface: #fff6e0;
+  --ashbis-warning-accent: #8a6a08;
+  --ashbis-input-border: #d8d8d8;
+
+  --ashbis-btn-alt-bg: #1a1a1a;
+  --ashbis-btn-alt-color: #ffffff;
 
   #boot-splash {
     background: #f4f4f4;

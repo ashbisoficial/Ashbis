@@ -1,5 +1,5 @@
 .chat-content {
-  --background: #070707;
+  --background: var(--ion-background-color);
 }
 
 // ── Contenedor de mensajes ───────────────────────────────────────────────────
@@ -34,14 +34,14 @@
     align-self: flex-start;
 
     .bubble-inner {
-      background: #141414;
-      color: #f3eaea;
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: var(--ashbis-surface);
+      color: var(--ion-text-color);
+      border: 1px solid var(--ashbis-surface-border);
       border-radius: 18px 18px 18px 4px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
-    .hora { color: #888888; }
+    .hora { color: var(--ion-color-medium); }
   }
 }
 
@@ -71,13 +71,13 @@
 // ── Panel de chips ────────────────────────────────────────────────────────────
 .chips-panel {
   padding: 12px 16px;
-  background: #0c0c0c;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--ion-background-color);
+  border-top: 1px solid var(--ashbis-surface-border);
 
   .chips-hint {
     margin: 0 0 10px;
     font-size: 0.85rem;
-    color: #aaaaaa;
+    color: var(--ion-color-medium);
   }
 }
 
@@ -89,14 +89,14 @@
   ion-chip {
     --background: transparent;
     background: transparent;
-    color: #ffffff;
+    color: var(--ion-text-color);
     border: 1.5px solid #8b0808;
 
     // El color="danger" que traía ion-chip pintaba el texto en rojo vía
     // --ion-color-base (no vía --color, que sí sobreescribimos arriba);
     // por eso se fuerza acá directo sobre el ion-label proyectado.
     ion-label {
-      color: #ffffff !important;
+      color: var(--ion-text-color) !important;
     }
   }
 }
@@ -107,14 +107,14 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: #0c0c0c;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--ion-background-color);
+  border-top: 1px solid var(--ashbis-surface-border);
 
   ion-input.chat-input {
     flex: 1;
-    --background: #141414;
-    --color: #ffffff;
-    --placeholder-color: #888888;
+    --background: var(--ashbis-surface);
+    --color: var(--ion-text-color);
+    --placeholder-color: var(--ion-color-medium);
     --border-color: #8b0808;
   }
 }

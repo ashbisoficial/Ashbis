@@ -1,7 +1,7 @@
 /* ====== FONDO GENERAL ====== */
 ion-content {
-  --background: #070707 !important;
-  color: #ffffff !important;
+  --background: var(--ion-background-color) !important;
+  color: var(--ion-text-color) !important;
 }
 
 /* Forzar fondo negro dentro de estructuras internas */
@@ -9,20 +9,20 @@ ion-content::part(scroll),
 ion-content .inner-scroll,
 ion-content .scroll-y,
 ion-content .ion-content-scroll-host {
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
 }
 
 .list{
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
 }
 /* La tarjeta se separa levemente del fondo negro de la página (borde y
    sombra sutiles) para que el formulario no se vea como un vacío sin
    límites — mismo criterio que .seccion-card en perfil.component.scss. */
 ion-card,
 ion-card::part(native) {
-  background: #0c0c0c !important;
+  background: var(--ashbis-surface) !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, .5) !important;
-  border: 1px solid rgba(255, 255, 255, .06);
+  border: 1px solid var(--ashbis-surface-border);
   border-radius: 18px !important;
 }
 
@@ -33,7 +33,7 @@ ion-card::part(native) {
   gap: 28px;
   width: 90%;
   margin: 4px auto 22px;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid var(--ashbis-surface-border);
 }
 
 .tipo-cuenta-tab {
@@ -45,14 +45,14 @@ ion-card::part(native) {
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--ion-color-medium);
   cursor: pointer;
   transition: color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .tipo-cuenta-tab:hover {
-  color: #a8a8a8;
+  color: var(--ion-text-color);
 }
 
 .tipo-cuenta-tab.activo {
@@ -79,7 +79,7 @@ ion-card::part(native) {
 /* ====== INPUTS Y LABELS ====== */
 ion-item {
   --background:transparent !important;
-  --color: #ffffff !important;
+  --color: var(--ion-text-color) !important;
   --highlight-color-focused: #d30000 !important;
   --highlight-color-valid: #d30000 !important;
   --highlight-color-invalid: #d30000 !important;
@@ -108,8 +108,8 @@ ion-item.item-consentimiento::part(native) {
 
 /* Labels */
 ion-label {
-  background: #070707 !important;
-  color: #ffffff !important;
+  background: var(--ion-background-color) !important;
+  color: var(--ion-text-color) !important;
   font-size: 14px;
 }
 
@@ -117,13 +117,13 @@ ion-label {
 ion-input,
 ion-select {
   background:transparent !important;
-  color: #ffffff !important;
+  color: var(--ion-text-color) !important;
 }
 
 /* Placeholder */
 ion-input::part(input),
 ion-select::part(text) {
-  color: #bbbbbb !important;
+  color: var(--ion-color-medium) !important;
 }
 
 /* Asteriscos */
@@ -133,7 +133,7 @@ ion-select::part(text) {
 
 /* ====== MENSAJES DE ERROR ====== */
 ion-note[color="danger"] {
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
   color: #ff5b5b !important;
   display: flex;
   align-items: flex-start;
@@ -154,9 +154,9 @@ ion-note[color="danger"] {
 
 /* Texto ayuda contraseña */
 .contrasena {
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
   font-size: 11px;
-  color: #d9d9d9;
+  color: var(--ion-color-medium);
   width: 80%;
   margin: 4px auto 6px auto;
   display: block;
@@ -167,7 +167,7 @@ ion-note[color="danger"] {
 .pw-meter {
   width: 100%;
   height: 6px;
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
   border-radius: 3px;
   margin: 6px auto;
 }
@@ -180,9 +180,9 @@ ion-note[color="danger"] {
 }
 
 .pw-strength-text {
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
   font-size: 12px;
-  color: #bbbbbb;
+  color: var(--ion-color-medium);
   width: 80%;
   margin: 0 auto 6px auto;
   text-align: left;
@@ -191,17 +191,17 @@ ion-note[color="danger"] {
 /* ====== ICÓNOS OJO (blancos) ====== */
 ion-button[slot="end"] {
   --background: transparent !important;
-  --color: #ffffff !important;
+  --color: var(--ion-text-color) !important;
   --ripple-color: transparent !important;
 }
 
 ion-button[slot="end"] ion-icon {
-  color: #ffffff !important;
+  color: var(--ion-text-color) !important;
   font-size: 22px;
 }
 
 .button-inner{
-  color: #ffffff;
+  color: var(--ion-text-color);
 
 }
 
@@ -230,7 +230,7 @@ ion-button[color="medium"] {
 
 /* Link inferior */
 ion-button[fill="clear"] {
-  --color: #bbbbbb !important;
+  --color: var(--ion-color-medium) !important;
   margin-top: 20px;
   font-size: 12px;
   text-transform: none;
@@ -240,5 +240,5 @@ ion-button[fill="clear"] {
    estilo del texto en sí vive en app-terminos-contenido/app-privacidad-
    contenido, que ya traen su propio encapsulamiento). */
 .legal-content {
-  --background: #070707;
+  --background: var(--ion-background-color);
 }

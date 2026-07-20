@@ -2,25 +2,25 @@
    1. FONDO GENERAL
 ============================================ */
 ion-content {
-  --background: #070707 !important;
-  color: #ffffff !important;
+  --background: var(--ion-background-color) !important;
+  color: var(--ion-text-color) !important;
 }
 
 ion-content::part(scroll),
 ion-content .inner-scroll {
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
 }
 
 ion-card,
 ion-card::part(native) {
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
   box-shadow: none !important;
   border-radius: 12px !important;
 }
 
 .list,
 .list-md {
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
   margin: 0;
   padding: 8px 0;
 }
@@ -132,7 +132,7 @@ ion-item::part(inner) {
 
 /* Labels */
 ion-item ion-label {
- color: #ffffff !important;
+ color: var(--ion-text-color) !important;
   font-size: 15px;
   padding-left: 20px;
   padding-right: 20px;
@@ -146,8 +146,8 @@ ion-item ion-label {
 /* Inputs */
 ion-input,
 ion-select {
-  background: #070707 !important;
-  color: #ffffff !important;
+  background: var(--ion-background-color) !important;
+  color: var(--ion-text-color) !important;
   border-bottom: 2px solid #de0505 !important;
 
   width: 100%;
@@ -162,7 +162,7 @@ ion-select {
 /* Placeholders */
 ion-input::part(input),
 ion-select::part(text) {
-  color: #bbbbbb !important;
+  color: var(--ion-color-medium) !important;
   padding-left: 10px;
   padding-right: 10px;
 
@@ -182,7 +182,7 @@ ion-select::part(text) {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  background: #070707;
+  background: var(--ion-background-color);
   padding: 12px 16px;
 }
 
@@ -356,7 +356,7 @@ ion-content {
 
 ion-item {
   --border-radius: 12px !important;
-  --background: #141414 !important;
+  --background: var(--ashbis-surface) !important;
   --padding-start: 14px;
   margin-bottom: 12px;
   border-radius: 12px;
@@ -380,8 +380,8 @@ ion-input, ion-select, ion-textarea {
    borde rojo inferior del resto de los campos (regla de la sección 4);
    se lo agregamos aquí para que se vea consistente. */
 .date-input-custom {
-  color: #ffffff !important;
-  background: #070707 !important;
+  color: var(--ion-text-color) !important;
+  background: var(--ion-background-color) !important;
   border-bottom: 2px solid #de0505 !important;
   width: 100%;
   max-width: 500px;
@@ -400,7 +400,7 @@ ion-accordion-group {
 }
 
 ion-accordion {
-  --background: #141414;
+  --background: var(--ashbis-surface);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -411,6 +411,6 @@ ion-accordion {
    otra parte del shadow DOM); ::part(content) es la única forma soportada
    de pintarlo, si no queda una franja gris clara detrás de los checkboxes. */
 ion-accordion::part(content) {
-  background: #070707 !important;
+  background: var(--ion-background-color) !important;
 }
 
