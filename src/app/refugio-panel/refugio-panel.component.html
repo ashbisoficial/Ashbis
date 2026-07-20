@@ -14,6 +14,63 @@
 
   <div class="container" *ngIf="!cargando()">
 
+    <div class="aviso-error" *ngIf="errorPermisos()">
+      No se pudo cargar toda la información (puede faltar algún dato). Si el problema sigue, avísale al equipo de Ashbis.
+    </div>
+
+    <!-- Estadísticas: solo lectura, para ver de un vistazo cómo va el trabajo del refugio. -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="stats-chart-outline"></ion-icon>
+          Estadísticas
+        </ion-card-title>
+        <p class="seccion-subtitulo">Un resumen de solo lectura — para ver cómo va el trabajo, no para editar.</p>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-grid class="stats-grid">
+          <ion-row>
+            <ion-col size="6">
+              <div class="stat-tile">
+                <div class="stat-val">{{ mascotas().length }}</div>
+                <div class="stat-lbl">Mascotas</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-tile">
+                <div class="stat-val">{{ publicacionesActivas() }}</div>
+                <div class="stat-lbl">Publicaciones activas</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-tile">
+                <div class="stat-val">{{ adopcionesConcretadas() }}</div>
+                <div class="stat-lbl">Adopciones concretadas</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-tile">
+                <div class="stat-val">{{ hogaresTemporalesActivos() }}</div>
+                <div class="stat-lbl">Hogares temporales activos</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-tile">
+                <div class="stat-val">{{ transferenciasPendientes() }}</div>
+                <div class="stat-lbl">Solicitudes pendientes</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-tile" [class.positivo]="balanceFinanciero() >= 0" [class.negativo]="balanceFinanciero() < 0">
+                <div class="stat-val">${{ balanceFinanciero() | number:'1.0-0' }}</div>
+                <div class="stat-lbl">Balance financiero</div>
+              </div>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+    </ion-card>
+
     <ion-button expand="block" fill="outline" color="danger" [routerLink]="['/tabs/refugio-finanzas', refugioUid]">
       <ion-icon name="cash-outline" slot="start"></ion-icon>
       Finanzas del refugio
@@ -42,6 +99,35 @@
         </ion-list>
         <ng-template #sinMascotas>
           <p class="vacio">El refugio todavía no tiene mascotas registradas.</p>
+        </ng-template>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Publicaciones: solo lectura. Gestionarlas (crear/editar/borrar) sigue
+         siendo desde "Mis publicaciones", en el perfil del refugio. -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="document-text-outline"></ion-icon>
+          Publicaciones
+        </ion-card-title>
+        <p class="seccion-subtitulo">Adopciones, recolecciones y donaciones publicadas por el refugio.</p>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list *ngIf="publicaciones().length; else sinPublicaciones">
+          <ion-item lines="none" class="fila-accion" *ngFor="let p of publicaciones()" button (click)="verPublicacion(p)">
+            <ion-avatar slot="start" *ngIf="p.fotoUrl">
+              <img [src]="p.fotoUrl" alt="foto" />
+            </ion-avatar>
+            <ion-label class="ion-text-wrap">
+              <h2>{{ p.titulo }}</h2>
+              <p>{{ p.tipo === 'adopcion' ? 'Adopción' : p.tipo === 'recoleccion' ? 'Recolección' : p.tipo === 'donacion' ? 'Donación' : 'Otro' }}
+                · {{ p.activa ? 'Activa' : 'Inactiva' }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <ng-template #sinPublicaciones>
+          <p class="vacio">El refugio todavía no tiene publicaciones.</p>
         </ng-template>
       </ion-card-content>
     </ion-card>

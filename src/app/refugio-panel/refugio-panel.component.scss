@@ -56,3 +56,42 @@ ion-avatar {
   width: 42px;
   height: 42px;
 }
+
+.aviso-error {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 91, 91, .4);
+  background: rgba(255, 91, 91, .1);
+  color: var(--ion-text-color);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.stats-grid {
+  padding: 0;
+}
+
+.stat-tile {
+  border-radius: 12px;
+  border: 1px solid var(--ashbis-surface-border);
+  background: var(--ashbis-surface-2);
+  padding: 10px 8px;
+  text-align: center;
+  margin-bottom: 8px;
+
+  .stat-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ion-text-color);
+  }
+
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--ion-color-medium);
+    margin-top: 2px;
+  }
+
+  &.positivo .stat-val { color: #2dd36f; }
+  &.negativo .stat-val { color: #ff5b5b; }
+}
