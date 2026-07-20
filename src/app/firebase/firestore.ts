@@ -186,6 +186,34 @@ export class FirestoreService {
     );
   }
 
+  /**
+   * Mascotas donde uid es colaborador de hogar temporal (aceptó una
+   * Transferencia tipo 'hogar_temporal'): acceso compartido sin ser el
+   * dueño legal. Separadas de getUserPets a propósito, para que la UI
+   * pueda mostrarlas aparte de las mascotas propias/del refugio.
+   */
+  getMascotasHogarTemporal(uid: string): Observable<Mascota[]> {
+    const r = collectionGroup(this.firestore, 'colaboradores');
+    const q = query(r, where('uid', '==', uid));
+    return collectionData(q).pipe(
+      switchMap(docs => {
+        const ids = Array.from(new Set(
+          (docs as Models.Mascotas.ColaboradorMascota[])
+            .map(d => d.mascotaId)
+            .filter((id): id is string => !!id)
+        ));
+        if (!ids.length) return of<Mascota[]>([]);
+        return combineLatest(ids.map(id => this.getPetById(id))).pipe(
+          map(list => list.filter((m): m is Mascota => !!m))
+        );
+      }),
+      catchError(err => {
+        console.error('getMascotasHogarTemporal falló:', err);
+        return of<Mascota[]>([]);
+      })
+    );
+  }
+
   getPetById(id: string): Observable<Mascota | undefined> {
     return docData(doc(this.firestore, 'mascotas', id), { idField: 'id' }) as Observable<Mascota | undefined>;
   }

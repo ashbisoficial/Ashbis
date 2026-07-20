@@ -206,6 +206,15 @@ service cloud.firestore {
       }
     }
 
+    // Igual que con miembros (línea 143): una consulta
+    // collectionGroup('colaboradores').where('uid','==', uid) necesita esta
+    // regla aparte con wildcard, las reglas anidadas de arriba no aplican.
+    // Usa el mismo documento (mascotas/{petId}/colaboradores/{colabUid}), así
+    // que solo se permite leer el propio.
+    match /{path=**}/colaboradores/{colabUid} {
+      allow read: if resource.data.uid == request.auth.uid;
+    }
+
     match /lugares/{placeId} {
       allow read:  if isAuth();
       allow write: if isAuth() && noLongStrings(request.resource.data);

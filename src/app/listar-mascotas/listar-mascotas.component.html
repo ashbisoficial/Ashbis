@@ -7,6 +7,18 @@
 
     <ion-title>Mis Mascotas</ion-title>
   </ion-toolbar>
+
+  <!-- Solo se muestra si hay al menos una mascota en hogar temporal -->
+  <ion-toolbar *ngIf="!loading() && mascotasHogarTemporal().length > 0">
+    <ion-segment [value]="vista()" (ionChange)="cambiarVista($any($event.detail.value))">
+      <ion-segment-button value="propias">
+        <ion-label>Mis mascotas</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="temporal">
+        <ion-label>Hogar temporal</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
 </ion-header>
 
 <ion-content fullscreen>
@@ -73,8 +85,14 @@
     <ng-template #empty>
       <ion-item lines="none">
         <ion-label class="ion-text-center">
-          <h2>Sin mascotas registradas</h2>
-          <p>Usa “Agregar Mascota” para crear tu primera ficha.</p>
+          <ng-container *ngIf="vista() === 'propias'; else vacioTemporal">
+            <h2>Sin mascotas registradas</h2>
+            <p>Usa “Agregar Mascota” para crear tu primera ficha.</p>
+          </ng-container>
+          <ng-template #vacioTemporal>
+            <h2>Sin mascotas en hogar temporal</h2>
+            <p>Cuando aceptes una solicitud de hogar temporal, la mascota va a aparecer acá.</p>
+          </ng-template>
         </ion-label>
       </ion-item>
     </ng-template>

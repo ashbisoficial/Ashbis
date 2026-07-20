@@ -712,6 +712,8 @@ export const aceptarTransferencia = onRequest(
             email: decoded.email || '',
             tipo: 'hogar_temporal',
             agregadoEn: admin.firestore.FieldValue.serverTimestamp(),
+            mascotaId: t['mascotaId'],
+            mascotaNombre: t['mascotaNombre'] || '',
           });
         } else {
           // Adopción: se entrega la mascota por completo.

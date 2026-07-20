@@ -162,6 +162,15 @@ export namespace Models {
       email: string;
       tipo: 'hogar_temporal';
       agregadoEn?: any;
+      /**
+       * Id y nombre de la mascota duplicados dentro del propio documento
+       * (además de estar implícitos en la ruta mascotas/{mascotaId}/...) por
+       * el mismo motivo que MiembroEquipo duplica refugioUid: permite
+       * resolver collectionGroup('colaboradores').where('uid','==', uid) a
+       * mascotas concretas sin conocer antes su id.
+       */
+      mascotaId: string;
+      mascotaNombre: string;
     }
   }
 

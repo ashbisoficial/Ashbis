@@ -215,6 +215,23 @@ ion-skeleton-text {
   );
 }
 
+/* Segmento "Mis mascotas" / "Hogar temporal": el toolbar que lo contiene
+   siempre es negro (chrome fijo), así que el segmento se estiliza para ese
+   fondo sin importar el tema claro/oscuro elegido. */
+ion-segment {
+  --background: rgba(255, 255, 255, 0.08);
+  padding: 4px 12px 10px;
+}
+
+ion-segment-button {
+  --color: #999999;
+  --color-checked: #ffffff;
+  --indicator-color: #8b0808;
+  font-weight: 600;
+  text-transform: none;
+  min-height: 34px;
+}
+
 ion-fab-button[color="danger"] {
   --background: #8b0808;      /* color del botón */
   --background-activated: #6e0606; /* cuando se presiona */

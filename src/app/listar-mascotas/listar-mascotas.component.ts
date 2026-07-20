@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { NgIf, NgFor, DatePipe } from '@angular/common';
 
 import {
@@ -7,17 +7,20 @@ import {
   IonList, IonItem, IonAvatar, IonSkeletonText,
   IonButton, IonLabel, IonIcon,
   IonFab, IonFabButton,
-  IonButtons, IonBackButton   // ✅ IMPORTADOS
+  IonButtons, IonBackButton,
+  IonSegment, IonSegmentButton
 } from '@ionic/angular/standalone';
 
 import { RefresherCustomEvent } from '@ionic/angular';
 import { Auth, authState } from '@angular/fire/auth';
-import { Subject, of, take } from 'rxjs';
+import { Subject, of, take, combineLatest } from 'rxjs';
 import { switchMap, takeUntil } from 'rxjs/operators';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { Router, RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
 import { add, qrCodeOutline } from 'ionicons/icons';
+
+type Vista = 'propias' | 'temporal';
 
 @Component({
   selector: 'app-mis-mascotas',
@@ -29,7 +32,8 @@ import { add, qrCodeOutline } from 'ionicons/icons';
   IonList, IonItem, IonAvatar, IonSkeletonText,
   IonLabel, IonIcon,
   IonFab, IonFabButton,
-  IonButtons, IonBackButton   // 🔥 NECESARIOS PARA EVITAR EL ERROR
+  IonButtons, IonBackButton,
+  IonSegment, IonSegmentButton
   ],
   templateUrl: './listar-mascotas.component.html',
   styleUrls: ['./listar-mascotas.component.scss'],
@@ -43,8 +47,15 @@ export class ListarMascotasComponent implements OnDestroy {
   private destroy$ = new Subject<void>();
 
   loading = signal(true);
-  mascotas = signal<Mascota[]>([]);
+  mascotasPropias = signal<Mascota[]>([]);
+  /** Mascotas donde solo soy colaborador de hogar temporal, no dueño. */
+  mascotasHogarTemporal = signal<Mascota[]>([]);
   usuarioUid = signal<string | null>(null);
+  vista = signal<Vista>('propias');
+
+  mascotas = computed(() =>
+    this.vista() === 'propias' ? this.mascotasPropias() : this.mascotasHogarTemporal()
+  );
 
   constructor() {
     // Registrar iconos
@@ -56,12 +67,17 @@ export class ListarMascotasComponent implements OnDestroy {
         switchMap(user => {
           const uid = user?.uid ?? null;
           this.usuarioUid.set(uid);
-          return uid ? this.fs.getUserPets(uid) : of<Mascota[]>([]);
+          if (!uid) return of<[Mascota[], Mascota[]]>([[], []]);
+          return combineLatest([
+            this.fs.getUserPets(uid),
+            this.fs.getMascotasHogarTemporal(uid)
+          ]);
         }),
         takeUntil(this.destroy$)
       )
-      .subscribe(pets => {
-        this.mascotas.set(pets ?? []);
+      .subscribe(([propias, temporal]) => {
+        this.mascotasPropias.set(propias ?? []);
+        this.mascotasHogarTemporal.set(temporal ?? []);
         this.loading.set(false);
       });
   }
@@ -72,6 +88,10 @@ export class ListarMascotasComponent implements OnDestroy {
   }
 
   trackById = (_: number, m: Mascota) => m.id;
+
+  cambiarVista(v: Vista): void {
+    this.vista.set(v);
+  }
 
   // Refrescar listado
   doRefresh(ev: Event): void {
@@ -85,9 +105,13 @@ export class ListarMascotasComponent implements OnDestroy {
 
     this.loading.set(true);
 
-    this.fs.getUserPets(uid).pipe(take(1)).subscribe({
-      next: pets => {
-        this.mascotas.set(pets ?? []);
+    combineLatest([
+      this.fs.getUserPets(uid),
+      this.fs.getMascotasHogarTemporal(uid)
+    ]).pipe(take(1)).subscribe({
+      next: ([propias, temporal]) => {
+        this.mascotasPropias.set(propias ?? []);
+        this.mascotasHogarTemporal.set(temporal ?? []);
         this.loading.set(false);
         refresher.target.complete();
       },
