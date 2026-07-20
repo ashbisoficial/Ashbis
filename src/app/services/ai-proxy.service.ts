@@ -20,7 +20,9 @@ export class AiProxyService {
 
   async sendMessage(prompt: string, categoria: string, mascota: string): Promise<AiProxyResponse> {
     const body: AiProxyRequest = { prompt, categoria, mascota };
-    const req$ = this.http.post<AiProxyResponse>(this.endpoint, body).pipe(timeout(15000));
+    // Debe quedar por debajo del timeoutSeconds de la Cloud Function aiProxy (45s)
+    // para que sea la función la que corte primero y no un timeout ciego del cliente.
+    const req$ = this.http.post<AiProxyResponse>(this.endpoint, body).pipe(timeout(40000));
     return firstValueFrom(req$);
   }
 }

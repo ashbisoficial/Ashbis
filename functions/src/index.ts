@@ -7,7 +7,7 @@ import { defineSecret } from 'firebase-functions/params';
 admin.initializeApp();
 
 const DISCORD_WEBHOOK = defineSecret('DISCORD_WEBHOOK');
-const ANTHROPIC_KEY = defineSecret('ANTHROPIC_KEY');
+const GEMINI_KEY = defineSecret('GEMINI_KEY');
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = new Set([
@@ -132,10 +132,11 @@ const VALID_PET_TYPES = new Set([
 export const aiProxy = onRequest(
   {
     region: 'us-central1',
-    timeoutSeconds: 30,
+    timeoutSeconds: 45,
     memory: '256MiB',
     maxInstances: 20,
-    secrets: [ANTHROPIC_KEY],
+    secrets: [GEMINI_KEY],
+    invoker: 'public',
   },
   async (req, res) => {
     const origin = req.headers.origin;
@@ -213,10 +214,10 @@ export const aiProxy = onRequest(
         return;
       }
 
-      // ── Llamada a Claude API ───────────────────────────────────────────────
-      const anthropicKey = ANTHROPIC_KEY.value();
-      if (!anthropicKey) {
-        functions.logger.error('Anthropic API key no configurada (secret ANTHROPIC_KEY)');
+      // ── Llamada a Gemini API ───────────────────────────────────────────────
+      const geminiKey = GEMINI_KEY.value();
+      if (!geminiKey) {
+        functions.logger.error('Gemini API key no configurada (secret GEMINI_KEY)');
         res.status(200).json({
           text: 'El servicio de IA está en mantenimiento temporal. Ante síntomas graves en tu mascota, acude urgente al veterinario. 🏥',
         });
@@ -277,30 +278,40 @@ export const aiProxy = onRequest(
       // quede separado del input del usuario para evitar prompt injection
       const userMessage = `Categoría de consulta: ${categoria}\nTipo de mascota: ${mascota}\n\nPregunta: ${rawPrompt}`;
 
-      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userMessage }],
-        }),
-      });
+      const geminiRes = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': geminiKey,
+          },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+            generationConfig: { maxOutputTokens: 1024 },
+          }),
+        }
+      );
 
-      if (!anthropicRes.ok) {
-        const errBody = await anthropicRes.text();
-        functions.logger.error('Anthropic API error', { status: anthropicRes.status, body: errBody });
+      if (geminiRes.status === 429) {
+        const errBody = await geminiRes.text();
+        functions.logger.error('Gemini API rate limit (free tier)', { body: errBody });
+        res.status(200).json({
+          text: 'El servicio de IA está muy solicitado en este momento. Intenta de nuevo en unos segundos. 🐾',
+        });
+        return;
+      }
+
+      if (!geminiRes.ok) {
+        const errBody = await geminiRes.text();
+        functions.logger.error('Gemini API error', { status: geminiRes.status, body: errBody });
         res.status(502).json({ error: 'Error del servicio de IA. Intenta nuevamente.' });
         return;
       }
 
-      const data = (await anthropicRes.json()) as any;
-      const text = (data?.content?.[0]?.text ?? '').trim();
+      const data = (await geminiRes.json()) as any;
+      const text = (data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim();
 
       if (!text) {
         res.status(200).json({ text: 'No obtuve respuesta. Intenta con otra pregunta. 🐾' });

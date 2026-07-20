@@ -2,10 +2,6 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    function isAuth() {
-      return request.auth != null;
-    }
-
     function isUser(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
@@ -51,7 +47,7 @@ service firebase.storage {
     }
 
     match /usuarios/{uid}/foto/{filename} {
-      allow read:          if isAuth();
+      allow read:          if isUser(uid);
       allow create, update: if isUser(uid) && isImage() && maxSize(5);
       allow delete:        if isUser(uid);
     }
