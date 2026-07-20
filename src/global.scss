@@ -112,6 +112,18 @@ html {
    al toggle de Configuración → Apariencia.
    =========================================================== */
 html.ashbis-light {
+  /* Ionic no define un valor propio de estas dos variables para "modo
+     claro": solo existen dentro de los archivos de paleta oscura
+     (dark.class.css), con selector .ion-palette-dark.*. Sin este bloque,
+     al sacar esa clase quedaban indefinidas — y como index.html declara
+     <meta name="color-scheme" content="light dark">, en un sistema con
+     modo oscuro el navegador terminaba pintando negro por su cuenta ahí
+     donde nuestro CSS dependía de estas variables sin valor. */
+  --ion-background-color: #ffffff;
+  --ion-background-color-rgb: 255, 255, 255;
+  --ion-text-color: #000000;
+  --ion-text-color-rgb: 0, 0, 0;
+
   --ashbis-surface: #ffffff;
   --ashbis-surface-border: rgba(0, 0, 0, .08);
   --ashbis-surface-2: #f0f0f0;

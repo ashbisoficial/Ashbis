@@ -17,12 +17,12 @@ const ESCALAS_TEXTO: Record<TamanoTexto, number> = {
  * Preferencias de apariencia (tema claro/oscuro, tamaño de texto),
  * persistidas en localStorage y aplicadas como clase/CSS var en <html>.
  *
- * El tema claro alcanza hoy al "chrome" compartido de la app (tabs,
- * alerts/toasts, la página de Configuración) y a las pantallas que ya usan
- * las variables de color de Ionic. Login/Registro mantienen su diseño oscuro
- * de marca a propósito (son pantallas previas a iniciar sesión, sin
- * preferencia de cuenta todavía). Extender el tema claro al resto de
- * pantallas internas es trabajo de seguimiento — ver nota en el commit.
+ * Además de la clase, fija --ion-background-color/--ion-text-color y el
+ * `color-scheme` real del documento: index.html declara
+ * `<meta name="color-scheme" content="light dark">`, así que si no se fija
+ * explícitamente acá, un sistema con modo oscuro activo hace que el propio
+ * navegador pinte de negro cualquier superficie que dependa de esas
+ * variables sin que nuestro CSS se entere (bug real, visto en producción).
  */
 @Injectable({ providedIn: 'root' })
 export class PreferenciasService {
@@ -59,6 +59,10 @@ export class PreferenciasService {
   private aplicarTema(tema: Tema): void {
     document.documentElement.classList.toggle('ion-palette-dark', tema === 'oscuro');
     document.documentElement.classList.toggle('ashbis-light', tema === 'claro');
+    // Alinea el color-scheme real del documento con el tema elegido, para
+    // que el navegador no pinte con el esquema del sistema operativo por
+    // su cuenta en huecos que nuestro CSS no cubra explícitamente.
+    document.documentElement.style.colorScheme = tema === 'oscuro' ? 'dark' : 'light';
   }
 
   private aplicarTamanoTexto(tamano: TamanoTexto): void {
