@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   AlertController,
   IonAvatar,
@@ -24,7 +24,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  addOutline, medkitOutline, pawOutline,
+  addOutline, cashOutline, medkitOutline, pawOutline,
   peopleOutline, trashOutline,
 } from 'ionicons/icons';
 import { combineLatest, Subject, takeUntil } from 'rxjs';
@@ -39,7 +39,7 @@ import { SecurityService } from '../services/security.service';
   templateUrl: './refugio-panel.component.html',
   styleUrls: ['./refugio-panel.component.scss'],
   imports: [
-    CommonModule,
+    CommonModule, RouterLink,
     IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
     IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
     IonItem, IonLabel, IonIcon, IonButton, IonList, IonAvatar, IonSpinner,
@@ -63,7 +63,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   miembros = signal<Models.Equipo.MiembroEquipo[]>([]);
 
   constructor() {
-    addIcons({ addOutline, medkitOutline, pawOutline, peopleOutline, trashOutline });
+    addIcons({ addOutline, cashOutline, medkitOutline, pawOutline, peopleOutline, trashOutline });
   }
 
   ngOnInit(): void {

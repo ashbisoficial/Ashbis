@@ -36,6 +36,7 @@
     "@ionic/storage-angular": "^4.0.0",
     "@southdevs/capacitor-google-auth": "^7.0.0",
     "angularx-qrcode": "^20.0.0",
+    "chart.js": "^4.5.1",
     "firebase": "^11.10.0",
     "ionicons": "^7.0.0",
     "leaflet": "^1.9.4",

@@ -299,4 +299,35 @@ export namespace Models {
       fechaRegistro?: string;
     }
   }
+
+  // ─── FINANZAS DEL REFUGIO (bitácora interna, no procesa pagos) ─────────────
+  export namespace Finanzas {
+    export const PathMovimientos = 'movimientosFinancieros'; // subcolección de usuarios/{refugioUid}
+
+    export type TipoMovimiento = 'ingreso' | 'gasto';
+
+    export type CategoriaMovimiento =
+      | 'alimentacion' | 'veterinaria' | 'medicamentos' | 'insumos'
+      | 'donacion' | 'adopcion' | 'eventos' | 'transporte' | 'otro';
+
+    /**
+     * Registro manual de un ingreso o gasto del refugio. Es solo una
+     * bitácora interna para llevar cuentas — Ashbis no procesa, retiene ni
+     * transfiere dinero entre personas (ver sección 8 de los Términos).
+     */
+    export interface Movimiento {
+      id?: string;
+      tipo: TipoMovimiento;
+      monto: number;
+      categoria: CategoriaMovimiento;
+      descripcion?: string;
+      /** Opcional: vincula el movimiento a una mascota puntual (ej. gasto veterinario de una mascota). */
+      mascotaId?: string;
+      mascotaNombre?: string;
+      /** Fecha del movimiento (no de carga), formato ISO yyyy-mm-dd. */
+      fecha: string;
+      creadoPor: string;
+      createdAt?: any;
+    }
+  }
 }

@@ -106,6 +106,28 @@ service cloud.firestore {
         allow delete: if puedeOperarComoRefugio(uid);
       }
 
+      // Bitácora interna de ingresos/gastos del refugio (no procesa pagos:
+      // ver sección 8 de los Términos). Mismo criterio de acceso que
+      // mascotas/publicaciones/veterinariasFavoritas: cualquiera del equipo
+      // puede cargar y ver los movimientos.
+      match /movimientosFinancieros/{movId} {
+        allow read:   if puedeOperarComoRefugio(uid);
+        allow create: if puedeOperarComoRefugio(uid)
+                      && request.resource.data.tipo in ['ingreso', 'gasto']
+                      && request.resource.data.monto is number
+                      && request.resource.data.monto > 0
+                      && request.resource.data.monto < 1000000000
+                      && request.resource.data.creadoPor == request.auth.uid
+                      && noLongStrings(request.resource.data);
+        allow update: if puedeOperarComoRefugio(uid)
+                      && request.resource.data.tipo in ['ingreso', 'gasto']
+                      && request.resource.data.monto is number
+                      && request.resource.data.monto > 0
+                      && request.resource.data.monto < 1000000000
+                      && noLongStrings(request.resource.data);
+        allow delete: if puedeOperarComoRefugio(uid);
+      }
+
       // Tokens de push (FCM) de los dispositivos donde el usuario inició
       // sesión. Cada doc = un token; el id del doc es el token mismo. Solo
       // el dueño los lee/escribe; las Cloud Functions que envían el push

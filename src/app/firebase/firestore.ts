@@ -448,6 +448,34 @@ export class FirestoreService {
     await deleteDoc(doc(this.firestore, `usuarios/${uid}/veterinariasFavoritas/${vetId}`));
   }
 
+  // ── Finanzas del refugio ─────────────────────────────────────────────────────
+
+  getMovimientosFinancieros(refugioUid: string): Observable<Models.Finanzas.Movimiento[]> {
+    const r = collection(this.firestore, `usuarios/${refugioUid}/${Models.Finanzas.PathMovimientos}`);
+    const q = query(r, orderBy('fecha', 'desc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Finanzas.Movimiento[]>;
+  }
+
+  async addMovimientoFinanciero(
+    refugioUid: string,
+    data: Omit<Models.Finanzas.Movimiento, 'id' | 'creadoPor' | 'createdAt'>
+  ): Promise<void> {
+    const uid = this.assertAuthenticated();
+    const payload = {
+      ...data,
+      creadoPor: uid,
+      createdAt: serverTimestamp(),
+    };
+    await addDoc(
+      collection(this.firestore, `usuarios/${refugioUid}/${Models.Finanzas.PathMovimientos}`),
+      this.security.sanitizeFirestoreObject(payload as any)
+    );
+  }
+
+  async deleteMovimientoFinanciero(refugioUid: string, movId: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, `usuarios/${refugioUid}/${Models.Finanzas.PathMovimientos}/${movId}`));
+  }
+
   // ── Lugares públicos (caché mapa) ──────────────────────────────────────────
 
   async getLugaresInfo(placeIds: string[]): Promise<Record<string, any>> {
