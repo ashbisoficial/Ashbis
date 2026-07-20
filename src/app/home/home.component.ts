@@ -18,7 +18,8 @@ import {
   chatbubblesOutline, heartOutline, heart, closeOutline, createOutline,
   callOutline, globeOutline, timeOutline, starOutline,
   chevronBackOutline, chevronForwardOutline, paw, bag,
-  qrCodeOutline, addCircleOutline, navigateOutline, expandOutline, contractOutline
+  qrCodeOutline, addCircleOutline, navigateOutline, expandOutline, contractOutline,
+  informationCircleOutline
 } from 'ionicons/icons';
 import { register } from 'swiper/element/bundle';
 import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
@@ -75,7 +76,8 @@ addIcons({
   chatbubblesOutline, heartOutline, heart, closeOutline, createOutline,
   callOutline, globeOutline, timeOutline, starOutline,
   chevronBackOutline, chevronForwardOutline, paw, bag,
-  qrCodeOutline, addCircleOutline, navigateOutline, expandOutline, contractOutline
+  qrCodeOutline, addCircleOutline, navigateOutline, expandOutline, contractOutline,
+  informationCircleOutline
 });
 
 @Component({

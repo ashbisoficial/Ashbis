@@ -150,20 +150,56 @@ swiper-slide {
   }
 }
 
-.map-hint {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
-  padding: 4px 10px;
+/* Ayuda + controles del mapa, fuera del mapa (ver comentario en el html) */
+.map-toolbar {
+  margin-top: 10px;
+}
+
+.map-ayuda {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    font-size: 15px;
+    color: var(--ashbis-red, #8b0808);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+.map-toolbar-botones {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.map-btn-outline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
   border-radius: 20px;
-  background: rgba(20, 20, 20, .75);
-  color: #dddddd;
-  font-size: 11px;
-  z-index: 401;
-  pointer-events: none;
-  white-space: nowrap;
+  border: 2px solid var(--ashbis-red, #8b0808);
+  background: transparent;
+  color: var(--ion-text-color);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  ion-icon {
+    font-size: 16px;
+    color: var(--ashbis-red, #8b0808);
+  }
+
+  &:active {
+    background: rgba(139, 8, 8, .12);
+  }
 }
 
 /* Asegura que el mapa Leaflet no quede tapado por Ionic */

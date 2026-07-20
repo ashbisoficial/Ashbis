@@ -96,12 +96,34 @@
       <p>Buscando lugares cercanos...</p>
     </div>
 
+    <!-- Ayuda + controles del mapa: fuera del mapa a propósito, para que se
+         vean siempre sin tener que tocar el mapa primero (si no, nadie se
+         entera de que existen). -->
+    <div class="map-toolbar">
+      <p class="map-ayuda">
+        <ion-icon name="information-circle-outline"></ion-icon>
+        El mapa está fijo para que no se mueva solo al hacer scroll. Usa estos botones para explorarlo.
+      </p>
+      <div class="map-toolbar-botones">
+        <button type="button" class="map-btn-outline" (click)="centrarEnUsuario()">
+          <ion-icon name="navigate-outline"></ion-icon>
+          Centrar en mí
+        </button>
+        <button type="button" class="map-btn-outline" (click)="toggleExpandirMapa()">
+          <ion-icon [name]="mapaExpandido ? 'contract-outline' : 'expand-outline'"></ion-icon>
+          {{ mapaExpandido ? 'Achicar mapa' : 'Expandir mapa' }}
+        </button>
+      </div>
+    </div>
+
     <!-- MAPA LEAFLET -->
     <ion-card-content>
       <div class="map-container" [class.expandido]="mapaExpandido">
         <div id="leaflet-map"></div>
 
-        <div class="map-botones">
+        <!-- En pantalla completa el mapa tapa todo lo demás (fixed), así que
+             acá SÍ hace falta un control flotante para poder salir/recentrar. -->
+        <div class="map-botones" *ngIf="mapaExpandido">
           <button
             type="button"
             class="map-btn"
@@ -115,14 +137,12 @@
             type="button"
             class="map-btn"
             (click)="toggleExpandirMapa()"
-            [attr.aria-label]="mapaExpandido ? 'Achicar mapa' : 'Expandir mapa'"
-            [attr.title]="mapaExpandido ? 'Achicar mapa' : 'Expandir mapa'"
+            aria-label="Achicar mapa"
+            title="Achicar mapa"
           >
-            <ion-icon [name]="mapaExpandido ? 'contract-outline' : 'expand-outline'"></ion-icon>
+            <ion-icon name="contract-outline"></ion-icon>
           </button>
         </div>
-
-        <p class="map-hint" *ngIf="!mapaExpandido">Doble click/tap para expandir</p>
       </div>
     </ion-card-content>
 
