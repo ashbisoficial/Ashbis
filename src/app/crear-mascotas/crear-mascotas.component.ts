@@ -130,7 +130,7 @@ export class CrearMascotasComponent implements OnInit {
     const file: File | undefined = event.target.files?.[0];
     if (!file) return;
     if (!this.allowedMime.includes(file.type)) {
-      await this.presentAlert('Solo se permiten imagenes JPEG, PNG, WebP o GIF.');
+      await this.presentAlert('Solo se permiten imágenes JPEG, PNG, WebP o GIF.');
       event.target.value = '';
       return;
     }
@@ -153,7 +153,7 @@ export class CrearMascotasComponent implements OnInit {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (!this.allowedMime.includes(file.type)) {
-        await this.presentAlert('Solo se permiten imagenes JPEG, PNG, WebP o GIF.');
+        await this.presentAlert('Solo se permiten imágenes JPEG, PNG, WebP o GIF.');
         continue;
       }
       if (file.size > this.maxFileBytes) {

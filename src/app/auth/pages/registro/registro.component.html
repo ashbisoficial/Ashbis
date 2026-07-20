@@ -174,14 +174,14 @@
                 <ion-note color="danger" 
                 *ngIf="f.password.touched && f.password.hasError('minlength')">
                 La contraseña debe tener al menos 8 caracteres</ion-note>
-                <ion-note color="danger" 
+                <ion-note color="danger"
                 *ngIf="f.password.touched && f.password.hasError('pattern')">
-                La contraseña debe incluir letras y números</ion-note>
+                Debe incluir mayúsculas, minúsculas, números y un símbolo (ej: ! @ # $ %)</ion-note>
                 <div class="pw-meter" *ngIf="pwStrength">
                   <div class="pw-meter-fill" [style.width.%]="pwStrength.percent"></div>
                 </div>
                 <div class="pw-strength-text" *ngIf="pwStrength">{{ pwStrength.label }}</div>
-                <ion-note class="contrasena" *ngIf="!pwStrength">Usa al menos 8 caracteres, mezcla letras, números y símbolos.</ion-note>
+                <ion-note class="contrasena" *ngIf="!pwStrength">Usa al menos 8 caracteres: mayúsculas, minúsculas, números y un símbolo (ej: ! @ # $ %).</ion-note>
                 <ion-item>
                   <ion-label position="stacked">Confirmar contraseña <span class="required">*</span></ion-label>
                   <ion-input
