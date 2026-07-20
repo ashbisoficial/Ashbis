@@ -52,6 +52,24 @@ service cloud.firestore {
       return puedeOperarComoRefugio(pet.uidUsuario) || esColaboradorMascota(petId);
     }
 
+    // ¿"auth" es un veterinario al que esta mascota le otorgó acceso a su
+    // historial médico? Solo lo crea la Cloud Function validarPinVeterinario
+    // (Admin SDK), después de comprobar el PIN del lado del servidor — el
+    // rol autodeclarado 'veterinario' por sí solo NUNCA alcanza (ver
+    // comentario en usuarios/{uid}).
+    function tieneAccesoVeterinario(petId) {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/mascotas/$(petId)/accesosVeterinario/$(request.auth.uid));
+    }
+
+    // Puede LEER el historial médico de esta mascota: dueño/equipo/hogar
+    // temporal, o un veterinario con acceso otorgado por PIN. No implica
+    // poder editar vacunas/exámenes/medicamentos/citas — esos siguen
+    // reservados a puedeAccederMascota.
+    function puedeVerHistorialMedico(petId) {
+      return puedeAccederMascota(petId) || tieneAccesoVeterinario(petId);
+    }
+
     // Puede crear un documento cuyo uidUsuario sea el propio, o el de un
     // refugio del que forme parte el equipo.
     function ownsData() {
@@ -189,12 +207,13 @@ service cloud.firestore {
     }
 
     match /mascotas/{petId} {
-      // Dueño original, equipo del refugio dueño, o colaborador de hogar
-      // temporal en esta mascota puntual.
+      // Dueño original, equipo del refugio dueño, colaborador de hogar
+      // temporal, o veterinario con acceso otorgado por PIN.
       allow read: if isAuth() && (
         resource.data.uidUsuario == request.auth.uid ||
         puedeOperarComoRefugio(resource.data.uidUsuario) ||
-        esColaboradorMascota(petId)
+        esColaboradorMascota(petId) ||
+        tieneAccesoVeterinario(petId)
       );
       allow create: if ownsData() && noLongStrings(request.resource.data);
       allow update: if isAuth()
@@ -205,35 +224,66 @@ service cloud.firestore {
       // Eliminar una mascota es más delicado que editarla: solo dueño o admin.
       allow delete: if esAdminDelRefugio(resource.data.uidUsuario);
 
+      // Lectura extendida a puedeVerHistorialMedico (incluye veterinarios
+      // con acceso por PIN): son parte del historial médico de la mascota.
+      // Crear/editar/borrar sigue reservado a puedeAccederMascota — un
+      // veterinario nunca modifica estos registros estructurados, solo
+      // agrega notas nuevas en historialMedico.
       match /vacunas/{vacunaId} {
-        allow read, write: if puedeAccederMascota(petId);
+        allow read: if puedeVerHistorialMedico(petId);
         allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       match /medicamentos/{medId} {
-        allow read: if puedeAccederMascota(petId);
+        allow read: if puedeVerHistorialMedico(petId);
         allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       match /examenes/{examenId} {
-        allow read: if puedeAccederMascota(petId);
+        allow read: if puedeVerHistorialMedico(petId);
         allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       match /citas/{citaId} {
-        allow read: if puedeAccederMascota(petId);
+        allow read: if puedeVerHistorialMedico(petId);
         allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       match /documentos/{docId} {
-        allow read: if puedeAccederMascota(petId);
+        allow read: if puedeVerHistorialMedico(petId);
         allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
+      }
+
+      // Notas de consulta, append-only: las escribe el dueño/equipo o un
+      // veterinario con acceso otorgado por PIN. Nadie puede editarlas ni
+      // borrarlas después de creadas — mismo criterio que chatEquipo.
+      match /historialMedico/{entradaId} {
+        allow read:   if puedeVerHistorialMedico(petId);
+        allow create: if puedeVerHistorialMedico(petId)
+                      && request.resource.data.autorUid == request.auth.uid
+                      && request.resource.data.texto is string
+                      && request.resource.data.texto.size() > 0
+                      && noLongStrings(request.resource.data);
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      // Acceso de un veterinario puntual a esta mascota, otorgado al validar
+      // su PIN. Solo lo crea la Cloud Function validarPinVeterinario (Admin
+      // SDK) — nunca el cliente — así el PIN siempre se valida del lado del
+      // servidor. El dueño/equipo puede revocarlo, o el veterinario puede
+      // quitarse él mismo.
+      match /accesosVeterinario/{vetUid} {
+        allow read:   if puedeAccederMascota(petId) || isUser(vetUid);
+        allow create: if false;
+        allow update: if false;
+        allow delete: if puedeAccederMascota(petId) || isUser(vetUid);
       }
 
       // Hogar temporal: acceso compartido a ESTA mascota, sin cambiar de
@@ -257,6 +307,14 @@ service cloud.firestore {
     // que solo se permite leer el propio.
     match /{path=**}/colaboradores/{colabUid} {
       allow read: if resource.data.uid == request.auth.uid;
+    }
+
+    // Igual que con colaboradores/miembros (líneas arriba): una consulta
+    // collectionGroup('accesosVeterinario').where('vetUid','==', uid) para
+    // que el veterinario vea "mis pacientes" necesita esta regla aparte con
+    // wildcard, las reglas anidadas de mascotas/{petId} no aplican acá.
+    match /{path=**}/accesosVeterinario/{vetUid} {
+      allow read: if resource.data.vetUid == request.auth.uid;
     }
 
     match /lugares/{placeId} {

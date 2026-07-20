@@ -1,0 +1,52 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Panel veterinario</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="container">
+
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>{{ nombre() }}</ion-card-title>
+        <p class="seccion-subtitulo">
+          Accede al historial médico de tus pacientes con el ID de la mascota
+          y el PIN que te comparta su dueño.
+        </p>
+      </ion-card-header>
+    </ion-card>
+
+    <ion-button expand="block" (click)="agregarPaciente()">
+      <ion-icon name="add-outline" slot="start"></ion-icon>
+      Agregar paciente
+    </ion-button>
+
+    <div *ngIf="cargando()" class="ion-text-center ion-padding">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+
+    <ion-card class="seccion-card" *ngIf="!cargando()">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="paw-outline"></ion-icon>
+          Mis pacientes
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="vacio" *ngIf="pacientes().length === 0">
+          Aún no tienes pacientes. Agrega uno con su ID y PIN.
+        </p>
+        <ion-list *ngIf="pacientes().length">
+          <ion-item *ngFor="let p of pacientes(); trackBy: trackById" button (click)="verPaciente(p)">
+            <ion-label>{{ p.mascotaNombre }}</ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+</ion-content>

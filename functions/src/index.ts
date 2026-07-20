@@ -743,6 +743,102 @@ export const aceptarTransferencia = onRequest(
   }
 );
 
+// ─── Cloud Function: validarPinVeterinario ────────────────────────────────────
+// Un veterinario ingresa el ID de una mascota + el PIN de 6 dígitos que le
+// compartió su dueño. El PIN se compara del lado del servidor con el Admin
+// SDK (las reglas de Firestore no dejan leer el documento de una mascota
+// ajena, así que el cliente no tiene forma de validar el PIN por su cuenta).
+// Si coincide, se otorga acceso de solo lectura al historial médico
+// creando mascotas/{id}/accesosVeterinario/{vetUid} — nunca lo crea el
+// cliente directo (ver reglas de Firestore).
+export const validarPinVeterinario = onRequest(
+  { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB', maxInstances: 10 },
+  async (req, res) => {
+    const origin = req.headers.origin;
+    const headers = corsHeaders(origin);
+    Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const authHeader = req.headers.authorization || '';
+    const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/);
+    if (!tokenMatch) { res.status(401).json({ error: 'Token de autenticación requerido.' }); return; }
+
+    let decoded: admin.auth.DecodedIdToken;
+    try {
+      decoded = await admin.auth().verifyIdToken(tokenMatch[1]);
+    } catch {
+      res.status(401).json({ error: 'Token inválido o expirado.' });
+      return;
+    }
+
+    // Limita también los intentos fallidos de adivinar un PIN por fuerza
+    // bruta: 20 intentos por minuto por cuenta autenticada.
+    if (hitRateLimit(`vetpin_${decoded.uid}`)) {
+      res.status(429).json({ error: 'Demasiados intentos. Espera un minuto.' });
+      return;
+    }
+
+    const mascotaId = sanitizeInput(req.body?.mascotaId, 200);
+    const pin = sanitizeInput(req.body?.pin, 10);
+    if (!mascotaId || !/^\d{4,8}$/.test(pin)) {
+      res.status(400).json({ error: 'Falta el ID de la mascota o el PIN no es válido.' });
+      return;
+    }
+
+    try {
+      const db = admin.firestore();
+
+      const vetSnap = await db.doc(`usuarios/${decoded.uid}`).get();
+      const vetData = vetSnap.exists ? vetSnap.data()! : {};
+      if (vetData['rol'] !== 'veterinario') {
+        res.status(403).json({ error: 'Solo una cuenta de veterinario puede pedir acceso al historial médico.' });
+        return;
+      }
+
+      const mascotaRef = db.doc(`mascotas/${mascotaId}`);
+      const mascotaSnap = await mascotaRef.get();
+      const mascota = mascotaSnap.exists ? mascotaSnap.data()! : null;
+      // Mismo mensaje si la mascota no existe o si el PIN no coincide: no
+      // hay que darle a quien intenta adivinar una pista de cuál de las dos
+      // cosas falló.
+      if (!mascota || !mascota['pinHistorial'] || mascota['pinHistorial'] !== pin) {
+        res.status(403).json({ error: 'Mascota no encontrada o PIN incorrecto.' });
+        return;
+      }
+
+      const vetNombre = `${vetData['nombre'] ?? ''} ${vetData['apellido'] ?? ''}`.trim()
+        || decoded.email || 'Veterinario';
+
+      await mascotaRef.collection('accesosVeterinario').doc(decoded.uid).set({
+        vetUid: decoded.uid,
+        vetNombre,
+        vetEmail: decoded.email || '',
+        nombreClinica: vetData['nombreClinica'] || '',
+        otorgadoEn: admin.firestore.FieldValue.serverTimestamp(),
+        mascotaId,
+        mascotaNombre: mascota['nombre'] || '',
+      });
+
+      res.status(200).json({
+        success: true,
+        mascota: {
+          id: mascotaId,
+          nombre: mascota['nombre'] || '',
+          especie: mascota['especie'] || '',
+          raza: mascota['raza'] || '',
+          fotoUrl: mascota['fotoUrl'] || '',
+        },
+      });
+
+    } catch (error) {
+      functions.logger.error('validarPinVeterinario error', error);
+      res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+  }
+);
+
 // ─── Cloud Function: aceptarInvitacionEquipo ─────────────────────────────────
 // Un refugio invita por email a alguien a sumarse a operar su cuenta. El
 // cliente puede crear/rechazar/cancelar la invitación directo (reglas de

@@ -72,6 +72,103 @@ ion-card-content {
 }
 
 /* ============================================
+   HISTORIAL MÉDICO / COMPARTIR CON VETERINARIO
+============================================ */
+.tarjeta-pin {
+  ion-card-content p {
+    font-size: 13px;
+    color: var(--ion-color-medium);
+    margin-bottom: 12px;
+  }
+}
+
+.dato-copiable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ion-background-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+
+  .etiqueta {
+    font-size: 11px;
+    color: var(--ion-color-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+  }
+
+  .valor {
+    flex: 1;
+    font-size: 13px;
+    color: var(--ion-text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .valor-pin {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  ion-icon {
+    color: #ff5b5b;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+}
+
+.accesos-lista {
+  margin-top: 14px;
+
+  .accesos-titulo {
+    font-size: 12px;
+    color: var(--ion-color-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 6px;
+  }
+}
+
+.nota-texto {
+  color: var(--ion-text-color) !important;
+  white-space: pre-wrap;
+}
+
+.nota-fecha {
+  font-size: 11px !important;
+}
+
+.nueva-nota {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 4px 0 20px;
+
+  ion-textarea {
+    flex: 1;
+    background: var(--ashbis-surface);
+    border-radius: 12px;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+  }
+
+  ion-button {
+    --border-radius: 50%;
+    --background: #8b0808;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+  }
+}
+
+/* ============================================
    RESPONSIVE
 ============================================ */
 @media (max-width: 360px) {

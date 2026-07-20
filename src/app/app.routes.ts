@@ -157,6 +157,12 @@ export const routes: Routes = [
           import('./refugio-chat/refugio-chat.component')
             .then(m => m.RefugioChatComponent),
       },
+      {
+        path: 'veterinario-panel',
+        loadComponent: () =>
+          import('./veterinario-panel/veterinario-panel.component')
+            .then(m => m.VeterinarioPanelComponent),
+      },
       // ── Chat IA dentro de tabs (mantiene navbar) ─────────────────────────
       {
         path: 'chat-ia',

@@ -416,6 +416,104 @@ export class FirestoreService {
     ]);
   }
 
+  // ── Historial médico (append-only) y acceso veterinario por PIN ─────────────
+  // Lo que ve un veterinario como "historial médico" combina las secciones
+  // estructuradas de arriba (vacunas/exámenes/medicamentos/citas, de solo
+  // lectura para él) con esta bitácora de notas de consulta, que sí puede
+  // escribir. Todo append-only: ver Models.HistorialMedico.
+
+  /** Genera (o regenera) el PIN de 6 dígitos de esta mascota. Regenerarlo
+   *  invalida el PIN anterior para otorgar accesos NUEVOS, pero no revoca
+   *  los que ya se otorgaron — eso se hace aparte con revocarAccesoVeterinario. */
+  async regenerarPinMascota(petId: string): Promise<string> {
+    this.assertAuthenticated();
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const pin = String(100000 + (buf[0] % 900000));
+    await updateDoc(doc(this.firestore, 'mascotas', petId), {
+      pinHistorial: pin,
+      updatedAt: serverTimestamp(),
+    });
+    return pin;
+  }
+
+  getAccesosVeterinario(petId: string): Observable<Models.Mascotas.AccesoVeterinario[]> {
+    const r = collection(this.firestore, `mascotas/${petId}/accesosVeterinario`);
+    const q = query(r, orderBy('otorgadoEn', 'desc'));
+    return collectionData(q) as Observable<Models.Mascotas.AccesoVeterinario[]>;
+  }
+
+  async revocarAccesoVeterinario(petId: string, vetUid: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, `mascotas/${petId}/accesosVeterinario/${vetUid}`));
+  }
+
+  /**
+   * Mascotas donde tengo (como veterinario) acceso otorgado por PIN. Si la
+   * consulta falla (índice de collectionGroup aún propagándose), se degrada
+   * a lista vacía en vez de romper el panel del veterinario.
+   */
+  getMisPacientesVeterinario(vetUid: string): Observable<Models.Mascotas.AccesoVeterinario[]> {
+    const r = collectionGroup(this.firestore, 'accesosVeterinario');
+    const q = query(r, where('vetUid', '==', vetUid));
+    return collectionData(q).pipe(
+      map(docs => docs as Models.Mascotas.AccesoVeterinario[]),
+      catchError(err => {
+        console.error('getMisPacientesVeterinario falló:', err);
+        return of<Models.Mascotas.AccesoVeterinario[]>([]);
+      })
+    );
+  }
+
+  getHistorialMedico(petId: string): Observable<Models.HistorialMedico.Entrada[]> {
+    const r = collection(this.firestore, `mascotas/${petId}/${Models.HistorialMedico.PathEntradas}`);
+    const q = query(r, orderBy('createdAt', 'asc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.HistorialMedico.Entrada[]>;
+  }
+
+  async agregarEntradaHistorial(petId: string, texto: string): Promise<void> {
+    const uid = this.assertAuthenticated();
+    const perfil = await this.getDocument(`usuarios/${uid}`);
+    const autorNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || perfil?.email || 'Alguien';
+    const payload: Omit<Models.HistorialMedico.Entrada, 'id'> = {
+      texto,
+      autorUid: uid,
+      autorNombre,
+      autorRol: (perfil?.rol as Models.Auth.Rol) ?? 'usuario',
+      createdAt: serverTimestamp(),
+    };
+    await addDoc(
+      collection(this.firestore, `mascotas/${petId}/${Models.HistorialMedico.PathEntradas}`),
+      this.security.sanitizeFirestoreObject(payload as any)
+    );
+  }
+
+  /**
+   * Valida el PIN de una mascota vía la Cloud Function validarPinVeterinario
+   * (nunca del lado del cliente: las reglas no dejan leer una mascota ajena
+   * para comparar el PIN). Si coincide, el servidor otorga acceso de solo
+   * lectura al historial médico y devuelve un resumen de la mascota.
+   */
+  async validarPinVeterinario(mascotaId: string, pin: string): Promise<{
+    id: string; nombre: string; especie: string; raza: string; fotoUrl?: string;
+  }> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('Usuario no autenticado');
+    const token = await user.getIdToken();
+    const res = await fetch(
+      'https://us-central1-ashbis-ae5b2.cloudfunctions.net/validarPinVeterinario',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mascotaId, pin }),
+      }
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.error || 'No se pudo validar el PIN.');
+    }
+    return body.mascota;
+  }
+
   // ── Veterinarias favoritas ─────────────────────────────────────────────────
 
   getVeterinariasFavoritasByUsuario(uid: string): Observable<VeterinariaFavorita[]> {

@@ -33,9 +33,14 @@
         <ion-label>Medicamentos</ion-label>
       </ion-segment-button>
 
-      <ion-segment-button value="veterinarias" layout="icon-top">
+      <ion-segment-button value="veterinarias" layout="icon-top" *ngIf="!soyVeterinario">
         <ion-icon name="paw-outline"></ion-icon>
         <ion-label>Veterinarias</ion-label>
+      </ion-segment-button>
+
+      <ion-segment-button value="historial" layout="icon-top">
+        <ion-icon name="document-text-outline"></ion-icon>
+        <ion-label>Historial</ion-label>
       </ion-segment-button>
 
     </ion-segment>
@@ -122,6 +127,79 @@
         </ion-card>
 
       </ion-list>
+
+      <!-- HISTORIAL MÉDICO (notas de consulta, append-only) -->
+      <div *ngSwitchCase="'historial'">
+
+        <!-- Compartir con veterinario: solo el dueño -->
+        <ion-card *ngIf="puedoCompartirConVeterinario" class="tarjeta-pin">
+          <ion-card-header>
+            <ion-card-title>Compartir con veterinario</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <p>Dale a tu veterinario el ID de la mascota y el PIN para que pueda ver y agregar notas al historial médico.</p>
+
+            <div class="dato-copiable" (click)="copiarId()">
+              <span class="etiqueta">ID de la mascota</span>
+              <span class="valor">{{ mascotaId }}</span>
+              <ion-icon name="copy-outline"></ion-icon>
+            </div>
+
+            <div class="dato-copiable" *ngIf="mascota.pinHistorial" (click)="copiarPin()">
+              <span class="etiqueta">PIN</span>
+              <span class="valor valor-pin">{{ mascota.pinHistorial }}</span>
+              <ion-icon name="copy-outline"></ion-icon>
+            </div>
+
+            <ion-button expand="block" fill="outline" (click)="generarPin()">
+              <ion-icon name="key-outline" slot="start"></ion-icon>
+              {{ mascota.pinHistorial ? 'Regenerar PIN' : 'Generar PIN' }}
+            </ion-button>
+
+            <div *ngIf="accesosVeterinario.length" class="accesos-lista">
+              <p class="accesos-titulo">Veterinarios con acceso</p>
+              <ion-item *ngFor="let acceso of accesosVeterinario" lines="none">
+                <ion-label>
+                  <h2>{{ acceso.vetNombre }}</h2>
+                  <p *ngIf="acceso.nombreClinica">{{ acceso.nombreClinica }}</p>
+                </ion-label>
+                <ion-button slot="end" fill="clear" color="danger" (click)="revocarAcceso(acceso)">
+                  <ion-icon name="person-remove-outline" slot="icon-only"></ion-icon>
+                </ion-button>
+              </ion-item>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Notas de consulta -->
+        <ion-list>
+          <ion-item *ngFor="let nota of entradasHistorial" lines="full">
+            <ion-label class="ion-text-wrap">
+              <h2>{{ nota.autorNombre }}</h2>
+              <p class="nota-texto">{{ nota.texto }}</p>
+              <p class="nota-fecha">{{ fechaNota(nota) }}</p>
+            </ion-label>
+          </ion-item>
+          <ion-card *ngIf="entradasHistorial.length === 0">
+            <ion-card-content class="ion-text-center">
+              Aún no hay notas en el historial médico.
+            </ion-card-content>
+          </ion-card>
+        </ion-list>
+
+        <div class="nueva-nota">
+          <ion-textarea
+            [(ngModel)]="nuevaNota"
+            placeholder="Agregar una nota al historial (diagnóstico, tratamiento, indicaciones...)"
+            autoGrow="true"
+            [rows]="2">
+          </ion-textarea>
+          <ion-button [disabled]="!nuevaNota.trim() || enviandoNota" (click)="agregarNota()">
+            <ion-icon name="send-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+
+      </div>
 
     </div>
 

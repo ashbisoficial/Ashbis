@@ -132,6 +132,14 @@ export namespace Models {
       // Contacto extra
       contactoEmergencia?: string;
       telefonoEmergencia?: string;
+
+      /** PIN de 6 dígitos para que un veterinario pida acceso al historial
+       *  médico de esta mascota puntual (ver namespace HistorialMedico más
+       *  abajo). Lo genera/regenera el dueño o el equipo del refugio desde
+       *  la ficha de la mascota. Regenerarlo invalida el PIN anterior para
+       *  otorgar accesos NUEVOS, pero no revoca los accesos ya otorgados —
+       *  eso se hace aparte, quitando el documento en accesosVeterinario. */
+      pinHistorial?: string;
     }
 
     // Subcoleción: vacunas
@@ -202,6 +210,51 @@ export namespace Models {
        */
       mascotaId: string;
       mascotaNombre: string;
+    }
+
+    /**
+     * Subcolección mascotas/{id}/accesosVeterinario: acceso de UN
+     * veterinario puntual al historial médico de esta mascota, otorgado al
+     * validar su PIN (ver Cloud Function validarPinVeterinario). Da acceso
+     * de solo lectura a la ficha y a vacunas/exámenes/medicamentos/citas, y
+     * de escritura (append-only) a historialMedico — nunca a editar o
+     * borrar nada.
+     */
+    export interface AccesoVeterinario {
+      vetUid: string;
+      vetNombre: string;
+      vetEmail: string;
+      nombreClinica?: string;
+      otorgadoEn?: any;
+      /**
+       * Id y nombre duplicados dentro del propio documento, mismo motivo que
+       * ColaboradorMascota: permite resolver
+       * collectionGroup('accesosVeterinario').where('vetUid','==', uid) a
+       * "mis pacientes" sin conocer antes el id de cada mascota.
+       */
+      mascotaId: string;
+      mascotaNombre: string;
+    }
+  }
+
+  // ─── HISTORIAL MÉDICO (notas de consulta, append-only) ─────────────────────
+  export namespace HistorialMedico {
+    export const PathEntradas = 'historialMedico'; // subcolección de mascotas/{id}
+
+    /**
+     * Nota de consulta agregada por el dueño/equipo o por un veterinario con
+     * acceso otorgado por PIN (ver Mascotas.AccesoVeterinario). Append-only:
+     * no se puede editar ni borrar, mismo criterio que ChatEquipo — así ni
+     * el dueño ni el veterinario pueden alterar el registro después de
+     * escrito.
+     */
+    export interface Entrada {
+      id?: string;
+      texto: string;
+      autorUid: string;
+      autorNombre: string;
+      autorRol: Auth.Rol;
+      createdAt?: any;
     }
   }
 
