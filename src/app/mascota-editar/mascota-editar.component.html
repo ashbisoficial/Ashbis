@@ -114,8 +114,10 @@
               </ion-item>
 
               <ion-item>
-                <ion-label position="stacked">Raza</ion-label>
-                <ion-input formControlName="raza" clearInput></ion-input>
+                <ion-label position="stacked">{{ esReptil ? '¿Cuál? (tipo de reptil)' : 'Raza' }}</ion-label>
+                <ion-input formControlName="raza"
+                  [placeholder]="esReptil ? 'Ej: Serpiente, Lagarto, Iguana, Rana...' : ''"
+                  clearInput></ion-input>
               </ion-item>
 
               <ion-item>

@@ -81,6 +81,12 @@ export class MascotaEditarComponent implements OnDestroy {
     const especie = this.mascota()?.especie ?? '';
     return [...(this.vacunasPorEspecie[especie] ?? []), 'Otra'];
   }
+
+  /** "Reptil" es una categoría muy amplia (serpiente, lagarto, rana...);
+   *  se reutiliza el campo Raza para que lo especifiquen. */
+  get esReptil(): boolean {
+    return this.form?.get('especie')?.value === 'Reptil';
+  }
   readonly hoy = new Date().toISOString().split('T')[0];
   readonly doceAnosFuturo = new Date(
     new Date().setFullYear(new Date().getFullYear() + 12)

@@ -143,11 +143,15 @@
                 <ion-note color="danger" *ngIf="isInvalid('color')">Indica el color (mín. 3 caracteres).</ion-note>
               </ion-item>
 
-              <!-- Raza -->
+              <!-- Raza (si es Reptil, se reutiliza para preguntar cuál: serpiente, lagarto, rana, etc.) -->
               <ion-item class="ion-margin-top" fill="solid" [class.is-invalid]="isInvalid('raza')">
-                <ion-label position="stacked">Raza <span class="req">*</span></ion-label>
-                <ion-input formControlName="raza" placeholder="Ej: Labrador" clearInput></ion-input>
-                <ion-note color="danger" *ngIf="isInvalid('raza')">Indica la raza, mín. 2 caracteres (o 'Mestizo').</ion-note>
+                <ion-label position="stacked">{{ esReptil ? '¿Cuál? (tipo de reptil)' : 'Raza' }} <span class="req">*</span></ion-label>
+                <ion-input formControlName="raza"
+                  [placeholder]="esReptil ? 'Ej: Serpiente, Lagarto, Iguana, Rana...' : 'Ej: Labrador'"
+                  clearInput></ion-input>
+                <ion-note color="danger" *ngIf="isInvalid('raza')">
+                  {{ esReptil ? 'Indica qué tipo de reptil es.' : 'Indica la raza, mín. 2 caracteres (o \'Mestizo\').' }}
+                </ion-note>
               </ion-item>
 
               <!-- Castrado -->

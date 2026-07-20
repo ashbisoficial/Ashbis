@@ -128,6 +128,13 @@ export class CrearMascotasComponent implements OnInit {
     return !!(c && c.touched && c.invalid);
   }
 
+  /** "Reptil" es una categoría muy amplia (serpiente, lagarto, rana...);
+   *  se reutiliza el campo Raza para que lo especifiquen, con otro
+   *  texto de ayuda en vez de agregar un campo nuevo. */
+  get esReptil(): boolean {
+    return this.mascotaForm.get('especie')?.value === 'Reptil';
+  }
+
   async onImageSelected(event: any): Promise<void> {
     const file: File | undefined = event.target.files?.[0];
     if (!file) return;
