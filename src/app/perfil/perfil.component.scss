@@ -408,32 +408,6 @@ ion-button[color="medium"] {
   --border-radius: 24px;
 }
 
-/* ====== CUENTA: CERRAR SESIÓN ====== */
-.zona-cuenta {
-  margin-top: 8px;
-}
-
-.btn-cerrar {
-  --background: transparent;
-  --color: var(--ion-text-color);
-  --border-color: #8b0808;
-  --border-width: 2px;
-  --border-style: solid;
-  --border-radius: 24px;
-
-  width: 90%;
-  max-width: 360px;
-  height: 46px;
-  margin: 10px auto 25px;
-  display: block;
-
-  transition: 0.25s ease;
-}
-
-.btn-cerrar:hover {
-  --background: #8b080860;
-}
-
 /* ====== RESPONSIVE ====== */
 @media (min-width: 768px) {
   .container {

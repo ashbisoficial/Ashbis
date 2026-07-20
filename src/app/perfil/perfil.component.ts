@@ -41,7 +41,7 @@ import { AlertController, LoadingController, ToastController } from '@ionic/angu
 import { addIcons } from 'ionicons';
 import {
   cameraOutline, createOutline, logoGoogle, closeOutline, trashOutline,
-  checkmarkOutline, logOutOutline, personCircleOutline, alertCircleOutline,
+  checkmarkOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
   documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline
 } from 'ionicons/icons';
@@ -50,7 +50,6 @@ import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
-import { PushNotificationService } from '../services/push-notification.service';
 
 interface UsuarioActual {
   uid: string;
@@ -101,7 +100,6 @@ export class PerfilComponent implements OnDestroy {
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
   private readonly alertCtrl = inject(AlertController);
-  private readonly pushNotifications = inject(PushNotificationService);
   private readonly security = inject(SecurityService);
 
   authenticationService: AuthenticationService = inject(AuthenticationService);
@@ -193,7 +191,7 @@ export class PerfilComponent implements OnDestroy {
   constructor() {
     addIcons({
       cameraOutline, createOutline, logoGoogle, closeOutline,
-      checkmarkOutline, logOutOutline, personCircleOutline, alertCircleOutline,
+      checkmarkOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
       documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline,
       settingsOutline
@@ -529,12 +527,6 @@ export class PerfilComponent implements OnDestroy {
   private async showToast(message: string, color: 'success' | 'danger' | 'primary' | 'warning' = 'primary'): Promise<void> {
     const t = await this.toastCtrl.create({ message, duration: 2000, color });
     t.present();
-  }
-
-  async logout(): Promise<void> {
-    await this.pushNotifications.olvidarTokenActual();
-    await this.auth.logout();
-    this.router.navigate(['/login'], { replaceUrl: true });
   }
 
   irAConfiguracion(): void {

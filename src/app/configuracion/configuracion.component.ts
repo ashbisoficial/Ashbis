@@ -28,6 +28,7 @@ import {
   personOutline, pawOutline, warningOutline, textOutline, moonOutline,
   sunnyOutline, cameraOutline, locationOutline, keyOutline, trashOutline,
   chevronForwardOutline, checkmarkCircle, closeCircle, helpCircleOutline,
+  logOutOutline,
 } from 'ionicons/icons';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
@@ -79,6 +80,7 @@ export class ConfiguracionComponent implements OnInit {
       personOutline, pawOutline, warningOutline, textOutline, moonOutline,
       sunnyOutline, cameraOutline, locationOutline, keyOutline, trashOutline,
       chevronForwardOutline, checkmarkCircle, closeCircle, helpCircleOutline,
+      logOutOutline,
     });
   }
 
@@ -160,6 +162,12 @@ export class ConfiguracionComponent implements OnInit {
 
   irAEditarPerfil(): void {
     this.router.navigate(['/tabs/perfil']);
+  }
+
+  async cerrarSesion(): Promise<void> {
+    await this.push.olvidarTokenActual();
+    await this.auth.logout();
+    await this.router.navigate(['/login'], { replaceUrl: true });
   }
 
   irAMisMascotas(): void {

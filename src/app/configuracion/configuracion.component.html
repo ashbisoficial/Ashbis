@@ -162,6 +162,11 @@
         <p class="campo-nota" *ngIf="esCuentaGoogle">
           Iniciás sesión con Google — la contraseña la administrás desde tu cuenta de Google.
         </p>
+
+        <ion-item lines="none" button (click)="cerrarSesion()">
+          <ion-icon name="log-out-outline" slot="start"></ion-icon>
+          <ion-label>Cerrar sesión</ion-label>
+        </ion-item>
       </ion-card-content>
     </ion-card>
 
