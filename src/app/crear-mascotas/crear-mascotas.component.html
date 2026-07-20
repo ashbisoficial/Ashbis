@@ -166,12 +166,28 @@
                 <ion-note color="danger" *ngIf="isInvalid('procedencia')">Selecciona la procedencia.</ion-note>
               </ion-item>
 
-              <!-- Señas -->
-              <ion-item class="ion-margin-top" fill="solid" [class.is-invalid]="isInvalid('senas')">
-                <ion-label position="stacked">Señas particulares <span class="req">*</span></ion-label>
-                <ion-input formControlName="senas" placeholder="Descripción breve" clearInput></ion-input>
+              <!-- Señas particulares: destacado porque es lo que ayuda a
+                   identificar a la mascota si se pierde (aparece en la
+                   ficha pública de "mascota perdida"). -->
+              <div class="senas-destacado ion-margin-top" [class.is-invalid]="isInvalid('senas')">
+                <div class="senas-titulo">
+                  <ion-icon name="finger-print-outline"></ion-icon>
+                  <span>Señas particulares <span class="req">*</span></span>
+                </div>
+                <p class="senas-ayuda">
+                  Marcas, manchas, cicatrices u otro detalle que la distinga de otras mascotas parecidas.
+                  Esto es lo primero que va a ver quien la encuentre si se pierde.
+                </p>
+                <ion-textarea
+                  formControlName="senas"
+                  placeholder="Ej: mancha blanca en forma de estrella en el pecho, cicatriz en la oreja izquierda"
+                  autoGrow="true"
+                  rows="2"
+                  maxlength="300"
+                  counter="true"
+                ></ion-textarea>
                 <ion-note color="danger" *ngIf="isInvalid('senas')">Describe brevemente (mín. 3 caracteres).</ion-note>
-              </ion-item>
+              </div>
 
               <!-- Notas -->
               <ion-item class="ion-margin-top" fill="solid">

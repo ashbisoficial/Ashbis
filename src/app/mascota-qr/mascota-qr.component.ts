@@ -287,7 +287,7 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
       '',
       `Nombre: ${m.nombre || 'Mascota'}`,
       `Descripción: ${descripcionFisica}`,
-      m.senas ? `Señas: ${m.senas}` : '',
+      m.senasParticulares ? `Señas: ${m.senasParticulares}` : '',
       `Microchip: ${m.numeroChip || 'No registrado'}`,
       '',
       '── CONTACTAR A ──',

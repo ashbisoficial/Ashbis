@@ -19,7 +19,7 @@ import { addIcons } from 'ionicons';
 import {
   addOutline, closeCircleOutline, cloudUploadOutline, createOutline,
   eyeOutline, imagesOutline, trashOutline,
-  checkmarkDoneOutline, checkboxOutline
+  checkmarkDoneOutline, checkboxOutline, fingerPrintOutline
 } from 'ionicons/icons';
 
 type Section =
@@ -128,7 +128,7 @@ export class MascotaEditarComponent implements OnDestroy {
     addIcons({
       addOutline, closeCircleOutline, cloudUploadOutline, createOutline,
       eyeOutline, imagesOutline, trashOutline,
-      checkmarkDoneOutline, checkboxOutline
+      checkmarkDoneOutline, checkboxOutline, fingerPrintOutline
     });
 
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -222,7 +222,8 @@ export class MascotaEditarComponent implements OnDestroy {
       raza: [m.raza ?? ''],
       color: [m.color ?? ''],
       castrado: [m.castrado ?? ''],
-      fechaNacimiento: [m.fechaNacimiento ?? '']
+      fechaNacimiento: [m.fechaNacimiento ?? ''],
+      senasParticulares: [m.senasParticulares ?? '', [Validators.minLength(3), Validators.maxLength(300)]]
     });
   }
 

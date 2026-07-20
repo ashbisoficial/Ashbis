@@ -116,6 +116,30 @@
                 <ion-input formControlName="color" clearInput></ion-input>
               </ion-item>
 
+              <!-- Señas particulares: destacado porque es el dato que ayuda
+                   a identificar a la mascota si se pierde. -->
+              <ion-item class="item-senas" lines="none">
+                <ion-label position="stacked">
+                  <ion-icon name="finger-print-outline"></ion-icon>
+                  Señas particulares
+                </ion-label>
+                <p class="senas-ayuda">
+                  Marcas, manchas, cicatrices u otro detalle que la distinga. Aparece en la ficha pública si se pierde.
+                </p>
+                <ion-textarea
+                  formControlName="senasParticulares"
+                  placeholder="Ej: mancha blanca en forma de estrella en el pecho"
+                  autoGrow="true"
+                  rows="2"
+                  maxlength="300"
+                  counter="true"
+                ></ion-textarea>
+                <ion-note color="danger"
+                  *ngIf="form.get('senasParticulares')?.touched && form.get('senasParticulares')?.invalid">
+                  Mínimo 3 caracteres.
+                </ion-note>
+              </ion-item>
+
               <ion-item>
                 <ion-label position="stacked">Castrado / Esterilizado</ion-label>
                 <ion-select formControlName="castrado" interface="popover" placeholder="Selecciona">

@@ -23,10 +23,11 @@ import {
   IonRow,
   IonSelect,
   IonSelectOption,
-  IonSpinner
+  IonSpinner,
+  IonTextarea
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addOutline, cameraOutline, cloudUploadOutline, closeCircle, imageOutline, imagesOutline, trashOutline } from 'ionicons/icons';
+import { addOutline, cameraOutline, cloudUploadOutline, closeCircle, fingerPrintOutline, imageOutline, imagesOutline, trashOutline } from 'ionicons/icons';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
 import { Firestore, doc, getDoc, getDocs, collection, query, where, increment, updateDoc } from '@angular/fire/firestore';
@@ -56,6 +57,7 @@ import { getFriendlyErrorMessage } from 'src/app/services/firebase-error.util';
     IonInput,
     IonSelect,
     IonSelectOption,
+    IonTextarea,
     IonNote,
     IonButton,
     IonImg,
@@ -98,7 +100,7 @@ export class CrearMascotasComponent implements OnInit {
   comportamientoSelected: string[] = [];
 
   constructor() {
-    addIcons({ cameraOutline, imageOutline, imagesOutline, trashOutline, addOutline, cloudUploadOutline, closeCircle });
+    addIcons({ cameraOutline, imageOutline, imagesOutline, trashOutline, addOutline, cloudUploadOutline, closeCircle, fingerPrintOutline });
   }
 
   ngOnInit(): void {
@@ -115,7 +117,7 @@ export class CrearMascotasComponent implements OnInit {
       raza: ['', [Validators.required, Validators.minLength(2)]],
       castrado: ['', Validators.required],
       procedencia: ['', Validators.required],
-      senas: ['', [Validators.required, Validators.minLength(3)]],
+      senas: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(300)]],
       notas: [''],
       fotoUrl: ['']
     });
@@ -296,7 +298,7 @@ export class CrearMascotasComponent implements OnInit {
       raza: data.raza ?? '',
       castrado: data.castrado ?? '',
       procedencia: data.procedencia ?? '',
-      senas: data.senas ?? '',
+      senasParticulares: data.senas ?? '',
       notas: data.notas ?? '',
       indicadores: this.comportamientoSelected ?? [],
       fotoUrl: fotoUrl ?? '',
