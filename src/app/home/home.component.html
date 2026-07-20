@@ -96,25 +96,12 @@
       <p>Buscando lugares cercanos...</p>
     </div>
 
-    <!-- Ayuda + controles del mapa: fuera del mapa a propósito, para que se
-         vean siempre sin tener que tocar el mapa primero (si no, nadie se
-         entera de que existen). -->
-    <div class="map-toolbar">
-      <p class="map-ayuda">
-        <ion-icon name="information-circle-outline"></ion-icon>
-        El mapa está fijo para que no se mueva solo al hacer scroll. Usa estos botones para explorarlo.
-      </p>
-      <div class="map-toolbar-botones">
-        <button type="button" class="map-btn-outline" (click)="centrarEnUsuario()">
-          <ion-icon name="navigate-outline"></ion-icon>
-          Centrar en mí
-        </button>
-        <button type="button" class="map-btn-outline" (click)="toggleExpandirMapa()">
-          <ion-icon [name]="mapaExpandido ? 'contract-outline' : 'expand-outline'"></ion-icon>
-          {{ mapaExpandido ? 'Achicar mapa' : 'Expandir mapa' }}
-        </button>
-      </div>
-    </div>
+    <!-- Ayuda del mapa: fuera del mapa y pegada arriba, chiquita a propósito
+         para no sumar peso visual — solo avisa que el mapa está fijo. -->
+    <p class="map-ayuda">
+      <ion-icon name="information-circle-outline"></ion-icon>
+      El mapa está fijo para que no se mueva solo al hacer scroll.
+    </p>
 
     <!-- MAPA LEAFLET -->
     <ion-card-content>
@@ -145,6 +132,18 @@
         </div>
       </div>
     </ion-card-content>
+
+    <!-- Controles del mapa: centrados y pegados debajo del mapa. -->
+    <div class="map-toolbar-botones">
+      <button type="button" class="map-btn-outline" (click)="centrarEnUsuario()">
+        <ion-icon name="navigate-outline"></ion-icon>
+        Centrar en mí
+      </button>
+      <button type="button" class="map-btn-outline" (click)="toggleExpandirMapa()">
+        <ion-icon [name]="mapaExpandido ? 'contract-outline' : 'expand-outline'"></ion-icon>
+        {{ mapaExpandido ? 'Achicar mapa' : 'Expandir mapa' }}
+      </button>
+    </div>
 
     <!-- PANEL DE INFORMACIÓN -->
     <div *ngIf="mostrarPanel && marcadorSeleccionado" id="panel-info" class="panel-info">
