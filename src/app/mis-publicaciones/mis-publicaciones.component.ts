@@ -27,7 +27,7 @@ import {
   ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addOutline, closeOutline, trashOutline, pauseOutline, playOutline } from 'ionicons/icons';
+import { addOutline, closeOutline, trashOutline, pauseOutline, playOutline, imageOutline } from 'ionicons/icons';
 import { Subject, catchError, of, switchMap, takeUntil } from 'rxjs';
 
 import { AuthenticationService } from '../firebase/authentication';
@@ -96,6 +96,17 @@ export class MisPublicacionesComponent implements OnDestroy {
     { value: 'otro', label: '📌 Otro' },
   ];
 
+  private readonly tipoLabels: Record<string, string> = {
+    adopcion: 'Adopción',
+    recoleccion: 'Recolección',
+    donacion: 'Donación',
+    otro: 'Otro',
+  };
+
+  tipoLabel(tipo: string): string {
+    return this.tipoLabels[tipo] ?? tipo;
+  }
+
   form = this.fb.group({
     tipo: ['adopcion' as Models.Publicaciones.TipoPublicacion, Validators.required],
     titulo: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
@@ -105,7 +116,7 @@ export class MisPublicacionesComponent implements OnDestroy {
   });
 
   constructor() {
-    addIcons({ addOutline, closeOutline, trashOutline, pauseOutline, playOutline });
+    addIcons({ addOutline, closeOutline, trashOutline, pauseOutline, playOutline, imageOutline });
 
     this.auth.authState$
       .pipe(

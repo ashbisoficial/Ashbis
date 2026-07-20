@@ -98,14 +98,21 @@
   </div>
 
   <ion-card *ngFor="let pub of publicaciones" class="pub-card">
-    <img *ngIf="pub.fotoUrl" [src]="pub.fotoUrl" class="pub-foto" alt="{{ pub.titulo }}" />
     <ion-card-content>
-      <div class="pub-header">
-        <ion-badge [color]="pub.activa ? 'success' : 'medium'">{{ pub.activa ? 'Activa' : 'Pausada' }}</ion-badge>
-        <span class="pub-tipo">{{ pub.tipo }}</span>
+      <div class="pub-fila">
+        <div class="pub-foto-wrap">
+          <img *ngIf="pub.fotoUrl" [src]="pub.fotoUrl" class="pub-foto" alt="{{ pub.titulo }}" />
+          <ion-icon *ngIf="!pub.fotoUrl" name="image-outline" class="pub-foto-placeholder"></ion-icon>
+        </div>
+        <div class="pub-info">
+          <div class="pub-header">
+            <ion-badge [color]="pub.activa ? 'success' : 'medium'">{{ pub.activa ? 'Activa' : 'Pausada' }}</ion-badge>
+            <span class="pub-tipo">{{ tipoLabel(pub.tipo) }}</span>
+          </div>
+          <h2>{{ pub.titulo }}</h2>
+          <p>{{ pub.descripcion }}</p>
+        </div>
       </div>
-      <h2>{{ pub.titulo }}</h2>
-      <p>{{ pub.descripcion }}</p>
       <div class="pub-acciones">
         <ion-button size="small" fill="outline" color="medium" (click)="toggleActiva(pub)">
           <ion-icon [name]="pub.activa ? 'pause-outline' : 'play-outline'" slot="start"></ion-icon>
