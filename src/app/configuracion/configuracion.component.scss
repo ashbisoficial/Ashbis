@@ -139,12 +139,12 @@ ion-item {
   }
   &[data-estado="no-pedido"],
   &[data-estado="no-soportado"] {
-    background: rgba(255, 255, 255, .08);
+    background: var(--ashbis-surface-2);
     color: var(--ion-color-medium);
   }
 }
 
 ion-segment {
-  --background: rgba(255, 255, 255, .04);
+  --background: var(--ashbis-surface-2);
   border-radius: 10px;
 }
