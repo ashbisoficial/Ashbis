@@ -25,6 +25,7 @@ import { register } from 'swiper/element/bundle';
 import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { NotificacionesBellComponent } from '../notificaciones/notificaciones-bell.component';
+import { RefugioContextService } from '../services/refugio-context.service';
 import { firstValueFrom, of, Subject, takeUntil } from 'rxjs';
 import { User } from '@angular/fire/auth';
 import { environment } from 'src/environments/environment';
@@ -100,7 +101,14 @@ export class HomePage implements OnInit, OnDestroy {
   private router          = inject(Router);
   private toastController = inject(ToastController);
   private firestoreService= inject(FirestoreService);
+  private refugioCtx      = inject(RefugioContextService);
   private injector        = inject(EnvironmentInjector);
+
+  /** Refugios a los que tengo acceso (dueño y/o colaborador); vacío = sin chat de equipo. */
+  private misRefugios: string[] = [];
+  get mostrarChatRefugio(): boolean {
+    return this.misRefugios.length > 0;
+  }
 
   userEmail$ = this.auth.authState$.pipe(map(u => u?.email ?? ''));
 
@@ -163,6 +171,17 @@ export class HomePage implements OnInit, OnDestroy {
     this.cargarLeaflet().then(() => this.initMap());
     this.cargarVeterinariasFavoritas();
     this.cargarPublicacionesActivas();
+    this.cargarContextoRefugio();
+  }
+
+  private cargarContextoRefugio(): void {
+    runInInjectionContext(this.injector, () => this.refugioCtx.contexto$())
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe(ctx => { this.misRefugios = ctx.todos; });
+  }
+
+  irAlChatDelEquipo(): void {
+    this.refugioCtx.irARefugio(this.misRefugios, '/tabs/refugio-chat');
   }
 
   private cargarPublicacionesActivas() {

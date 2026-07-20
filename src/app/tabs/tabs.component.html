@@ -20,10 +20,12 @@
       <ion-label>Agregar</ion-label>
     </ion-tab-button>
 
-    <!-- 4. Pestaña Publicar (solo cuentas de refugio) -->
-    <ion-tab-button *ngIf="esRefugio" tab="mis-publicaciones" href="/tabs/mis-publicaciones">
-      <ion-icon name="megaphone-outline"></ion-icon>
-      <ion-label>Publicar</ion-label>
+    <!-- 4. Pestaña Refugio (dueño y colaboradores): hub único de todo lo
+         del refugio — mascotas, publicaciones, equipo, veterinarias,
+         estadísticas, finanzas y chat del equipo. -->
+    <ion-tab-button *ngIf="mostrarTabRefugio" tab="refugio-panel" (click)="irARefugio()">
+      <ion-icon name="paw-outline"></ion-icon>
+      <ion-label>Refugio</ion-label>
     </ion-tab-button>
 
     <!-- 5. Pestaña Perfil -->

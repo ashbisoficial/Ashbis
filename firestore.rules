@@ -68,7 +68,8 @@ service cloud.firestore {
           (!('lugar'     in data) || data.lugar.size()     <= 500) &&
           (!('tipo'      in data) || data.tipo.size()      <= 200) &&
           (!('direccion' in data) || data.direccion.size() <= 500) &&
-          (!('descripcion' in data) || data.descripcion.size() <= 1000)
+          (!('descripcion' in data) || data.descripcion.size() <= 1000) &&
+          (!('texto' in data) || data.texto.size() <= 2000)
         );
     }
 
@@ -95,15 +96,16 @@ service cloud.firestore {
       allow delete: if false;
 
       // Si uid es un refugio, esta lista también funciona como "veterinarias
-      // con las que trabaja el refugio": cualquiera del equipo puede
-      // verla/editarla, igual que con mascotas o publicaciones.
+      // con las que trabaja el refugio": cualquiera del equipo puede VERLA,
+      // pero solo la cuenta dueña puede agregar/editar/quitar — el equipo
+      // opera mascotas, no la configuración del refugio.
       match /veterinariasFavoritas/{vetId} {
         allow read:   if puedeOperarComoRefugio(uid);
-        allow create: if puedeOperarComoRefugio(uid)
+        allow create: if isUser(uid)
                       && request.resource.data.uidUsuario == uid
                       && noLongStrings(request.resource.data);
-        allow update: if puedeOperarComoRefugio(uid) && noLongStrings(request.resource.data);
-        allow delete: if puedeOperarComoRefugio(uid);
+        allow update: if isUser(uid) && noLongStrings(request.resource.data);
+        allow delete: if isUser(uid);
       }
 
       // Bitácora interna de ingresos/gastos del refugio (no procesa pagos:
@@ -126,6 +128,20 @@ service cloud.firestore {
                       && request.resource.data.monto < 1000000000
                       && noLongStrings(request.resource.data);
         allow delete: if puedeOperarComoRefugio(uid);
+      }
+
+      // Chat de equipo: un solo hilo grupal por refugio (dueño + todo el
+      // equipo). Los mensajes son append-only, igual que el historial
+      // médico — nadie los edita ni borra, evita disputas.
+      match /chatEquipo/{msgId} {
+        allow read:   if puedeOperarComoRefugio(uid);
+        allow create: if puedeOperarComoRefugio(uid)
+                      && request.resource.data.autorUid == request.auth.uid
+                      && request.resource.data.texto is string
+                      && request.resource.data.texto.size() > 0
+                      && noLongStrings(request.resource.data);
+        allow update: if false;
+        allow delete: if false;
       }
 
       // Tokens de push (FCM) de los dispositivos donde el usuario inició
@@ -250,10 +266,11 @@ service cloud.firestore {
 
     match /publicaciones/{postId} {
       // Feed público de adopción/recolección/donación: lo ve cualquiera
-      // (incluso sin cuenta), pero solo el equipo de un refugio puede
-      // publicar, editar o borrar sus propias publicaciones.
+      // (incluso sin cuenta). Publicar/editar/borrar es solo de la cuenta
+      // dueña del refugio — el equipo puede ver las publicaciones desde el
+      // panel del refugio, pero no gestionarlas.
       allow read: if true;
-      allow create: if puedeOperarComoRefugio(request.resource.data.uidAutor)
+      allow create: if isUser(request.resource.data.uidAutor)
                     && esCuentaRefugio(request.resource.data.uidAutor)
                     && request.resource.data.tipo in ['adopcion', 'recoleccion', 'donacion', 'otro']
                     // Quien publica tiene que confirmar explícitamente que
@@ -271,12 +288,12 @@ service cloud.firestore {
       // expiraEn y aceptaVeracidad quedan fijos desde la creación: si se
       // pudieran editar, un refugio podría estirar la fecha de borrado
       // indefinidamente actualizando la publicación.
-      allow update: if puedeOperarComoRefugio(resource.data.uidAutor)
+      allow update: if isUser(resource.data.uidAutor)
                     && request.resource.data.uidAutor == resource.data.uidAutor
                     && request.resource.data.expiraEn == resource.data.expiraEn
                     && request.resource.data.aceptaVeracidad == resource.data.aceptaVeracidad
                     && noLongStrings(request.resource.data);
-      allow delete: if puedeOperarComoRefugio(resource.data.uidAutor);
+      allow delete: if isUser(resource.data.uidAutor);
     }
 
     match /transferencias/{transferId} {

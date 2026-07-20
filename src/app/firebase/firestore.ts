@@ -476,6 +476,30 @@ export class FirestoreService {
     await deleteDoc(doc(this.firestore, `usuarios/${refugioUid}/${Models.Finanzas.PathMovimientos}/${movId}`));
   }
 
+  // ── Chat de equipo del refugio ───────────────────────────────────────────────
+
+  getMensajesChatEquipo(refugioUid: string): Observable<Models.ChatEquipo.Mensaje[]> {
+    const r = collection(this.firestore, `usuarios/${refugioUid}/${Models.ChatEquipo.PathMensajes}`);
+    const q = query(r, orderBy('createdAt', 'asc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.ChatEquipo.Mensaje[]>;
+  }
+
+  async enviarMensajeChatEquipo(refugioUid: string, texto: string): Promise<void> {
+    const uid = this.assertAuthenticated();
+    const perfil = await this.getDocument(`usuarios/${uid}`);
+    const autorNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || 'Alguien del equipo';
+    const payload: Omit<Models.ChatEquipo.Mensaje, 'id'> = {
+      texto,
+      autorUid: uid,
+      autorNombre,
+      createdAt: serverTimestamp(),
+    };
+    await addDoc(
+      collection(this.firestore, `usuarios/${refugioUid}/${Models.ChatEquipo.PathMensajes}`),
+      this.security.sanitizeFirestoreObject(payload as any)
+    );
+  }
+
   // ── Lugares públicos (caché mapa) ──────────────────────────────────────────
 
   async getLugaresInfo(placeIds: string[]): Promise<Record<string, any>> {

@@ -16,11 +16,11 @@ import {
   homeOutline,
   listOutline,
   addCircleOutline,
-  megaphoneOutline,
+  pawOutline,
   personOutline
 } from 'ionicons/icons';
-import { AuthenticationService } from '../firebase/authentication';
-import { FirestoreService } from '../firebase/firestore';
+import { take } from 'rxjs';
+import { RefugioContextService } from '../services/refugio-context.service';
 import { PushNotificationService } from '../services/push-notification.service';
 
 @Component({
@@ -38,30 +38,35 @@ import { PushNotificationService } from '../services/push-notification.service';
   ]
 })
 export class TabsComponent {
-  private auth = inject(AuthenticationService);
-  private fs = inject(FirestoreService);
-  private push = inject(PushNotificationService);
+  private readonly refugioCtx = inject(RefugioContextService);
+  private readonly push = inject(PushNotificationService);
 
-  esRefugio = false;
+  /** Refugios a los que tengo acceso (propio y/o los que colaboro). Vacío = no se muestra el tab. */
+  private misRefugios: string[] = [];
 
   constructor() {
     addIcons({
       homeOutline,
       listOutline,
       addCircleOutline,
-      megaphoneOutline,
+      pawOutline,
       personOutline
     });
 
-    const uid = this.auth.getCurrentUser()?.uid;
-    if (uid) {
-      this.fs.getDocument(`usuarios/${uid}`).then(perfil => {
-        this.esRefugio = perfil?.rol === 'refugio';
-      });
-    }
+    this.refugioCtx.contexto$()
+      .pipe(take(1))
+      .subscribe(ctx => { this.misRefugios = ctx.todos; });
 
     // No hace nada en web (isNative=false); en la app nativa pide permiso
     // (si no se pidió antes) y registra el token del dispositivo.
     this.push.init();
+  }
+
+  get mostrarTabRefugio(): boolean {
+    return this.misRefugios.length > 0;
+  }
+
+  irARefugio(): void {
+    this.refugioCtx.irARefugio(this.misRefugios, '/tabs/refugio-panel');
   }
 }

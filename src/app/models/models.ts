@@ -330,4 +330,23 @@ export namespace Models {
       createdAt?: any;
     }
   }
+
+  // ─── CHAT DE EQUIPO DEL REFUGIO ─────────────────────────────────────────────
+  export namespace ChatEquipo {
+    export const PathMensajes = 'chatEquipo'; // subcolección de usuarios/{refugioUid}
+
+    /**
+     * Un solo hilo grupal por refugio (dueño + todo el equipo). Los mensajes
+     * son append-only: no se pueden editar ni borrar, igual criterio que el
+     * historial médico — simplifica las reglas y evita disputas sobre
+     * ediciones.
+     */
+    export interface Mensaje {
+      id?: string;
+      texto: string;
+      autorUid: string;
+      autorNombre: string;
+      createdAt?: any;
+    }
+  }
 }

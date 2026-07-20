@@ -151,6 +151,12 @@ export const routes: Routes = [
           import('./refugio-finanzas/refugio-finanzas.component')
             .then(m => m.RefugioFinanzasComponent),
       },
+      {
+        path: 'refugio-chat/:refugioUid',
+        loadComponent: () =>
+          import('./refugio-chat/refugio-chat.component')
+            .then(m => m.RefugioChatComponent),
+      },
       // ── Chat IA dentro de tabs (mantiene navbar) ─────────────────────────
       {
         path: 'chat-ia',

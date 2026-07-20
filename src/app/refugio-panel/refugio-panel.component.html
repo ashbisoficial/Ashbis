@@ -18,6 +18,11 @@
       No se pudo cargar toda la información (puede faltar algún dato). Si el problema sigue, avísale al equipo de Ashbis.
     </div>
 
+    <ion-button expand="block" fill="outline" color="danger" [routerLink]="['/tabs/refugio-chat', refugioUid]">
+      <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+      Chat del equipo
+    </ion-button>
+
     <!-- Estadísticas: solo lectura, para ver de un vistazo cómo va el trabajo del refugio. -->
     <ion-card class="seccion-card">
       <ion-card-header>
@@ -129,6 +134,10 @@
         <ng-template #sinPublicaciones>
           <p class="vacio">El refugio todavía no tiene publicaciones.</p>
         </ng-template>
+        <ion-button *ngIf="esDueno" expand="block" fill="outline" color="medium" routerLink="/tabs/mis-publicaciones">
+          <ion-icon name="add-outline" slot="start"></ion-icon>
+          Gestionar publicaciones
+        </ion-button>
       </ion-card-content>
     </ion-card>
 
@@ -148,13 +157,13 @@
               <h2>{{ v.nombre }}</h2>
               <p>{{ v.direccion }}</p>
             </ion-label>
-            <ion-button slot="end" size="small" fill="clear" color="danger" (click)="quitarVeterinaria(v)">
+            <ion-button *ngIf="esDueno" slot="end" size="small" fill="clear" color="danger" (click)="quitarVeterinaria(v)">
               <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
             </ion-button>
           </ion-item>
         </ion-list>
         <p class="vacio" *ngIf="!veterinarias().length">Aún no agregaste veterinarias asociadas.</p>
-        <ion-button expand="block" fill="outline" color="medium" (click)="agregarVeterinaria()">
+        <ion-button *ngIf="esDueno" expand="block" fill="outline" color="medium" (click)="agregarVeterinaria()">
           <ion-icon name="add-outline" slot="start"></ion-icon>
           Agregar veterinaria
         </ion-button>

@@ -27,11 +27,12 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  addOutline, cashOutline, documentTextOutline, medkitOutline, pawOutline,
+  addOutline, cashOutline, chatbubblesOutline, documentTextOutline, medkitOutline, pawOutline,
   peopleOutline, statsChartOutline, trashOutline,
 } from 'ionicons/icons';
 import { catchError, combineLatest, of, Subject, takeUntil } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
+import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService, Mascota, VeterinariaFavorita } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
@@ -53,12 +54,15 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fs = inject(FirestoreService);
+  private readonly auth = inject(AuthenticationService);
   private readonly security = inject(SecurityService);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
   private readonly destroy$ = new Subject<void>();
 
   refugioUid = '';
+  /** true si quien mira el panel es la cuenta dueña del refugio (no un colaborador). */
+  esDueno = false;
   nombreRefugio = signal('Refugio');
   cargando = signal(true);
   /** Si alguna consulta falló por permisos (típico de un deploy a medio
@@ -93,7 +97,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({
-      addOutline, cashOutline, documentTextOutline, medkitOutline, pawOutline,
+      addOutline, cashOutline, chatbubblesOutline, documentTextOutline, medkitOutline, pawOutline,
       peopleOutline, statsChartOutline, trashOutline,
     });
   }
@@ -101,6 +105,8 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.refugioUid = this.route.snapshot.paramMap.get('refugioUid')!;
     if (!this.refugioUid) return;
+
+    this.esDueno = this.auth.getCurrentUser()?.uid === this.refugioUid;
 
     this.fs.getDocument(`usuarios/${this.refugioUid}`)
       .then(perfil => this.nombreRefugio.set(perfil?.nombreRefugio?.trim() || 'Refugio'))
@@ -145,6 +151,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   }
 
   async agregarVeterinaria(): Promise<void> {
+    if (!this.esDueno) return;
     const alert = await this.alertCtrl.create({
       header: 'Agregar veterinaria',
       message: 'Se guarda como veterinaria asociada a este refugio.',
@@ -184,7 +191,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   }
 
   async quitarVeterinaria(v: VeterinariaFavorita): Promise<void> {
-    if (!v.id) return;
+    if (!v.id || !this.esDueno) return;
     const alert = await this.alertCtrl.create({
       header: 'Quitar veterinaria',
       message: `¿Quitar a "${v.nombre}" de las veterinarias asociadas?`,

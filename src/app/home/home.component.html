@@ -2,6 +2,9 @@
   <ion-toolbar class="header-menu">
     <img src="assets/img/ashbis.png" alt="Logo Ashbis" class="logo-header">
     <ion-buttons slot="end">
+      <ion-button *ngIf="mostrarChatRefugio" fill="clear" (click)="irAlChatDelEquipo()" aria-label="Chat del equipo">
+        <ion-icon slot="icon-only" name="chatbubbles-outline"></ion-icon>
+      </ion-button>
       <app-notificaciones-bell></app-notificaciones-bell>
     </ion-buttons>
   </ion-toolbar>
