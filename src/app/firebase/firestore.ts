@@ -583,6 +583,21 @@ export class FirestoreService {
     return url;
   }
 
+  /**
+   * Sube el título/certificado de una cuenta veterinaria para verificación
+   * manual futura. Se llama justo después de crear el usuario de Auth, antes
+   * de que exista el documento en usuarios/{uid} — por eso, a diferencia de
+   * uploadProfilePhoto, no intenta actualizar Firestore: el caller mete la
+   * URL resultante en el mismo payload con el que crea el perfil.
+   */
+  async uploadTituloVeterinario(uid: string, file: File): Promise<string> {
+    const safeFilename = this.sanitizeFilename(file.name);
+    const path = `usuarios/${uid}/titulo/${Date.now()}-${safeFilename}`;
+    const r = ref(this.storage, path);
+    await uploadBytes(r, file);
+    return getDownloadURL(r);
+  }
+
   // ── Publicaciones (refugio: adopción/recolección/donación) ─────────────────
 
   getPublicacionesActivas(): Observable<Models.Publicaciones.Publicacion[]> {

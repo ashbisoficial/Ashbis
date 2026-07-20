@@ -106,6 +106,37 @@ ion-item.item-consentimiento::part(native) {
   padding-right: 0;
 }
 
+/* Selector de título/certificado: tampoco es un input de texto. */
+ion-item.titulo-picker::part(native) {
+  border-bottom: none !important;
+  width: 90%;
+  margin: 16px auto 6px;
+  padding-left: 8px;
+  padding-right: 8px;
+  flex-wrap: wrap;
+}
+
+.titulo-archivo {
+  width: 100%;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ion-text-color);
+
+  a {
+    color: #d30000;
+    text-decoration: underline;
+    margin-left: 8px;
+    cursor: pointer;
+  }
+}
+
+.titulo-ayuda {
+  width: 100%;
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--ion-color-medium);
+}
+
 /* Labels */
 ion-label {
   background: var(--ion-background-color) !important;

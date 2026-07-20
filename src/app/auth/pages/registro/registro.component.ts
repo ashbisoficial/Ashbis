@@ -119,13 +119,70 @@ export class RegistroComponent {
       rol: ['usuario' as Models.Auth.Rol, Validators.required],
       nombreRefugio: [''],
       nombreClinica: [''],
+      tipoNegocioVeterinario: ['' as Models.Auth.TipoNegocioVeterinario | ''],
+      nombreDoctor: [''],
+      numeroRegistroProfesional: [''],
+      especialidadesInput: [''],
+      modalidadAtencion: ['' as Models.Auth.ModalidadAtencion | ''],
       consentimiento: [false, [Validators.requiredTrue]]
     },
     { validators: [this.passwordsIgualesValidator(), this.rolExtraValidator()] }
   );
 
+  /** Certificado de título/registro profesional (solo veterinario, tipos con práctica médica). */
+  tituloFile: File | null = null;
+  tituloNombre: string | null = null;
+  errorTitulo: string | null = null;
+
+  readonly tiposNegocioVeterinario: { value: Models.Auth.TipoNegocioVeterinario; label: string }[] = [
+    { value: 'independiente', label: 'Veterinario/a independiente' },
+    { value: 'clinica_pequena', label: 'Veterinaria pequeña (menos de 10 personas)' },
+    { value: 'clinica_grande', label: 'Veterinaria grande o clínica (15 o más personas)' },
+    { value: 'peluqueria', label: 'Peluquería o servicios estéticos' },
+  ];
+
   constructor() {
     addIcons({ eye, eyeOff, closeOutline });
+  }
+
+  /** true si el tipo de negocio implica práctica médica (no la peluquería). */
+  get esVeterinarioMedico(): boolean {
+    const tipo = this.datosForm.get('tipoNegocioVeterinario')?.value;
+    return tipo === 'independiente' || tipo === 'clinica_pequena' || tipo === 'clinica_grande';
+  }
+
+  /** true si el tipo de negocio es una clínica con equipo (no un independiente ni una peluquería). */
+  get esClinicaConEquipo(): boolean {
+    const tipo = this.datosForm.get('tipoNegocioVeterinario')?.value;
+    return tipo === 'clinica_pequena' || tipo === 'clinica_grande';
+  }
+
+  get esClinicaGrande(): boolean {
+    return this.datosForm.get('tipoNegocioVeterinario')?.value === 'clinica_grande';
+  }
+
+  onTituloSelected(event: any): void {
+    const file: File | undefined = event.target.files?.[0];
+    this.errorTitulo = null;
+    if (!file) return;
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!tiposPermitidos.includes(file.type)) {
+      this.errorTitulo = 'Solo se permiten imágenes (JPEG, PNG, WebP) o PDF.';
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      this.errorTitulo = 'El archivo no puede superar los 15 MB.';
+      event.target.value = '';
+      return;
+    }
+    this.tituloFile = file;
+    this.tituloNombre = file.name;
+  }
+
+  quitarTitulo(): void {
+    this.tituloFile = null;
+    this.tituloNombre = null;
   }
 
   get f() {
@@ -158,9 +215,25 @@ export class RegistroComponent {
     return (form: AbstractControl): ValidationErrors | null => {
       const rol = form.get('rol')?.value;
       const nombreRefugio = form.get('nombreRefugio')?.value;
-      return rol === 'refugio' && !nombreRefugio?.trim()
-        ? { nombreRefugioRequerido: true }
-        : null;
+      if (rol === 'refugio' && !nombreRefugio?.trim()) {
+        return { nombreRefugioRequerido: true };
+      }
+      if (rol === 'veterinario') {
+        const tipo = form.get('tipoNegocioVeterinario')?.value;
+        if (!tipo) return { tipoNegocioRequerido: true };
+        const esClinica = tipo === 'clinica_pequena' || tipo === 'clinica_grande';
+        if (esClinica && !form.get('nombreDoctor')?.value?.trim()) {
+          return { nombreDoctorRequerido: true };
+        }
+        const esMedico = tipo !== 'peluqueria';
+        if (esMedico && !form.get('numeroRegistroProfesional')?.value?.trim()) {
+          return { numeroRegistroRequerido: true };
+        }
+        if (!form.get('modalidadAtencion')?.value) {
+          return { modalidadRequerida: true };
+        }
+      }
+      return null;
     };
   }
 
@@ -184,12 +257,27 @@ export class RegistroComponent {
       this.cargando = false;
       return;
     }
+    if (this.esVeterinarioMedico && !this.tituloFile) {
+      this.cargando = false;
+      this.errorTitulo = 'Sube tu título o certificado profesional.';
+      return;
+    }
 
     try {
       const data = this.datosForm.value;
       const cleanEmail = this.security.sanitizeText(data.email!);
       const respuesta = await this.authenticationService.createUser(cleanEmail, data.password!);
       const rol = (data.rol as Models.Auth.Rol) || 'usuario';
+
+      let tituloUrl: string | undefined;
+      if (rol === 'veterinario' && this.tituloFile) {
+        tituloUrl = await this.firestoreService.uploadTituloVeterinario(respuesta.user.uid, this.tituloFile);
+      }
+      const especialidades = (data.especialidadesInput || '')
+        .split(',')
+        .map(e => this.security.sanitizeText(e.trim()))
+        .filter(Boolean);
+
       const datosUser: Models.Auth.UserProfile = {
         uid: respuesta.user.uid,
         nombre: this.security.sanitizeText(data.nombre!),
@@ -207,6 +295,19 @@ export class RegistroComponent {
         ...(rol === 'veterinario' && data.nombreClinica?.trim()
           ? { nombreClinica: this.security.sanitizeText(data.nombreClinica) }
           : {}),
+        ...(rol === 'veterinario' ? {
+          tipoNegocioVeterinario: data.tipoNegocioVeterinario as Models.Auth.TipoNegocioVeterinario,
+          modalidadAtencion: data.modalidadAtencion as Models.Auth.ModalidadAtencion,
+          verificado: false,
+          ...(this.esClinicaConEquipo && data.nombreDoctor?.trim()
+            ? { nombreDoctor: this.security.sanitizeText(data.nombreDoctor) }
+            : {}),
+          ...(this.esVeterinarioMedico && data.numeroRegistroProfesional?.trim()
+            ? { numeroRegistroProfesional: this.security.sanitizeText(data.numeroRegistroProfesional) }
+            : {}),
+          ...(this.esClinicaGrande && especialidades.length ? { especialidades } : {}),
+          ...(tituloUrl ? { tituloUrl } : {}),
+        } : {}),
         consentGiven: true,
         consentDate: new Date().toISOString(),
         consentVersion: '2.0'

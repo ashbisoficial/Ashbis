@@ -13,6 +13,20 @@ export namespace Models {
      */
     export type Rol = 'usuario' | 'refugio' | 'veterinario';
 
+    /**
+     * Sub-tipo de negocio dentro del rol 'veterinario'. Define qué datos de
+     * verificación tienen sentido pedir: un independiente o una clínica
+     * necesitan acreditar título; una peluquería/estética no.
+     * - 'independiente': un solo veterinario, sin clínica detrás.
+     * - 'clinica_pequena': menos de 10 personas.
+     * - 'clinica_grande': 15 o más personas, puede declarar especialidades.
+     * - 'peluqueria': peluquería o servicios estéticos (no médico).
+     */
+    export type TipoNegocioVeterinario =
+      | 'independiente' | 'clinica_pequena' | 'clinica_grande' | 'peluqueria';
+
+    export type ModalidadAtencion = 'presencial' | 'a_domicilio' | 'ambas';
+
     export interface UserProfile {
       uid: string;
       nombre: string;
@@ -34,8 +48,25 @@ export namespace Models {
       rol?: Rol;
       /** Solo si rol === 'refugio'. Nombre del refugio/organización. */
       nombreRefugio?: string;
-      /** Solo si rol === 'veterinario'. Nombre de la clínica (informativo, no verificado). */
+      /** Solo si rol === 'veterinario'. Nombre de la clínica/veterinaria/peluquería (informativo, no verificado). */
       nombreClinica?: string;
+      /** Solo si rol === 'veterinario'. Ver TipoNegocioVeterinario. */
+      tipoNegocioVeterinario?: TipoNegocioVeterinario;
+      /** Solo si rol === 'veterinario' y es una clínica (no independiente ni
+       *  peluquería): nombre del veterinario responsable/director técnico,
+       *  distinto de quien crea la cuenta (que puede ser un/a administrativo/a). */
+      nombreDoctor?: string;
+      /** Número de registro/colegio profesional. No aplica a peluquerías. */
+      numeroRegistroProfesional?: string;
+      /** Certificado de título subido para verificación manual futura (ver `verificado`). */
+      tituloUrl?: string;
+      /** Solo clínicas grandes: lista de especialidades que ofrece. */
+      especialidades?: string[];
+      /** Solo veterinario: si atiende en el local, a domicilio, o ambas. */
+      modalidadAtencion?: ModalidadAtencion;
+      /** Revisión manual del título/registro profesional; false hasta que
+       *  el equipo de Ashbis lo confirme (funcionalidad de revisión: fase futura). */
+      verificado?: boolean;
       /** Hasta 2 contactos adicionales de emergencia. Se exponen en el
        *  carnet público de una mascota en las mismas condiciones que el
        *  teléfono del dueño (siempre en el carnet médico; en el QR de
