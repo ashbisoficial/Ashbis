@@ -23,7 +23,7 @@
     <!-- 4. Pestaña Refugio (dueño y colaboradores): hub único de todo lo
          del refugio — mascotas, publicaciones, equipo, veterinarias,
          estadísticas, finanzas y chat del equipo. -->
-    <ion-tab-button *ngIf="mostrarTabRefugio" tab="refugio-panel" (click)="irARefugio()">
+    <ion-tab-button *ngIf="hrefRefugio" tab="refugio-panel" [href]="hrefRefugio">
       <ion-icon name="paw-outline"></ion-icon>
       <ion-label>Refugio</ion-label>
     </ion-tab-button>
