@@ -70,6 +70,7 @@ export class ChatIaComponent implements OnInit {
     { id: 'comportamiento', label: '🐾 Comportamiento' },
     { id: 'cuidados', label: '✂️ Cuidados generales' },
     { id: 'vacunas', label: '💉 Vacunas y medicina' },
+    { id: 'app', label: '❓ Ayuda con la app' },
   ];
 
   readonly tiposMascota = [
@@ -87,7 +88,7 @@ export class ChatIaComponent implements OnInit {
 
   ngOnInit(): void {
     this.agregarMensaje('Ashbis IA',
-      'Hola 👋 Soy Ashbis IA, tu asistente veterinario. ¿Sobre qué tema quieres consultar hoy?'
+      'Hola 👋 Soy Ashbis IA. Puedo ayudarte con salud y cuidados de tu mascota, o resolver dudas sobre cómo usar Ashbis. ¿Sobre qué tema quieres consultar hoy?'
     );
   }
 
@@ -110,8 +111,18 @@ export class ChatIaComponent implements OnInit {
   seleccionarCategoria(categoria: { id: string; label: string }): void {
     this.categoriaSeleccionada = categoria.id;
     this.agregarMensaje('Tu', categoria.label);
-    this.agregarMensaje('Ashbis IA', '¿Qué tipo de mascota tienes?');
-    this.pasoActual = 2;
+    // "Ayuda con la app" no depende del tipo de mascota: va directo a la
+    // pregunta, sin el paso intermedio.
+    if (categoria.id === 'app') {
+      this.agregarMensaje(
+        'Ashbis IA',
+        'Contame qué necesitás: cómo usar una función, tipos de cuenta, o si querés reportar un error. ❓'
+      );
+      this.pasoActual = 3;
+    } else {
+      this.agregarMensaje('Ashbis IA', '¿Qué tipo de mascota tienes?');
+      this.pasoActual = 2;
+    }
   }
 
   seleccionarMascota(tipo: { id: string; label: string }): void {

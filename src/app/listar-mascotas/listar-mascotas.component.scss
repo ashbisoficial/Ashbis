@@ -1,4 +1,12 @@
 /* ================================
+   FONDO DE LA PÁGINA
+================================ */
+ion-content {
+  --background: var(--ion-background-color);
+  color: var(--ion-text-color);
+}
+
+/* ================================
    TARJETA DE MASCOTA
 ================================ */
 ion-item.pet-card,
@@ -13,11 +21,12 @@ ion-item.pet-card::part(native) {
   margin: 10px 12px;
   border-radius: 16px;
 
-  background: rgba(0,0,0,0.70) !important;
+  background: var(--ashbis-surface) !important;
+  border: 1px solid var(--ashbis-surface-border);
   --background: transparent !important;
 
   padding: 14px !important;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.45) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25) !important;
 
   --border-width: 0 !important;
   --inner-border-width: 0 !important;
@@ -34,13 +43,14 @@ ion-item.pet-card::part(native) {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .3px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--ion-text-color);
+  background: var(--ashbis-surface-2);
+  border: 1px solid var(--ashbis-surface-border);
 
   &.perdida {
     background: #8b0808;
     border-color: #8b0808;
+    color: #ffffff;
   }
 }
 
@@ -95,7 +105,7 @@ ion-avatar.pet-avatar::part(native) {
 .pet-info h2 {
   font-size: 1.2rem;
   margin: 0 0 4px;
-  color: #fff;
+  color: var(--ion-text-color);
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -104,7 +114,7 @@ ion-avatar.pet-avatar::part(native) {
 
 .pet-info p {
   font-size: 1rem;
-  color: rgba(255,255,255,0.85);
+  color: var(--ion-color-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -141,7 +151,7 @@ ion-avatar.pet-avatar::part(native) {
 /* BOTÓN BLANCO CON BORDE ROJO */
 .btn-outline {
   background: transparent;
-  color: #fff;
+  color: var(--ion-text-color);
   border: 2px solid #8b0808;
 }
 

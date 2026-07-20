@@ -1,6 +1,7 @@
 .guia {
   --background: var(--ion-background-color);
   --color: var(--ion-text-color);
+  color: var(--ion-text-color);
 }
 
 .portada {
@@ -46,8 +47,8 @@
     padding: 6px 12px;
     border-radius: 20px;
     background: var(--ashbis-surface);
-    border: 1px solid var(--ashbis-surface-border);
-    color: var(--ashbis-red, #8b0808);
+    border: 1px solid var(--ashbis-red, #8b0808);
+    color: var(--ion-text-color);
     cursor: pointer;
     white-space: nowrap;
   }
@@ -90,6 +91,7 @@
   margin: 0 0 8px;
   font-size: 16px;
   font-weight: 700;
+  color: var(--ion-text-color);
 }
 
 .tarjeta p {
@@ -107,6 +109,7 @@
     font-size: 13px;
     line-height: 1.6;
     margin-bottom: 4px;
+    color: var(--ion-text-color);
   }
 }
 

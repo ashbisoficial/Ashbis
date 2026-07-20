@@ -94,7 +94,8 @@ ion-content {
   --background: transparent;
   --border-color: #8b0808;
   --border-width: 2px;
-  color: #ffffff;
+  --color: var(--ion-text-color);
+  color: var(--ion-text-color);
 }
 
 /* Botón Galería */
