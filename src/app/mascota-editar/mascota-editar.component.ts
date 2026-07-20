@@ -66,6 +66,21 @@ export class MascotaEditarComponent implements OnDestroy {
 
   mascota = signal<Mascota | null>(null);
   section = signal<Section>('info');
+
+  /** Vacunas típicas por especie; "Otra" siempre se agrega al final para
+   *  poder escribir el nombre a mano si no está en la lista. */
+  private readonly vacunasPorEspecie: Record<string, string[]> = {
+    Perro: ['Antirrábica', 'Óctuple / Puppy (DHPPi)', 'Bordetella (tos de las perreras)', 'Leptospirosis', 'Coronavirus canino'],
+    Gato: ['Antirrábica', 'Triple felina', 'Leucemia felina (FeLV)', 'Peritonitis infecciosa felina'],
+    Conejo: ['Mixomatosis', 'Enfermedad hemorrágica vírica (RHD)'],
+    Hurón: ['Antirrábica', 'Moquillo (distemper)'],
+    Ave: ['Viruela aviar', 'Enfermedad de Newcastle', 'Polioma aviar'],
+  };
+
+  get opcionesVacuna(): string[] {
+    const especie = this.mascota()?.especie ?? '';
+    return [...(this.vacunasPorEspecie[especie] ?? []), 'Otra'];
+  }
   readonly hoy = new Date().toISOString().split('T')[0];
   readonly doceAnosFuturo = new Date(
     new Date().setFullYear(new Date().getFullYear() + 12)
@@ -503,7 +518,8 @@ export class MascotaEditarComponent implements OnDestroy {
   abrirNuevaVacuna() {
     this.editandoVacunaId.set(null);
     this.vacunaForm = this.fb.group({
-      tipo: ['', [Validators.required, Validators.maxLength(60)]],
+      tipo: ['', Validators.required],
+      tipoManual: ['', Validators.maxLength(60)], // solo se usa si tipo === 'Otra'
       fechaAplicacion: [new Date().toISOString(), Validators.required], // ISO
       proximaFecha: [''],                                               // opcional
       notas: ['']
@@ -513,8 +529,13 @@ export class MascotaEditarComponent implements OnDestroy {
 
   abrirEditarVacuna(v: Vacuna) {
     this.editandoVacunaId.set(v.id || null);
+    // Si el tipo guardado no está en las opciones de la especie actual (por
+    // ejemplo, se cargó a mano o cambió la especie), se abre en "Otra" con
+    // el texto original precargado en vez de perderlo.
+    const esPreset = this.opcionesVacuna.includes(v.tipo);
     this.vacunaForm = this.fb.group({
-      tipo: [v.tipo, [Validators.required, Validators.maxLength(60)]],
+      tipo: [esPreset ? v.tipo : 'Otra', Validators.required],
+      tipoManual: [esPreset ? '' : v.tipo, Validators.maxLength(60)],
       fechaAplicacion: [v.fechaAplicacion, Validators.required],
       proximaFecha: [v.proximaFecha || ''],
       notas: [v.notas || '']
@@ -523,13 +544,21 @@ export class MascotaEditarComponent implements OnDestroy {
   }
 
   async guardarVacuna() {
+    const tipoSeleccionado = this.vacunaForm.get('tipo')?.value;
+    const tipoManual = (this.vacunaForm.get('tipoManual')?.value || '').trim();
+
+    if (tipoSeleccionado === 'Otra' && !tipoManual) {
+      this.vacunaForm.get('tipoManual')?.markAsTouched();
+      return this.showToast('Escribe el nombre de la vacuna.');
+    }
     if (this.vacunaForm.invalid || !this.mascota()?.id || !this.auth.currentUser) {
       this.vacunaForm?.markAllAsTouched();
       return this.showToast('Revisa los campos de la vacuna.');
     }
 
     const petId = this.mascota()!.id;
-    const { tipo, fechaAplicacion, proximaFecha, notas } = this.vacunaForm.value;
+    const { fechaAplicacion, proximaFecha, notas } = this.vacunaForm.value;
+    const tipo = tipoSeleccionado === 'Otra' ? tipoManual : tipoSeleccionado;
     const payload: Vacuna = {
       tipo,
       fechaAplicacion,

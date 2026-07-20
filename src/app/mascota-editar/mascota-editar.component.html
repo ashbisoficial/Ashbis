@@ -99,9 +99,16 @@
 
               <ion-item>
                 <ion-label position="stacked">Especie</ion-label>
-                <ion-select formControlName="especie" interface="popover" placeholder="Perro, Gato, Otro">
+                <ion-select formControlName="especie" interface="popover" placeholder="Selecciona">
                   <ion-select-option value="Perro">Perro</ion-select-option>
                   <ion-select-option value="Gato">Gato</ion-select-option>
+                  <ion-select-option value="Conejo">Conejo</ion-select-option>
+                  <ion-select-option value="Hámster">Hámster</ion-select-option>
+                  <ion-select-option value="Ave">Ave</ion-select-option>
+                  <ion-select-option value="Reptil">Reptil</ion-select-option>
+                  <ion-select-option value="Tortuga">Tortuga</ion-select-option>
+                  <ion-select-option value="Hurón">Hurón</ion-select-option>
+                  <ion-select-option value="Erizo">Erizo</ion-select-option>
                   <ion-select-option value="Otro">Otro</ion-select-option>
                 </ion-select>
               </ion-item>
@@ -478,12 +485,17 @@
                     <ion-item>
                       <ion-label position="stacked">Tipo de vacuna</ion-label>
                       <ion-select formControlName="tipo" interface="popover" placeholder="Selecciona">
-                        <ion-select-option value="Antirrábica">Antirrábica</ion-select-option>
-                        <ion-select-option value="Óctuple / Puppy">Óctuple / Puppy</ion-select-option>
-                        <ion-select-option value="Triple felina">Triple felina</ion-select-option>
-                        <ion-select-option value="Bordetella">Bordetella</ion-select-option>
-                        <ion-select-option value="Otra">Otra</ion-select-option>
+                        <ion-select-option *ngFor="let op of opcionesVacuna" [value]="op">{{ op }}</ion-select-option>
                       </ion-select>
+                    </ion-item>
+
+                    <ion-item *ngIf="vacunaForm.get('tipo')?.value === 'Otra'">
+                      <ion-label position="stacked">Nombre de la vacuna</ion-label>
+                      <ion-input formControlName="tipoManual" placeholder="Ej: Panleucopenia"></ion-input>
+                      <ion-note color="danger"
+                        *ngIf="vacunaForm.get('tipoManual')?.touched && !vacunaForm.get('tipoManual')?.value">
+                        Escribe el nombre de la vacuna.
+                      </ion-note>
                     </ion-item>
 
                     <ion-item class="input-fecha">
