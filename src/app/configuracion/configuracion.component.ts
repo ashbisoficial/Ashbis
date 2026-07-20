@@ -166,6 +166,10 @@ export class ConfiguracionComponent implements OnInit {
     this.router.navigate(['/tabs/listar-mascotas']);
   }
 
+  irAGuia(): void {
+    this.router.navigate(['/tabs/guia']);
+  }
+
   irAPrivacidad(): void {
     this.router.navigate(['/privacidad']);
   }

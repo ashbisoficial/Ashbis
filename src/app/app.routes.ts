@@ -94,6 +94,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'guia',
+        loadComponent: () =>
+          import('./guia/guia.component').then((m) => m.GuiaComponent),
+      },
+      {
         path: 'mis-publicaciones',
         loadComponent: () =>
           import('./mis-publicaciones/mis-publicaciones.component').then(

@@ -10,6 +10,18 @@
 <ion-content [fullscreen]="true" class="configuracion">
   <div class="container">
 
+    <!-- ═══════════ GUÍA DE USO ═══════════ -->
+    <ion-card class="seccion-card seccion-guia" button (click)="irAGuia()">
+      <ion-card-content class="guia-content">
+        <ion-icon name="help-circle-outline"></ion-icon>
+        <div>
+          <p class="guia-titulo">Guía de uso</p>
+          <p class="guia-subtitulo">Cómo usar Ashbis, paso a paso</p>
+        </div>
+        <ion-icon name="chevron-forward-outline" class="guia-flecha"></ion-icon>
+      </ion-card-content>
+    </ion-card>
+
     <!-- ═══════════ APARIENCIA ═══════════ -->
     <ion-card class="seccion-card">
       <ion-card-header>

@@ -1,0 +1,109 @@
+<ion-header translucent="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/configuracion"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Guía de uso</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="guia">
+  <div class="portada">
+    <img src="assets/img/logo_ashbis.jpeg" alt="Ashbis" class="portada-logo" />
+    <h1>Bienvenido a Ashbis</h1>
+    <p>Todo lo que necesitás saber para aprovechar la app al máximo, paso a paso.</p>
+  </div>
+
+  <div class="indice">
+    <a *ngFor="let s of secciones" (click)="irA(s.id)">{{ s.titulo }}</a>
+  </div>
+
+  <div class="contenedor">
+
+    <section id="cuenta" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="person-add-outline"></ion-icon></div>
+      <h2>1. Creá tu cuenta</h2>
+      <p>Al registrarte elegís uno de tres tipos de cuenta:</p>
+      <ul>
+        <li><strong>Dueño:</strong> gestioná el perfil de tus propias mascotas.</li>
+        <li><strong>Refugio:</strong> además de tus mascotas, podés publicar adopciones, campañas de donación y sumar a tu equipo a otras personas que ayuden a operar la cuenta.</li>
+        <li><strong>Veterinario:</strong> cuenta profesional — estamos construyendo las herramientas de historial clínico, por ahora funciona como cuenta de dueño.</li>
+      </ul>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Podés cambiar la foto de perfil y tus datos personales en cualquier momento desde Perfil.</p>
+    </section>
+
+    <section id="mascotas" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="paw-outline"></ion-icon></div>
+      <h2>2. Agregá a tu mascota</h2>
+      <p>Desde la pestaña <strong>Agregar</strong> creás su ficha: nombre, especie, raza, edad, sexo, color y una foto. Después la vas a encontrar en <strong>Mis Mascotas</strong>, con su estado (Normal o Perdida) visible en la tarjeta.</p>
+      <p>Tocá <strong>Editar ficha</strong> para actualizar sus datos o subir fotos a la galería, o <strong>Ver Perfil</strong> para entrar a su ficha completa.</p>
+    </section>
+
+    <section id="carnet" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="qr-code-outline"></ion-icon></div>
+      <h2>3. Carnet digital y código QR</h2>
+      <p>Cada mascota tiene su propio código QR. Al escanearlo, cualquier persona ve su <strong>carnet digital</strong> (una ficha pública con foto y datos básicos) sin necesidad de tener la app instalada.</p>
+      <p>Desde el perfil de la mascota, tocá <strong>QR</strong> para verlo o descargarlo, y <strong>Historial</strong> para abrir el carnet directamente.</p>
+    </section>
+
+    <section id="perdida" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="warning-outline"></ion-icon></div>
+      <h2>4. Reportar una mascota perdida</h2>
+      <p>En el perfil de la mascota, tocá <strong>Reportar perdida</strong>. Mientras esté marcada así, tu número de contacto (y el de los contactos de emergencia que agregues en tu Perfil) aparece en su ficha pública del QR, para que quien la encuentre pueda avisarte.</p>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Apenas la recuperes, tocá <strong>Marcar como encontrada</strong> — tu contacto deja de mostrarse en el QR.</p>
+    </section>
+
+    <section id="refugios" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="heart-outline"></ion-icon></div>
+      <h2>5. Publicaciones de refugios</h2>
+      <p>Si tenés cuenta de refugio, desde <strong>Mis Publicaciones</strong> podés compartir adopciones, campañas de recolección o pedidos de donación. Aparecen en el feed del Home para que cualquier usuario las vea, con foto grande y toda la información al tocarlas.</p>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Cada publicación se marca automáticamente como veraz al momento de crearla, según nuestros Términos y Condiciones.</p>
+    </section>
+
+    <section id="transferencias" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="swap-horizontal-outline"></ion-icon></div>
+      <h2>6. Transferencias y equipo</h2>
+      <p>Desde el perfil de una mascota podés <strong>transferirla a un nuevo dueño</strong> (por ejemplo, tras una adopción) — la otra persona recibe una notificación y, al aceptarla, la mascota pasa a su cuenta con todo su historial.</p>
+      <p>Las cuentas de refugio también pueden invitar a otras personas a su <strong>equipo</strong> (como admin o staff) para operar la cuenta entre varios, desde Perfil.</p>
+    </section>
+
+    <section id="chat" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="chatbubbles-outline"></ion-icon></div>
+      <h2>7. Asistente de IA</h2>
+      <p>El chat de Ashbis IA responde preguntas sobre salud, alimentación, comportamiento y cuidados de tu mascota. Elegís una categoría, el tipo de animal, y escribís tu consulta.</p>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Ante síntomas graves o una emergencia, el asistente siempre te va a recomendar acudir a un veterinario — no reemplaza una consulta profesional.</p>
+    </section>
+
+    <section id="notificaciones" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="notifications-outline"></ion-icon></div>
+      <h2>8. Notificaciones</h2>
+      <p>El ícono de campanita (arriba a la derecha en el Home) te avisa cuando tenés invitaciones de equipo o solicitudes de transferencia/adopción pendientes, con un punto rojo si hay algo sin leer.</p>
+      <p>Si activás las notificaciones push en Configuración, también te van a llegar directo a la barra de notificaciones de tu celular (o de Safari/Chrome si instalaste Ashbis como app), aunque tengas la app cerrada.</p>
+    </section>
+
+    <section id="configuracion" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="settings-outline"></ion-icon></div>
+      <h2>9. Configuración</h2>
+      <p>Desde el ícono de engranaje en Perfil accedés a Configuración, donde podés:</p>
+      <ul>
+        <li>Elegir tema <strong>claro u oscuro</strong> y el tamaño de letra.</li>
+        <li>Activar o desactivar las <strong>notificaciones push</strong>.</li>
+        <li>Ver el estado de los permisos de cámara, ubicación y notificaciones.</li>
+        <li>Cambiar tu contraseña o eliminar tu cuenta.</li>
+      </ul>
+    </section>
+
+    <section id="privacidad" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
+      <h2>10. Privacidad y tus datos</h2>
+      <p>Tu número de teléfono y los de tus contactos de emergencia solo se muestran públicamente si marcás a una mascota como perdida — nunca antes. Podés leer el detalle completo en la Política de Privacidad y los Términos y Condiciones, disponibles desde el registro y desde Configuración.</p>
+    </section>
+
+    <section id="ayuda" class="tarjeta tarjeta-final">
+      <div class="tarjeta-icono"><ion-icon name="paw-outline"></ion-icon></div>
+      <h2>¿Necesitás ayuda?</h2>
+      <p>Escribinos a <a href="mailto:ashbis.oficial@gmail.com">ashbis.oficial&#64;gmail.com</a> y te respondemos a la brevedad.</p>
+    </section>
+
+  </div>
+</ion-content>

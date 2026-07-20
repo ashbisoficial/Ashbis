@@ -39,6 +39,45 @@
   border-color: rgba(139, 8, 8, .3);
 }
 
+.seccion-guia {
+  cursor: pointer;
+}
+
+.guia-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  > ion-icon:first-child {
+    font-size: 30px;
+    color: var(--ashbis-red, #8b0808);
+    flex-shrink: 0;
+  }
+
+  > div {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.guia-titulo {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.guia-subtitulo {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.guia-flecha {
+  font-size: 18px;
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
 .campo-label {
   display: flex;
   align-items: center;

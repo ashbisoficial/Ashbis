@@ -1,0 +1,137 @@
+.guia {
+  --background: var(--ion-background-color);
+  --color: var(--ion-text-color);
+}
+
+.portada {
+  text-align: center;
+  padding: 28px 20px 16px;
+  background: linear-gradient(180deg, rgba(139, 8, 8, .12), transparent);
+}
+
+.portada-logo {
+  width: 84px;
+  height: 84px;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+.portada h1 {
+  margin: 16px 0 6px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.portada p {
+  margin: 0 auto;
+  max-width: 320px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  line-height: 1.5;
+}
+
+.indice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 16px 20px;
+  max-width: 720px;
+  margin: 0 auto;
+
+  a {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--ashbis-surface);
+    border: 1px solid var(--ashbis-surface-border);
+    color: var(--ashbis-red, #8b0808);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+}
+
+.contenedor {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tarjeta {
+  background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border);
+  border-radius: 16px;
+  padding: 20px 18px;
+  scroll-margin-top: 70px;
+}
+
+.tarjeta-icono {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(139, 8, 8, .14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+
+  ion-icon {
+    font-size: 26px;
+    color: var(--ashbis-red, #8b0808);
+  }
+}
+
+.tarjeta h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tarjeta p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ion-text-color);
+}
+
+.tarjeta ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+
+  li {
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 4px;
+  }
+}
+
+.tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  background: rgba(139, 8, 8, .08);
+  border-radius: 10px;
+  padding: 8px 10px;
+
+  ion-icon {
+    color: var(--ashbis-red, #8b0808);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+.tarjeta-final {
+  text-align: center;
+
+  a {
+    color: var(--ashbis-red, #8b0808);
+    font-weight: 600;
+  }
+}
