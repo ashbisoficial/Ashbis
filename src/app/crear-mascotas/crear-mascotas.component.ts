@@ -88,9 +88,9 @@ export class CrearMascotasComponent implements OnInit {
     { label: 'Tener cuidado con otros animales', value: 'cuidado_otros_animales' },
     { label: 'Tener cuidado con mujeres', value: 'cuidado_mujeres' },
     { label: 'Tener cuidado con hombres', value: 'cuidado_hombres' },
-    { label: 'Tener cuidado con ninos', value: 'cuidado_ninos' },
+    { label: 'Tener cuidado con niños', value: 'cuidado_ninos' },
     { label: 'Tener cuidado con su misma especie', value: 'cuidado_misma_especie' },
-    { label: 'Necesita compania constante', value: 'necesita_compania' },
+    { label: 'Necesita compañía constante', value: 'necesita_compania' },
     { label: 'Es temeroso', value: 'temeroso' },
     { label: 'Es agresivo', value: 'agresivo' },
     { label: 'Ninguno', value: 'ninguno' }
