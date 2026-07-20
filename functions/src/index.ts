@@ -711,7 +711,17 @@ export const aceptarTransferencia = onRequest(
 
         if (t['tipo'] === 'hogar_temporal') {
           // Acceso compartido: NO cambia de dueño, solo se agrega como
-          // colaborador de esta mascota puntual.
+          // colaborador de esta mascota puntual. Una mascota solo puede
+          // estar en UN hogar temporal a la vez — si alguien mandó varias
+          // solicitudes en paralelo (a distintas personas), la primera que
+          // se acepte gana y las demás quedan sin efecto acá.
+          const colaboradoresExistentes = await tx.get(
+            mascotaRef.collection('colaboradores').limit(1)
+          );
+          if (!colaboradoresExistentes.empty) {
+            throw new HttpError(409, 'Esta mascota ya tiene un hogar temporal activo.');
+          }
+
           const accepterSnap = await tx.get(db.doc(`usuarios/${decoded.uid}`));
           const accepterData = accepterSnap.exists ? accepterSnap.data()! : {};
           const nombre = `${accepterData['nombre'] ?? ''} ${accepterData['apellido'] ?? ''}`.trim()

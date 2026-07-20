@@ -1,9 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import {
   Firestore,
-  collection, collectionData, collectionGroup, deleteDoc, doc, getDoc,
+  collection, collectionData, collectionGroup, deleteDoc, doc, getDoc, getDocs,
   serverTimestamp, setDoc, updateDoc, docData, addDoc,
-  query, where, orderBy, CollectionReference, Timestamp,
+  query, where, orderBy, limit, CollectionReference, Timestamp,
   arrayUnion, arrayRemove,
 } from '@angular/fire/firestore';
 import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
@@ -218,6 +218,20 @@ export class FirestoreService {
         return of<Mascota[]>([]);
       })
     );
+  }
+
+  /**
+   * ¿Esta mascota ya tiene un hogar temporal activo (algún colaborador)?
+   * Una mascota solo puede estar en UN hogar temporal a la vez — se usa
+   * para avisar antes de mandar una nueva solicitud, aunque el chequeo
+   * real que no se puede saltear vive en la Cloud Function
+   * aceptarTransferencia (esto es solo para dar feedback temprano en la UI).
+   */
+  async hayHogarTemporalActivo(petId: string): Promise<boolean> {
+    const snap = await getDocs(
+      query(collection(this.firestore, `mascotas/${petId}/colaboradores`), limit(1))
+    );
+    return !snap.empty;
   }
 
   getPetById(id: string): Observable<Mascota | undefined> {

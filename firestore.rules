@@ -373,9 +373,14 @@ service cloud.firestore {
                request.resource.data.paraEmail       == resource.data.paraEmail;
       }
 
+      // paraEmail se guarda siempre en minúsculas (crearTransferencia lo
+      // normaliza), pero request.auth.token.email conserva las mayúsculas
+      // con las que la cuenta destinataria se registró — sin el .lower()
+      // acá, cualquier cuenta con una mayúscula en su email nunca podía ver
+      // (ni rechazar) las transferencias dirigidas a ella.
       allow read: if isAuth() &&
         (puedeOperarComoRefugio(resource.data.deUid) ||
-         resource.data.paraEmail == request.auth.token.email);
+         resource.data.paraEmail == request.auth.token.email.lower());
 
       allow create: if puedeOperarComoRefugio(request.resource.data.deUid)
                     && esCuentaRefugio(request.resource.data.deUid)
@@ -387,7 +392,7 @@ service cloud.firestore {
 
       // Rechazar: solo el destinatario, mientras siga pendiente.
       allow update: if isAuth()
-                    && request.auth.token.email == resource.data.paraEmail
+                    && request.auth.token.email.lower() == resource.data.paraEmail
                     && resource.data.estado == 'pendiente'
                     && request.resource.data.estado == 'rechazada'
                     && soloCambiaEstado();
@@ -413,9 +418,11 @@ service cloud.firestore {
                request.resource.data.rolEquipo     == resource.data.rolEquipo;
       }
 
+      // Mismo motivo del .lower() que en transferencias más arriba: paraEmail
+      // se guarda en minúsculas, request.auth.token.email no.
       allow read: if isAuth() &&
         (puedeOperarComoRefugio(resource.data.refugioUid) ||
-         resource.data.paraEmail == request.auth.token.email);
+         resource.data.paraEmail == request.auth.token.email.lower());
 
       allow create: if esAdminDelRefugio(request.resource.data.refugioUid)
                     && esCuentaRefugio(request.resource.data.refugioUid)
@@ -425,7 +432,7 @@ service cloud.firestore {
 
       // Rechazar: solo el destinatario, mientras siga pendiente.
       allow update: if isAuth()
-                    && request.auth.token.email == resource.data.paraEmail
+                    && request.auth.token.email.lower() == resource.data.paraEmail
                     && resource.data.estado == 'pendiente'
                     && request.resource.data.estado == 'rechazada'
                     && soloCambiaEstadoInvitacion();
