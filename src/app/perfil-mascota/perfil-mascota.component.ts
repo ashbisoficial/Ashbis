@@ -45,8 +45,13 @@ export class MascotaPerfilComponent implements OnDestroy {
 
   mascota = signal<Mascota | null>(null);
   loading = signal(true);
-  esRefugio = signal(false);
+  /** true si el usuario actual es dueño de esta mascota (directo, o vía equipo de un refugio). */
+  puedeTransferir = signal(false);
   actualizandoEstado = false;
+
+  private miUid: string | null = null;
+  private misRefugios: string[] = [];
+  private miRolEsRefugio = false;
 
   constructor() {
     addIcons({ alertCircleOutline, checkmarkCircleOutline });
@@ -66,15 +71,36 @@ export class MascotaPerfilComponent implements OnDestroy {
       .subscribe((doc) => {
         if (doc) this.mascota.set(doc);
         this.loading.set(false);
+        this.actualizarPuedeTransferir();
       });
 
-    // Solo un refugio puede transferir la mascota a un nuevo dueño.
-    const uid = this.auth.getCurrentUser()?.uid;
-    if (uid) {
-      this.fs.getDocument(`usuarios/${uid}`).then(perfil => {
-        this.esRefugio.set(perfil?.rol === 'refugio');
+    // Transferir (dar en adopción / hogar temporal) requiere: ser el dueño
+    // legal de la mascota (directo, o vía equipo de un refugio) Y que esa
+    // cuenta dueña sea de rol 'refugio' — las reglas de Firestore exigen
+    // esCuentaRefugio(deUid), así que ocultamos el botón si de todos modos
+    // el backend lo va a rechazar. Un colaborador de hogar temporal, por
+    // ejemplo, NO puede volver a transferirla — no es su dueño.
+    this.miUid = this.auth.getCurrentUser()?.uid ?? null;
+    if (this.miUid) {
+      this.fs.getDocument(`usuarios/${this.miUid}`).then(perfil => {
+        this.miRolEsRefugio = perfil?.rol === 'refugio';
+        this.actualizarPuedeTransferir();
       });
+      this.fs.getMisRefugios(this.miUid)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(refugioUids => {
+          this.misRefugios = refugioUids;
+          this.actualizarPuedeTransferir();
+        });
     }
+  }
+
+  private actualizarPuedeTransferir(): void {
+    const m = this.mascota();
+    if (!m || !this.miUid) { this.puedeTransferir.set(false); return; }
+    const esDuenoDirecto = m.uidUsuario === this.miUid && this.miRolEsRefugio;
+    const esEquipoDelRefugioDueno = this.misRefugios.includes(m.uidUsuario);
+    this.puedeTransferir.set(esDuenoDirecto || esEquipoDelRefugioDueno);
   }
 
   ngOnDestroy(): void {
@@ -162,20 +188,14 @@ editarPerfil() {
     }
   }
 
-  async transferirMascota(): Promise<void> {
+  darEnAdopcion(): void {
     const m = this.mascota();
-    if (!m?.id) return;
+    if (m?.id) this.pedirDatosTransferencia(m, 'adopcion');
+  }
 
-    const tipoAlert = await this.alertCtrl.create({
-      header: `Transferir a ${m.nombre}`,
-      message: 'Adopción: se entrega la mascota por completo, con todo su historial. Hogar temporal: acceso compartido, la mascota sigue siendo tuya.',
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        { text: 'Hogar temporal', handler: () => this.pedirDatosTransferencia(m, 'hogar_temporal') },
-        { text: 'Adopción completa', handler: () => this.pedirDatosTransferencia(m, 'adopcion') },
-      ]
-    });
-    await tipoAlert.present();
+  darHogarTemporal(): void {
+    const m = this.mascota();
+    if (m?.id) this.pedirDatosTransferencia(m, 'hogar_temporal');
   }
 
   private async pedirDatosTransferencia(
