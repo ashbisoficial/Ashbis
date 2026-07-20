@@ -193,9 +193,22 @@ editarPerfil() {
     if (m?.id) this.pedirDatosTransferencia(m, 'adopcion');
   }
 
-  darHogarTemporal(): void {
+  async darHogarTemporal(): Promise<void> {
     const m = this.mascota();
-    if (m?.id) this.pedirDatosTransferencia(m, 'hogar_temporal');
+    if (!m?.id) return;
+    // Una mascota solo puede estar en UN hogar temporal a la vez — se avisa
+    // acá antes de mandar una solicitud nueva; el chequeo que de verdad no
+    // se puede saltear vive en la Cloud Function aceptarTransferencia.
+    if (await this.fs.hayHogarTemporalActivo(m.id)) {
+      const alert = await this.alertCtrl.create({
+        header: 'Ya tiene un hogar temporal',
+        message: `${m.nombre} ya está en un hogar temporal activo. Termínalo antes de mandar una nueva solicitud.`,
+        buttons: ['Entendido'],
+      });
+      await alert.present();
+      return;
+    }
+    this.pedirDatosTransferencia(m, 'hogar_temporal');
   }
 
   private async pedirDatosTransferencia(

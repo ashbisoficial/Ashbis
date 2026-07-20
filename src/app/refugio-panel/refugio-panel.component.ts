@@ -30,12 +30,13 @@ import {
   addOutline, cashOutline, chatbubblesOutline, documentTextOutline, medkitOutline, pawOutline,
   peopleOutline, statsChartOutline, trashOutline,
 } from 'ionicons/icons';
-import { catchError, combineLatest, of, Subject, takeUntil } from 'rxjs';
+import { catchError, combineLatest, of, Subject, take, takeUntil } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService, Mascota, VeterinariaFavorita } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
+import { RefugioContextService } from '../services/refugio-context.service';
 
 @Component({
   selector: 'app-refugio-panel',
@@ -58,6 +59,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   private readonly security = inject(SecurityService);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
+  private readonly refugioCtx = inject(RefugioContextService);
   private readonly destroy$ = new Subject<void>();
 
   refugioUid = '';
@@ -103,12 +105,38 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.refugioUid = this.route.snapshot.paramMap.get('refugioUid')!;
-    if (!this.refugioUid) return;
+    const uidParam = this.route.snapshot.paramMap.get('refugioUid');
+    if (uidParam) {
+      this.cargarPanel(uidParam);
+      return;
+    }
 
-    this.esDueno = this.auth.getCurrentUser()?.uid === this.refugioUid;
+    // Se entró desde el tab "Refugio" del nav (sin uid en la URL): Ionic
+    // siempre navega a la raíz estática del tab (/tabs/refugio-panel, sin
+    // el uid) — ignora cualquier href dinámico del tab-button — así que acá
+    // resolvemos a qué refugio corresponde, igual que RefugioContextService
+    // .irARefugio, y navegamos a la ruta con el uid ya resuelto.
+    this.refugioCtx.contexto$()
+      .pipe(take(1))
+      .subscribe(ctx => {
+        if (!ctx.todos.length) {
+          this.cargando.set(false);
+          this.errorPermisos.set(true);
+          return;
+        }
+        if (ctx.todos.length === 1) {
+          this.router.navigate(['/tabs/refugio-panel', ctx.todos[0]], { replaceUrl: true });
+        } else {
+          this.refugioCtx.irARefugio(ctx.todos, '/tabs/refugio-panel');
+        }
+      });
+  }
 
-    this.fs.getDocument(`usuarios/${this.refugioUid}`)
+  private cargarPanel(uid: string): void {
+    this.refugioUid = uid;
+    this.esDueno = this.auth.getCurrentUser()?.uid === uid;
+
+    this.fs.getDocument(`usuarios/${uid}`)
       .then(perfil => this.nombreRefugio.set(perfil?.nombreRefugio?.trim() || 'Refugio'))
       .catch(() => this.errorPermisos.set(true));
 
@@ -116,12 +144,12 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
       obs$.pipe(catchError(() => { this.errorPermisos.set(true); return of<T[]>([]); }));
 
     combineLatest([
-      conFallback(this.fs.getUserPetsPropios(this.refugioUid)),
-      conFallback(this.fs.getVeterinariasFavoritasByUsuario(this.refugioUid)),
-      conFallback(this.fs.getMiembrosEquipo(this.refugioUid)),
-      conFallback(this.fs.getPublicacionesByUsuario(this.refugioUid)),
-      conFallback(this.fs.getTransferenciasEnviadas(this.refugioUid)),
-      conFallback(this.fs.getMovimientosFinancieros(this.refugioUid)),
+      conFallback(this.fs.getUserPetsPropios(uid)),
+      conFallback(this.fs.getVeterinariasFavoritasByUsuario(uid)),
+      conFallback(this.fs.getMiembrosEquipo(uid)),
+      conFallback(this.fs.getPublicacionesByUsuario(uid)),
+      conFallback(this.fs.getTransferenciasEnviadas(uid)),
+      conFallback(this.fs.getMovimientosFinancieros(uid)),
     ])
       .pipe(takeUntil(this.destroy$))
       .subscribe(([mascotas, vets, miembros, publicaciones, transferencias, movimientos]) => {

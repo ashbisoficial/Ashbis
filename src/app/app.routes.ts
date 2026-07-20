@@ -139,6 +139,16 @@ export const routes: Routes = [
           import('./mascota-detalle/mascota-detalle.component')
             .then(m => m.MascotaDetalleComponent),
       },
+      // Sin uid: es la ruta a la que el tab-bar navega SIEMPRE al tocar
+      // "Refugio" (Ionic solo conoce tabsPrefix + tab, nunca el href
+      // dinámico del botón) — el propio componente resuelve a qué refugio
+      // corresponde y redirige a la ruta con uid.
+      {
+        path: 'refugio-panel',
+        loadComponent: () =>
+          import('./refugio-panel/refugio-panel.component')
+            .then(m => m.RefugioPanelComponent),
+      },
       {
         path: 'refugio-panel/:refugioUid',
         loadComponent: () =>

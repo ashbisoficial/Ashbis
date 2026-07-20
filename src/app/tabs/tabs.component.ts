@@ -47,11 +47,12 @@ export class TabsComponent {
   private readonly fs = inject(FirestoreService);
 
   /**
-   * Refugios a los que tengo acceso (propio primero, después los que
-   * colaboro). El tab-button necesita un href real para navegar — igual que
-   * el resto de los tabs — así que se ata directo al primero. Si la cuenta
-   * colabora con más de uno, los demás siguen accesibles desde "Equipos en
-   * los que colaboro" en el Perfil.
+   * href del tab "Refugio": SIEMPRE la ruta estática sin uid, nunca
+   * "/tabs/refugio-panel/{uid}". Ionic navega los tab-buttons con
+   * `tabsPrefix + '/' + tab` (ignora el href real del botón al hacer
+   * click), así que un href dinámico con uid nunca matchea y termina en el
+   * fallback de ruta no encontrada. RefugioPanelComponent, al recibir la
+   * ruta sin uid, resuelve solo a qué refugio corresponde y redirige.
    */
   hrefRefugio: string | null = null;
 
@@ -71,7 +72,7 @@ export class TabsComponent {
     this.refugioCtx.contexto$()
       .pipe(take(1))
       .subscribe(ctx => {
-        this.hrefRefugio = ctx.todos.length ? `/tabs/refugio-panel/${ctx.todos[0]}` : null;
+        this.hrefRefugio = ctx.todos.length ? '/tabs/refugio-panel' : null;
       });
 
     const uid = this.auth.getCurrentUser()?.uid;
