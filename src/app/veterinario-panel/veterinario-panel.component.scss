@@ -51,3 +51,69 @@ ion-item {
   --padding-start: 0;
   --inner-padding-end: 0;
 }
+
+.dato-perfil {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--ion-text-color);
+
+  ion-icon { color: var(--ashbis-red, #8b0808); font-size: 15px; }
+}
+
+.chips-especialidades {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+
+  .chip {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--ion-background-color);
+    border: 1px solid var(--ashbis-surface-border);
+    font-size: 11px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.tarjeta-verificacion {
+  &.verificado {
+    border-color: rgba(34, 197, 94, 0.4);
+    background: rgba(34, 197, 94, 0.08);
+  }
+}
+
+.verificacion-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+
+  ion-icon {
+    font-size: 26px;
+    color: var(--ashbis-red, #8b0808);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ion-text-color);
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ion-color-medium);
+    line-height: 1.5;
+  }
+}
+
+.tarjeta-verificacion.verificado .verificacion-header ion-icon {
+  color: #22c55e;
+}

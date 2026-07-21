@@ -18,6 +18,44 @@
           y el PIN que te comparta su dueño.
         </p>
       </ion-card-header>
+      <ion-card-content *ngIf="nombreClinica() || etiquetaTipoNegocio()">
+        <p class="dato-perfil" *ngIf="nombreClinica()"><ion-icon name="medkit-outline"></ion-icon> {{ nombreClinica() }}</p>
+        <p class="dato-perfil" *ngIf="etiquetaTipoNegocio()">{{ etiquetaTipoNegocio() }}</p>
+        <p class="dato-perfil" *ngIf="nombreDoctor()">Director/a técnico: {{ nombreDoctor() }}</p>
+        <p class="dato-perfil" *ngIf="numeroRegistroProfesional()">Registro profesional: {{ numeroRegistroProfesional() }}</p>
+        <p class="dato-perfil" *ngIf="etiquetaModalidad()">{{ etiquetaModalidad() }}</p>
+        <div class="chips-especialidades" *ngIf="especialidades().length">
+          <span class="chip" *ngFor="let e of especialidades()">{{ e }}</span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Verificación (antifraude): documento de título, revisión manual del equipo de Ashbis. -->
+    <ion-card class="seccion-card tarjeta-verificacion" *ngIf="requiereVerificacion()" [class.verificado]="verificado()">
+      <ion-card-content>
+        <div class="verificacion-header">
+          <ion-icon [name]="verificado() ? 'shield-checkmark-outline' : 'document-text-outline'"></ion-icon>
+          <div>
+            <h2 *ngIf="verificado()">Cuenta verificada por Ashbis</h2>
+            <h2 *ngIf="!verificado()">Cuenta sin verificar</h2>
+            <p *ngIf="verificado()">El equipo de Ashbis confirmó tu título/registro profesional.</p>
+            <p *ngIf="!verificado() && tituloUrl()">Documento enviado, en revisión por el equipo de Ashbis.</p>
+            <p *ngIf="!verificado() && !tituloUrl()">
+              Subí tu título o certificado profesional para que Ashbis pueda verificar tu cuenta.
+            </p>
+          </div>
+        </div>
+
+        <ng-container *ngIf="!verificado()">
+          <input #tituloInput type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden
+            (change)="subirTitulo($event)" />
+          <ion-button expand="block" fill="outline" color="medium" [disabled]="subiendoTitulo()"
+            (click)="tituloInput.click()">
+            <ion-icon name="document-text-outline" slot="start"></ion-icon>
+            {{ subiendoTitulo() ? 'Subiendo...' : (tituloUrl() ? 'Volver a subir título' : 'Subir título') }}
+          </ion-button>
+        </ng-container>
+      </ion-card-content>
     </ion-card>
 
     <ion-button expand="block" (click)="agregarPaciente()">

@@ -22,11 +22,27 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addOutline, pawOutline } from 'ionicons/icons';
+import {
+  addOutline, documentTextOutline, medkitOutline, pawOutline, shieldCheckmarkOutline,
+} from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
+import { SecurityService } from '../services/security.service';
+
+const ETIQUETAS_TIPO_NEGOCIO: Record<Models.Auth.TipoNegocioVeterinario, string> = {
+  independiente: 'Veterinario independiente',
+  clinica_pequena: 'Clínica pequeña',
+  clinica_grande: 'Clínica grande',
+  peluqueria: 'Peluquería / estética',
+};
+
+const ETIQUETAS_MODALIDAD: Record<Models.Auth.ModalidadAtencion, string> = {
+  presencial: 'Atención presencial',
+  a_domicilio: 'Atención a domicilio',
+  ambas: 'Presencial y a domicilio',
+};
 
 @Component({
   selector: 'app-veterinario-panel',
@@ -46,6 +62,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthenticationService);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
+  private readonly security = inject(SecurityService);
   private readonly destroy$ = new Subject<void>();
 
   miUid = '';
@@ -53,8 +70,21 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
   cargando = signal(true);
   pacientes = signal<Models.Mascotas.AccesoVeterinario[]>([]);
 
+  // ── Perfil profesional ───────────────────────────────────────────────────
+  nombreClinica = signal<string | null>(null);
+  etiquetaTipoNegocio = signal<string | null>(null);
+  etiquetaModalidad = signal<string | null>(null);
+  nombreDoctor = signal<string | null>(null);
+  numeroRegistroProfesional = signal<string | null>(null);
+  especialidades = signal<string[]>([]);
+  /** false para peluquería/estética: no requiere título ni verificación. */
+  requiereVerificacion = signal(false);
+  verificado = signal(false);
+  tituloUrl = signal<string | null>(null);
+  subiendoTitulo = signal(false);
+
   constructor() {
-    addIcons({ addOutline, pawOutline });
+    addIcons({ addOutline, pawOutline, documentTextOutline, shieldCheckmarkOutline, medkitOutline });
   }
 
   ngOnInit(): void {
@@ -63,6 +93,20 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
 
     this.fs.getDocument(`usuarios/${this.miUid}`).then(perfil => {
       this.nombre.set(`${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || 'Veterinario');
+      this.nombreClinica.set(perfil?.nombreClinica?.trim() || null);
+      this.nombreDoctor.set(perfil?.nombreDoctor?.trim() || null);
+      this.numeroRegistroProfesional.set(perfil?.numeroRegistroProfesional?.trim() || null);
+      this.especialidades.set(perfil?.especialidades ?? []);
+
+      const tipo: Models.Auth.TipoNegocioVeterinario | undefined = perfil?.tipoNegocioVeterinario;
+      this.etiquetaTipoNegocio.set(tipo ? ETIQUETAS_TIPO_NEGOCIO[tipo] : null);
+      this.requiereVerificacion.set(!!tipo && tipo !== 'peluqueria');
+
+      const modalidad: Models.Auth.ModalidadAtencion | undefined = perfil?.modalidadAtencion;
+      this.etiquetaModalidad.set(modalidad ? ETIQUETAS_MODALIDAD[modalidad] : null);
+
+      this.verificado.set(perfil?.verificado === true);
+      this.tituloUrl.set(perfil?.tituloUrl ?? null);
     });
 
     this.fs.getMisPacientesVeterinario(this.miUid)
@@ -82,6 +126,33 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
 
   verPaciente(p: Models.Mascotas.AccesoVeterinario): void {
     this.router.navigate(['/tabs/mascota-detalle', p.mascotaId]);
+  }
+
+  async subirTitulo(event: Event): Promise<void> {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    const error = this.security.validateFile(file, {
+      allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+      maxMb: 15,
+    });
+    if (error) {
+      await this.mostrarToast(error, 'danger');
+      (event.target as HTMLInputElement).value = '';
+      return;
+    }
+
+    this.subiendoTitulo.set(true);
+    try {
+      const url = await this.fs.actualizarTituloVeterinario(this.miUid, file);
+      this.tituloUrl.set(url);
+      await this.mostrarToast('Título enviado. El equipo de Ashbis lo va a revisar.', 'success');
+    } catch {
+      await this.mostrarToast('No se pudo subir el título. Intenta nuevamente.', 'danger');
+    } finally {
+      this.subiendoTitulo.set(false);
+      (event.target as HTMLInputElement).value = '';
+    }
   }
 
   async agregarPaciente(): Promise<void> {

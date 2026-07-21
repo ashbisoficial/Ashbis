@@ -27,7 +27,7 @@
       <ul>
         <li><strong>Dueño:</strong> gestioná el perfil de tus propias mascotas.</li>
         <li><strong>Refugio:</strong> además de tus mascotas, podés publicar adopciones, campañas de donación y sumar a tu equipo a otras personas que ayuden a operar la cuenta.</li>
-        <li><strong>Veterinario:</strong> cuenta profesional — estamos construyendo las herramientas de historial clínico, por ahora funciona como cuenta de dueño.</li>
+        <li><strong>Veterinario:</strong> cuenta profesional — subís tu título para que Ashbis verifique tu cuenta, y accedés al historial médico de tus pacientes con el ID de la mascota y el PIN que te comparta su dueño.</li>
       </ul>
       <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Podés cambiar la foto de perfil y tus datos personales en cualquier momento desde Perfil.</p>
     </section>
@@ -55,35 +55,42 @@
 
     <section id="refugios" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="heart-outline"></ion-icon></div>
-      <h2>5. Publicaciones de refugios</h2>
-      <p>Si tenés cuenta de refugio, desde <strong>Mis Publicaciones</strong> podés compartir adopciones, campañas de recolección o pedidos de donación. Aparecen en el feed del Home para que cualquier usuario las vea, con foto grande y toda la información al tocarlas.</p>
-      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Cada publicación se marca automáticamente como veraz al momento de crearla, según nuestros Términos y Condiciones.</p>
+      <h2>5. Publicá adopciones y recibí postulaciones</h2>
+      <p>Si tenés cuenta de refugio, desde <strong>Mis Publicaciones</strong> compartís adopciones, campañas de recolección o pedidos de donación. Aparecen en el feed del Home para que cualquier usuario las vea, con foto grande y toda la información al tocarlas.</p>
+      <p>En una publicación de <strong>adopción</strong>, cualquier persona puede postular contándote por qué le interesa. Vos ves todas las postulaciones desde la publicación y elegís con quién avanzar: al aceptar una, se abre un <strong>chat directo</strong> entre vos y quien postuló para coordinar todo.</p>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> El traspaso de la mascota no es automático: una vez que se pusieron de acuerdo en el chat, tocás <strong>Enviar traspaso</strong> ahí mismo para iniciar la transferencia oficial de dueño.</p>
     </section>
 
-    <section id="transferencias" class="tarjeta">
-      <div class="tarjeta-icono"><ion-icon name="swap-horizontal-outline"></ion-icon></div>
-      <h2>6. Transferencias y equipo</h2>
-      <p>Desde el perfil de una mascota podés <strong>transferirla a un nuevo dueño</strong> (por ejemplo, tras una adopción) — la otra persona recibe una notificación y, al aceptarla, la mascota pasa a su cuenta con todo su historial.</p>
-      <p>Las cuentas de refugio también pueden invitar a otras personas a su <strong>equipo</strong> (como admin o staff) para operar la cuenta entre varios, desde Perfil.</p>
+    <section id="hogar-temporal" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="home-outline"></ion-icon></div>
+      <h2>6. Hogar temporal y transferencias</h2>
+      <p>Desde el perfil de una mascota podés <strong>transferirla a un nuevo dueño</strong> (adopción) o compartir el acceso sin cambiar de dueño (<strong>hogar temporal</strong>) — la otra persona recibe una notificación y, al aceptarla, la mascota (o el acceso) pasa a su cuenta.</p>
+      <p>Como refugio, podés <strong>revocar un hogar temporal</strong> en cualquier momento desde la ficha de la mascota. Y una mascota nunca puede estar en dos estados a la vez: si se concreta una adopción, cualquier hogar temporal activo para esa mascota se cierra solo.</p>
+    </section>
+
+    <section id="panel-refugio" class="tarjeta">
+      <div class="tarjeta-icono"><ion-icon name="people-outline"></ion-icon></div>
+      <h2>7. Panel, equipo y verificación del refugio</h2>
+      <p>Desde la pestaña <strong>Refugio</strong> tenés un panel con estadísticas, tus mascotas, publicaciones, veterinarias asociadas y tu equipo — invitá a otras personas como admin o staff para operar la cuenta entre varios, y hablá con ellas en el <strong>chat de equipo</strong>. El ícono de chat (junto a la campanita) te lleva directo a esa conversación, o a <strong>Mis chats</strong> si además tenés chats directos de adopción abiertos.</p>
+      <p>También podés cargar tus <strong>ingresos y gastos</strong> en Finanzas, y subir un documento legal para que Ashbis <strong>verifique tu cuenta</strong>. Una vez confirmado, tus publicaciones muestran una insignia de refugio verificado; si declaraste donaciones recibidas en Finanzas, el total también se muestra de forma transparente en tus publicaciones de donación.</p>
     </section>
 
     <section id="chat" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="chatbubbles-outline"></ion-icon></div>
-      <h2>7. Asistente de IA</h2>
-      <p>El chat de Ashbis IA responde preguntas sobre salud, alimentación, comportamiento y cuidados de tu mascota. Elegís una categoría, el tipo de animal, y escribís tu consulta.</p>
-      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Ante síntomas graves o una emergencia, el asistente siempre te va a recomendar acudir a un veterinario — no reemplaza una consulta profesional.</p>
+      <h2>8. Asistente de IA</h2>
+      <p>Estamos afinando el asistente de IA antes de reactivarlo — por ahora está <strong>temporalmente desactivado</strong> durante la beta. Ante cualquier duda de salud de tu mascota, consultá directamente con un veterinario.</p>
     </section>
 
     <section id="notificaciones" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="notifications-outline"></ion-icon></div>
-      <h2>8. Notificaciones</h2>
+      <h2>9. Notificaciones</h2>
       <p>El ícono de campanita (arriba a la derecha en el Home) te avisa cuando tenés invitaciones de equipo o solicitudes de transferencia/adopción pendientes, con un punto rojo si hay algo sin leer.</p>
       <p>Si activás las notificaciones push en Configuración, también te van a llegar directo a la barra de notificaciones de tu celular (o de Safari/Chrome si instalaste Ashbis como app), aunque tengas la app cerrada.</p>
     </section>
 
     <section id="configuracion" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="settings-outline"></ion-icon></div>
-      <h2>9. Configuración</h2>
+      <h2>10. Configuración</h2>
       <p>Desde el ícono de engranaje en Perfil accedés a Configuración, donde podés:</p>
       <ul>
         <li>Elegir tema <strong>claro u oscuro</strong> y el tamaño de letra.</li>
@@ -95,7 +102,7 @@
 
     <section id="privacidad" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
-      <h2>10. Privacidad y tus datos</h2>
+      <h2>11. Privacidad y tus datos</h2>
       <p>Tu número de teléfono y los de tus contactos de emergencia solo se muestran públicamente si marcás a una mascota como perdida — nunca antes. Podés leer el detalle completo en la Política de Privacidad y los Términos y Condiciones, disponibles desde el registro y desde Configuración.</p>
     </section>
 

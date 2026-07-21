@@ -723,6 +723,18 @@ export class FirestoreService {
     return getDownloadURL(r);
   }
 
+  /** Sube (o reemplaza) el título de una cuenta veterinaria YA existente y
+   *  lo guarda directo en el perfil — a diferencia de uploadTituloVeterinario
+   *  (que se usa durante el registro, cuando usuarios/{uid} todavía no
+   *  existe y no hay nada que actualizar), esto se llama desde el panel del
+   *  veterinario en una cuenta ya creada. */
+  async actualizarTituloVeterinario(uid: string, file: File): Promise<string> {
+    this.assertAuthenticated();
+    const url = await this.uploadTituloVeterinario(uid, file);
+    await updateDoc(doc(this.firestore, `usuarios/${uid}`), { tituloUrl: url });
+    return url;
+  }
+
   /** Sube el documento legal de una cuenta de refugio (personería jurídica,
    *  RUT, certificado) para verificación manual futura y lo guarda en el
    *  perfil. A diferencia del título de veterinario, esto se llama desde una
