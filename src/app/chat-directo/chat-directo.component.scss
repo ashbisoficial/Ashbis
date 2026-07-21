@@ -2,6 +2,27 @@
   --background: var(--ion-background-color);
 }
 
+.traspaso-panel {
+  padding: 10px 16px 0;
+
+  ion-button { margin: 0; }
+}
+
+.traspaso-estado {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--ashbis-surface);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--ion-text-color);
+  text-align: center;
+
+  &.traspaso-ok {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--ion-text-color);
+  }
+}
+
 .messages-container {
   display: flex;
   flex-direction: column;

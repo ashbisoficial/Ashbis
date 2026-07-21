@@ -9,6 +9,21 @@
 
 <ion-content [fullscreen]="true" class="chat-content">
 
+  <div class="traspaso-panel" *ngIf="esRefugio() && chat()?.mascotaId">
+    <ion-button *ngIf="estadoTraspaso() === 'ninguno' || estadoTraspaso() === 'rechazada' || estadoTraspaso() === 'cancelada'"
+      expand="block" color="danger" size="small"
+      [disabled]="enviandoTraspaso" (click)="enviarTraspaso()">
+      <ion-icon name="paw-outline" slot="start"></ion-icon>
+      Enviar traspaso de {{ chat()?.mascotaNombre }}
+    </ion-button>
+    <p class="traspaso-estado" *ngIf="estadoTraspaso() === 'pendiente'">
+      📨 Traspaso enviado — esperando que {{ chat()?.postulanteNombre }} lo acepte desde sus notificaciones.
+    </p>
+    <p class="traspaso-estado traspaso-ok" *ngIf="estadoTraspaso() === 'aceptada'">
+      ✅ ¡Traspaso aceptado! {{ chat()?.mascotaNombre }} ya es de {{ chat()?.postulanteNombre }}.
+    </p>
+  </div>
+
   <div class="messages-container" #scrollContainer>
     <div class="ion-text-center ion-padding" *ngIf="cargando()">
       <ion-spinner></ion-spinner>

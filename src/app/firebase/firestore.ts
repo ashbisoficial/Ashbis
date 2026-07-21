@@ -865,6 +865,7 @@ export class FirestoreService {
       refugioNombre,
       postulanteUid: p.postulanteUid,
       postulanteNombre: p.postulanteNombre,
+      postulanteEmail: p.postulanteEmail,
       postulacionId: p.id,
       createdAt: serverTimestamp(),
     };

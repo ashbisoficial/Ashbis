@@ -418,6 +418,8 @@ export namespace Models {
       refugioNombre: string;
       postulanteUid: string;
       postulanteNombre: string;
+      /** Para poder iniciar la transferencia de la mascota sin salir del chat. */
+      postulanteEmail: string;
       postulacionId: string;
       createdAt?: any;
     }
