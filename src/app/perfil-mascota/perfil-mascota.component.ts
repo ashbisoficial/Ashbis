@@ -255,8 +255,11 @@ editarPerfil() {
                 'success'
               );
               return true;
-            } catch {
-              await this.presentToast('No se pudo enviar la solicitud. Intenta nuevamente.', 'danger');
+            } catch (err: any) {
+              await this.presentToast(
+                err?.message || 'No se pudo enviar la solicitud. Intenta nuevamente.',
+                'danger'
+              );
               return false;
             }
           }
