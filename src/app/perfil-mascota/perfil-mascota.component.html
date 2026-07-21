@@ -61,6 +61,10 @@
                 Hogar temporal
               </ion-button>
             </ng-container>
+            <ion-button *ngIf="puedePublicarAdopcion()" fill="outline" color="tertiary"
+              [disabled]="publicandoAdopcion" (click)="publicarEnAdopcion()">
+              Publicar en adopción
+            </ion-button>
           </div>
 
           <ion-card [color]="estaPerdida ? 'warning' : undefined" class="estado-perdida-card">

@@ -47,6 +47,14 @@ export class MascotaPerfilComponent implements OnDestroy {
   loading = signal(true);
   /** true si el usuario actual es dueño de esta mascota (directo, o vía equipo de un refugio). */
   puedeTransferir = signal(false);
+  /** true si puede publicarla en adopción en el feed público: solo la
+   *  cuenta que figura como dueña real de la mascota (mascotas/{id}.uidUsuario),
+   *  sea cual sea su rol — a diferencia de puedeTransferir, no requiere que
+   *  la cuenta sea de rol 'refugio'. El equipo de un refugio NO puede
+   *  usarlo (las reglas de "publicaciones" exigen que uidAutor sea quien
+   *  ejecuta la acción, igual que "Mis Publicaciones"). */
+  puedePublicarAdopcion = signal(false);
+  publicandoAdopcion = false;
   actualizandoEstado = false;
 
   private miUid: string | null = null;
@@ -97,10 +105,15 @@ export class MascotaPerfilComponent implements OnDestroy {
 
   private actualizarPuedeTransferir(): void {
     const m = this.mascota();
-    if (!m || !this.miUid) { this.puedeTransferir.set(false); return; }
-    const esDuenoDirecto = m.uidUsuario === this.miUid && this.miRolEsRefugio;
+    if (!m || !this.miUid) {
+      this.puedeTransferir.set(false);
+      this.puedePublicarAdopcion.set(false);
+      return;
+    }
+    const esDuenoDirecto = m.uidUsuario === this.miUid;
     const esEquipoDelRefugioDueno = this.misRefugios.includes(m.uidUsuario);
-    this.puedeTransferir.set(esDuenoDirecto || esEquipoDelRefugioDueno);
+    this.puedeTransferir.set((esDuenoDirecto && this.miRolEsRefugio) || esEquipoDelRefugioDueno);
+    this.puedePublicarAdopcion.set(esDuenoDirecto);
   }
 
   ngOnDestroy(): void {
@@ -191,6 +204,63 @@ editarPerfil() {
   darEnAdopcion(): void {
     const m = this.mascota();
     if (m?.id) this.pedirDatosTransferencia(m, 'adopcion');
+  }
+
+  /** Publica a la mascota en el feed público de adopción (a diferencia de
+   *  "Dar en adopción", que la transfiere a un email puntual): cualquier
+   *  dueño puede hacerlo, no hace falta cuenta de refugio. Pide un mensaje
+   *  y confirmación explícita antes de postear, porque queda visible para
+   *  cualquier persona en el Home. */
+  async publicarEnAdopcion(): Promise<void> {
+    const m = this.mascota();
+    if (!m?.id || this.publicandoAdopcion) return;
+
+    const alert = await this.alertCtrl.create({
+      header: `Publicar a ${m.nombre} en adopción`,
+      message: 'Va a aparecer públicamente en el feed del Home para que cualquier persona la vea y pueda postular a adoptarla. Confirmás que la información es real.',
+      inputs: [
+        { name: 'descripcion', type: 'textarea', placeholder: `Contá algo de ${m.nombre}: personalidad, por qué la das en adopción, etc.` },
+      ],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Publicar',
+          handler: async (data) => {
+            const descripcion = this.security.sanitizeText(data.descripcion || '', 1000);
+            if (descripcion.length < 10) {
+              await this.presentToast('Contanos un poco más antes de publicar (mínimo 10 caracteres).', 'danger');
+              return false;
+            }
+            this.publicandoAdopcion = true;
+            try {
+              const uid = this.auth.getCurrentUser()?.uid;
+              const perfil = uid ? await this.fs.getDocument(`usuarios/${uid}`) : null;
+              const nombreAutor = perfil?.nombreRefugio?.trim()
+                || `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
+                || 'Alguien de Ashbis';
+              await this.fs.crearPublicacion({
+                uidAutor: m.uidUsuario,
+                nombreAutor,
+                tipo: 'adopcion',
+                titulo: m.nombre,
+                descripcion,
+                mascotaId: m.id!,
+                aceptaVeracidad: true,
+                ...(m.fotoUrl ? { fotoUrl: m.fotoUrl } : {}),
+              });
+              await this.presentToast('¡Publicado! Ya aparece en el feed de adopciones del Home.', 'success');
+              return true;
+            } catch (err: any) {
+              await this.presentToast(err?.message || 'No se pudo publicar. Intenta nuevamente.', 'danger');
+              return false;
+            } finally {
+              this.publicandoAdopcion = false;
+            }
+          },
+        },
+      ],
+    });
+    await alert.present();
   }
 
   async darHogarTemporal(): Promise<void> {

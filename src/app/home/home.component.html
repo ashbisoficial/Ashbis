@@ -287,6 +287,24 @@
     </swiper-container>
   </div>
 
+  <!-- MASCOTAS EN ADOPCIÓN: tarjetas (no carrusel) con la info real de la
+       ficha de cada mascota vinculada, no solo lo que dice la publicación. -->
+  <div class="seccion-adopcion" *ngIf="publicacionesAdopcion.length">
+    <h2 class="seccion-adopcion-titulo">
+      <ion-icon name="heart-outline"></ion-icon>
+      Mascotas en adopción
+    </h2>
+    <div class="tarjetas-adopcion">
+      <div class="tarjeta-adopcion" *ngFor="let pub of publicacionesAdopcion" (click)="verPublicacion(pub)">
+        <img [src]="fotoAdopcion(pub)" [alt]="nombreAdopcion(pub)" />
+        <div class="tarjeta-adopcion-info">
+          <h3>{{ nombreAdopcion(pub) }}</h3>
+          <p>{{ infoPrincipalAdopcion(pub) }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   </div>
   <!-- /home-container -->
 

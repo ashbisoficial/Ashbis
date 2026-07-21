@@ -347,13 +347,27 @@ service cloud.firestore {
       // (incluso sin cuenta). Publicar/editar/borrar es solo de la cuenta
       // dueña del refugio — el equipo puede ver las publicaciones desde el
       // panel del refugio, pero no gestionarlas.
+      //
+      // Excepción: cualquier cuenta (no solo refugio) puede publicar en
+      // adopción a UNA mascota propia — se valida con get() que
+      // mascotas/{mascotaId}.uidUsuario sea justo quien publica, así nadie
+      // puede reportar en adopción una mascota ajena. El resto de los tipos
+      // (recolección/donación) siguen siendo exclusivos de cuentas refugio.
       allow read: if true;
       allow create: if isUser(request.resource.data.uidAutor)
-                    && esCuentaRefugio(request.resource.data.uidAutor)
                     && request.resource.data.tipo in ['adopcion', 'recoleccion', 'donacion', 'otro']
+                    && (
+                         esCuentaRefugio(request.resource.data.uidAutor)
+                         || (
+                              request.resource.data.tipo == 'adopcion'
+                              && 'mascotaId' in request.resource.data
+                              && get(/databases/$(database)/documents/mascotas/$(request.resource.data.mascotaId)).data.uidUsuario
+                                 == request.resource.data.uidAutor
+                            )
+                       )
                     // Quien publica tiene que confirmar explícitamente que
-                    // los datos son reales (checkbox obligatorio en el
-                    // formulario) — no se puede crear la publicación sin
+                    // los datos son reales (checkbox/confirmación
+                    // obligatoria) — no se puede crear la publicación sin
                     // marcarla, ni siquiera llamando a la API directo.
                     && request.resource.data.aceptaVeracidad == true
                     // expiraEn se usa para el borrado automático por TTL a

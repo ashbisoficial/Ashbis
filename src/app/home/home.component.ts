@@ -22,7 +22,7 @@ import {
   informationCircleOutline
 } from 'ionicons/icons';
 import { register } from 'swiper/element/bundle';
-import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
+import { FirestoreService, Mascota, VeterinariaFavorita } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { NotificacionesBellComponent } from '../notificaciones/notificaciones-bell.component';
 import { RefugioContextService } from '../services/refugio-context.service';
@@ -164,6 +164,13 @@ export class HomePage implements OnInit, OnDestroy {
   // imágenes genéricas de imagenesCarruselInferior en su lugar.
   publicacionesActivas: Models.Publicaciones.Publicacion[] = [];
 
+  // Sección de tarjetas "Mascotas en adopción" (debajo del segundo
+  // carrusel): solo publicaciones tipo 'adopcion', mostrando la info real
+  // de la ficha de la mascota (no solo lo que dice la publicación) cuando
+  // está vinculada a una.
+  publicacionesAdopcion: Models.Publicaciones.Publicacion[] = [];
+  private infoMascotaAdopcion: Record<string, Mascota | undefined> = {};
+
   constructor() {
     addIcons({ chatbubblesOutline, locateOutline, bagOutline });
   }
@@ -211,7 +218,46 @@ export class HomePage implements OnInit, OnDestroy {
     runInInjectionContext(this.injector, () =>
       this.firestoreService.getPublicacionesActivas()
     ).pipe(takeUntil(this.destroy$))
-      .subscribe(pubs => this.publicacionesActivas = pubs);
+      .subscribe(pubs => {
+        this.publicacionesActivas = pubs;
+        this.publicacionesAdopcion = pubs.filter(p => p.tipo === 'adopcion');
+        this.cargarInfoMascotasAdopcion(this.publicacionesAdopcion);
+      });
+  }
+
+  /** Trae la ficha real de cada mascota vinculada a una publicación de
+   *  adopción (nombre/foto/especie/raza/edad), para mostrar la info
+   *  principal de la mascota y no solo lo que dice la publicación. */
+  private cargarInfoMascotasAdopcion(pubs: Models.Publicaciones.Publicacion[]): void {
+    for (const pub of pubs) {
+      const mascotaId = pub.mascotaId;
+      if (!mascotaId || mascotaId in this.infoMascotaAdopcion) continue;
+      this.infoMascotaAdopcion[mascotaId] = undefined;
+      runInInjectionContext(this.injector, () =>
+        this.firestoreService.getPetById(mascotaId)
+      ).pipe(take(1), takeUntil(this.destroy$))
+        .subscribe(m => { this.infoMascotaAdopcion[mascotaId] = m; });
+    }
+  }
+
+  /** Foto/nombre/info principal para la tarjeta: prioriza la ficha de la
+   *  mascota vinculada por sobre lo que dice la publicación. */
+  fotoAdopcion(pub: Models.Publicaciones.Publicacion): string {
+    const m = pub.mascotaId ? this.infoMascotaAdopcion[pub.mascotaId] : undefined;
+    return m?.fotoUrl || pub.fotoUrl || 'assets/img/9.jpg';
+  }
+
+  nombreAdopcion(pub: Models.Publicaciones.Publicacion): string {
+    const m = pub.mascotaId ? this.infoMascotaAdopcion[pub.mascotaId] : undefined;
+    return m?.nombre || pub.titulo;
+  }
+
+  infoPrincipalAdopcion(pub: Models.Publicaciones.Publicacion): string {
+    const m = pub.mascotaId ? this.infoMascotaAdopcion[pub.mascotaId] : undefined;
+    if (!m) return pub.nombreAutor;
+    return [m.especie, m.raza, m.edad != null ? `${m.edad} años` : null]
+      .filter(Boolean)
+      .join(' · ');
   }
 
   verPublicacion(pub: Models.Publicaciones.Publicacion): void {
