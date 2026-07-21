@@ -377,12 +377,47 @@ export const getCarnetPublico = onRequest(
         res.status(404).json({ error: 'Mascota no encontrada' });
         return;
       }
-      const mascota = mascotaSnap.data()!;
+      const mascotaDoc = mascotaSnap.data()!;
+
+      // Solo los campos que tiene sentido mostrar en un carnet público — NUNCA
+      // se manda el documento crudo: uidUsuario no aporta nada a un tercero, y
+      // pinHistorial/qrCarnetToken/qrPerdidaToken son secretos (el PIN da
+      // acceso de veterinario al historial médico; exponerlo acá lo dejaría
+      // visible en la respuesta HTTP para cualquiera que abra el carnet).
+      const mascota = {
+        id: mascotaId,
+        nombre: mascotaDoc['nombre'] ?? '',
+        especie: mascotaDoc['especie'] ?? '',
+        raza: mascotaDoc['raza'] ?? '',
+        color: mascotaDoc['color'] ?? '',
+        sexo: mascotaDoc['sexo'] ?? '',
+        edad: mascotaDoc['edad'] ?? null,
+        fechaNacimiento: mascotaDoc['fechaNacimiento'] ?? null,
+        peso: mascotaDoc['peso'] ?? null,
+        numeroChip: mascotaDoc['numeroChip'] ?? null,
+        castrado: mascotaDoc['castrado'] ?? null,
+        fotoUrl: mascotaDoc['fotoUrl'] ?? null,
+        galeria: mascotaDoc['galeria'] ?? [],
+        estado: mascotaDoc['estado'] ?? 'normal',
+        indicadores: mascotaDoc['indicadores'] ?? [],
+        senasParticulares: mascotaDoc['senasParticulares'] ?? null,
+        alergias: mascotaDoc['alergias'] ?? [],
+        enfermedadesCronicas: mascotaDoc['enfermedadesCronicas'] ?? [],
+        medicamentosPermanentes: mascotaDoc['medicamentosPermanentes'] ?? [],
+        observacionesRescate: mascotaDoc['observacionesRescate'] ?? null,
+        seLlevaConPerros: mascotaDoc['seLlevaConPerros'] ?? null,
+        seLlevaConGatos: mascotaDoc['seLlevaConGatos'] ?? null,
+        seLlevaConNinos: mascotaDoc['seLlevaConNinos'] ?? null,
+        esAgresivo: mascotaDoc['esAgresivo'] ?? null,
+        contactoEmergencia: mascotaDoc['contactoEmergencia'] ?? null,
+        telefonoEmergencia: mascotaDoc['telefonoEmergencia'] ?? null,
+        fechaRegistro: mascotaDoc['fechaRegistro'] ?? null,
+      };
 
       // 3. Contacto público del dueño
       let dueno: any = null;
       try {
-        const duenoSnap = await db.doc(`usuarios/${mascota['uidUsuario']}/publico/contacto`).get();
+        const duenoSnap = await db.doc(`usuarios/${mascotaDoc['uidUsuario']}/publico/contacto`).get();
         if (duenoSnap.exists) dueno = duenoSnap.data();
       } catch { /* no crítico */ }
 
@@ -1046,6 +1081,84 @@ export const onTransferenciaCreada = onDocumentCreated(
       });
     } catch (error) {
       functions.logger.error('onTransferenciaCreada: error enviando push', error);
+    }
+  }
+);
+
+// ─── Cloud Function: reenviarNotificacionTransferencia ────────────────────────
+// El refugio puede volver a avisarle al destinatario de una solicitud que
+// sigue pendiente (por ejemplo, si nunca le llegó el push o el mail se
+// perdió) sin crear una transferencia duplicada — crearTransferencia ya
+// rechaza crear una segunda si hay una pendiente para la misma mascota +
+// email. Solo reenvía el push; no cambia nada del documento.
+export const reenviarNotificacionTransferencia = onRequest(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB', maxInstances: 10, invoker: 'public' },
+  async (req, res) => {
+    const origin = req.headers.origin;
+    const headers = corsHeaders(origin);
+    Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const authHeader = req.headers.authorization || '';
+    const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/);
+    if (!tokenMatch) { res.status(401).json({ error: 'Token de autenticación requerido.' }); return; }
+
+    let decoded: admin.auth.DecodedIdToken;
+    try {
+      decoded = await admin.auth().verifyIdToken(tokenMatch[1]);
+    } catch {
+      res.status(401).json({ error: 'Token inválido o expirado.' });
+      return;
+    }
+
+    if (hitRateLimit(`reenvio_${decoded.uid}`)) {
+      res.status(429).json({ error: 'Demasiados reenvíos. Espera un minuto.' });
+      return;
+    }
+
+    const transferenciaId = sanitizeInput(req.body?.transferenciaId, 200);
+    if (!transferenciaId) {
+      res.status(400).json({ error: 'Falta transferenciaId.' });
+      return;
+    }
+
+    try {
+      const db = admin.firestore();
+      const transferSnap = await db.doc(`transferencias/${transferenciaId}`).get();
+      if (!transferSnap.exists) {
+        res.status(404).json({ error: 'Transferencia no encontrada.' });
+        return;
+      }
+      const t = transferSnap.data()!;
+
+      if (t['estado'] !== 'pendiente') {
+        res.status(409).json({ error: 'Esta solicitud ya no está pendiente.' });
+        return;
+      }
+
+      // Solo el dueño del refugio o alguien de su equipo puede reenviar.
+      const esDueno = decoded.uid === t['deUid'];
+      const esMiembro = esDueno ? true : (
+        await db.doc(`usuarios/${t['deUid']}/miembros/${decoded.uid}`).get()
+      ).exists;
+      if (!esMiembro) {
+        res.status(403).json({ error: 'No podés reenviar esta solicitud.' });
+        return;
+      }
+
+      const esAdopcion = t['tipo'] === 'adopcion';
+      await enviarPushPorEmail(t['paraEmail'], {
+        title: esAdopcion ? 'Solicitud de adopción' : 'Solicitud de hogar temporal',
+        body: `${t['deNombre']} quiere ${esAdopcion ? 'transferirte' : 'compartirte el acceso a'} ${t['mascotaNombre']}.`,
+        ruta: '/tabs/notificaciones',
+      });
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      functions.logger.error('reenviarNotificacionTransferencia error', error);
+      res.status(500).json({ error: 'Error interno del servidor.' });
     }
   }
 );

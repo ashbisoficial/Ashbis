@@ -253,6 +253,59 @@
 }
 
 /* ───────────────────────────────────────── */
+/* Texto libre (señas, observaciones de rescate) */
+/* ───────────────────────────────────────── */
+
+.texto-libre {
+  margin: 0;
+  color: white;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.alerta-texto {
+  margin: 12px 0 0;
+  color: #ff8a80;
+  font-weight: 600;
+}
+
+/* ───────────────────────────────────────── */
+/* Grupos de badges (alergias, enf. crónicas, etc.) */
+/* ───────────────────────────────────────── */
+
+.grupo-badges {
+  margin-top: 10px;
+
+  &:first-of-type {
+    margin-top: 4px;
+  }
+}
+
+.etiqueta-grupo {
+  display: block;
+  color: var(--ashbis-muted);
+  font-size: .78rem;
+  margin-bottom: 4px;
+}
+
+/* ───────────────────────────────────────── */
+/* Galería de fotos */
+/* ───────────────────────────────────────── */
+
+.galeria-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+
+  img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+}
+
+/* ───────────────────────────────────────── */
 /* Cards internas */
 /* ───────────────────────────────────────── */
 

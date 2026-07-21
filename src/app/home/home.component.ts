@@ -632,10 +632,6 @@ export class HomePage implements OnInit, OnDestroy {
     return 'medium';
   }
 
-  irAlChatIA() {
-    this.router.navigate(['/tabs/chat-ia']);
-  }
-
   irAQR() {
     this.router.navigate(['/tabs/mascota-qr']);
   }

@@ -46,11 +46,14 @@
   </div>
     <!-- Info básica -->
     <div class="wallet-body">
+      <div class="row"><span>Fecha de nacimiento</span><strong>{{ mascota?.fechaNacimiento ? (mascota.fechaNacimiento | date:'dd/MM/yyyy') : '—' }}</strong></div>
       <div class="row"><span>Edad</span><strong>{{ mascota?.edad ?? '—' }} años</strong></div>
       <div class="row"><span>Sexo</span><strong>{{ mascota?.sexo || '—' }}</strong></div>
       <div class="row"><span>Color / Desc.</span><strong>{{ mascota?.color || '—' }}</strong></div>
+      <div class="row"><span>Peso</span><strong>{{ mascota?.peso ? (mascota.peso + ' kg') : '—' }}</strong></div>
       <div class="row"><span>Castrado/a</span><strong>{{ mascota?.castrado || '—' }}</strong></div>
       <div class="row"><span>Chip</span><strong>{{ mascota?.numeroChip || 'No registrado' }}</strong></div>
+      <div class="row" *ngIf="mascota?.fechaRegistro"><span>En Ashbis desde</span><strong>{{ mascota.fechaRegistro | date:'dd/MM/yyyy' }}</strong></div>
     </div>
 
     <!-- Indicadores de cuidado especial -->
@@ -64,10 +67,68 @@
       </span>
     </div>
 
+    <!-- Señas particulares -->
+    <div class="seccion" *ngIf="mascota?.senasParticulares">
+      <h3>🔎 Señas particulares</h3>
+      <p class="texto-libre">{{ mascota.senasParticulares }}</p>
+    </div>
+
+    <!-- Salud crítica -->
+    <div class="wallet-alert" *ngIf="mascota?.alergias?.length || mascota?.enfermedadesCronicas?.length || mascota?.medicamentosPermanentes?.length">
+      <strong>🏥 Salud crítica:</strong>
+      <div *ngIf="mascota.enfermedadesCronicas?.length" class="grupo-badges">
+        <span class="etiqueta-grupo">Enfermedades crónicas</span>
+        <span class="badge-indicador" *ngFor="let e of mascota.enfermedadesCronicas">{{ e }}</span>
+      </div>
+      <div *ngIf="mascota.alergias?.length" class="grupo-badges">
+        <span class="etiqueta-grupo">Alergias</span>
+        <span class="badge-indicador" *ngFor="let a of mascota.alergias">{{ a }}</span>
+      </div>
+      <div *ngIf="mascota.medicamentosPermanentes?.length" class="grupo-badges">
+        <span class="etiqueta-grupo">Medicamentos permanentes</span>
+        <span class="badge-indicador" *ngFor="let m of mascota.medicamentosPermanentes">{{ m }}</span>
+      </div>
+    </div>
+
+    <!-- Compatibilidad -->
+    <div class="seccion" *ngIf="mascota?.seLlevaConPerros !== null || mascota?.seLlevaConGatos !== null || mascota?.seLlevaConNinos !== null || mascota?.esAgresivo">
+      <h3>🐾 Compatibilidad</h3>
+      <div class="row" *ngIf="mascota?.seLlevaConPerros !== null && mascota?.seLlevaConPerros !== undefined">
+        <span>Se lleva con perros</span><strong>{{ mascota.seLlevaConPerros ? 'Sí' : 'No' }}</strong>
+      </div>
+      <div class="row" *ngIf="mascota?.seLlevaConGatos !== null && mascota?.seLlevaConGatos !== undefined">
+        <span>Se lleva con gatos</span><strong>{{ mascota.seLlevaConGatos ? 'Sí' : 'No' }}</strong>
+      </div>
+      <div class="row" *ngIf="mascota?.seLlevaConNinos !== null && mascota?.seLlevaConNinos !== undefined">
+        <span>Se lleva con niños</span><strong>{{ mascota.seLlevaConNinos ? 'Sí' : 'No' }}</strong>
+      </div>
+      <p class="alerta-texto" *ngIf="mascota?.esAgresivo">🚫 Puede ser agresivo/a — manejar con precaución.</p>
+    </div>
+
+    <!-- Observaciones de rescate -->
+    <div class="seccion" *ngIf="mascota?.observacionesRescate">
+      <h3>🆘 Observaciones de rescate</h3>
+      <p class="texto-libre">{{ mascota.observacionesRescate }}</p>
+    </div>
+
+    <!-- Contacto de emergencia de la mascota (distinto del contacto del dueño) -->
+    <div class="wallet-owner" *ngIf="mascota?.contactoEmergencia || mascota?.telefonoEmergencia">
+      <p>🆘 Contacto de emergencia: {{ mascota.contactoEmergencia || '—' }}</p>
+      <p *ngIf="mascota?.telefonoEmergencia">📞 <a [href]="'tel:' + mascota.telefonoEmergencia">{{ mascota.telefonoEmergencia }}</a></p>
+    </div>
+
     <!-- Dueño -->
     <div class="wallet-owner" *ngIf="dueno">
       <p>👤 {{ dueno?.nombre }} {{ dueno?.apellido }}</p>
       <p>📞 {{ dueno?.telefono || 'Sin teléfono registrado' }}</p>
+    </div>
+
+    <!-- Galería de fotos -->
+    <div class="seccion" *ngIf="mascota?.galeria?.length">
+      <h3>📷 Fotos</h3>
+      <div class="galeria-grid">
+        <img *ngFor="let foto of mascota.galeria" [src]="foto" alt="Foto de {{ mascota.nombre }}" />
+      </div>
     </div>
 
     <!-- Vacunas -->

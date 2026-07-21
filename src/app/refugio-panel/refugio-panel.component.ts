@@ -79,6 +79,9 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   transferencias = signal<Models.Transferencias.Transferencia[]>([]);
   movimientos = signal<Models.Finanzas.Movimiento[]>([]);
   invitacionesEquipoEnviadas = signal<Models.Equipo.InvitacionEquipo[]>([]);
+  /** id de la transferencia que se está reenviando ahora mismo (deshabilita
+   *  su botón mientras corre, para evitar reenvíos dobles por doble tap). */
+  reenviando = signal<string | null>(null);
 
   // ── Estadísticas (solo lectura) ─────────────────────────────────────────
   publicacionesActivas = computed(() => this.publicaciones().filter(p => p.activa).length);
@@ -319,6 +322,19 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
       await this.mostrarToast('Transferencia cancelada.', 'success');
     } catch {
       await this.mostrarToast('No se pudo cancelar la transferencia.', 'danger');
+    }
+  }
+
+  async reenviarTransferencia(t: Models.Transferencias.Transferencia): Promise<void> {
+    if (!t.id || this.reenviando()) return;
+    this.reenviando.set(t.id);
+    try {
+      await this.fs.reenviarNotificacionTransferencia(t.id);
+      await this.mostrarToast(`Se reenvió el aviso a ${t.paraEmail}.`, 'success');
+    } catch (err: any) {
+      await this.mostrarToast(err?.message || 'No se pudo reenviar. Intenta nuevamente.', 'danger');
+    } finally {
+      this.reenviando.set(null);
     }
   }
 

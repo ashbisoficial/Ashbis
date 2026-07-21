@@ -54,6 +54,12 @@ export class ChatIaComponent implements OnInit {
 
   private readonly aiProxy = inject(AiProxyService);
 
+  /** Chat con IA desactivado para la beta (el proxy a Gemini sigue fallando
+   *  en producción). El botón de entrada en Home ya está oculto; esto es un
+   *  segundo cierre por si alguien llega directo a /tabs/chat-ia. Volver a
+   *  poner en true reactiva la función sin tocar nada más. */
+  readonly habilitado = false;
+
   // ── Estado de pasos ─────────────────────────────────────────────────────
   pasoActual = 1;
   categoriaSeleccionada = '';

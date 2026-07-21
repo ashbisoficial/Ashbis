@@ -792,6 +792,22 @@ export class FirestoreService {
     // quien ejecuta la acción: puede ser un miembro del equipo operando en
     // nombre del refugio.
     this.assertAuthenticated();
+
+    // Evita mandar la misma solicitud dos veces por accidente: si ya hay
+    // una pendiente para esta mascota + este email, no se crea otra —
+    // reenviar el aviso a esa misma solicitud se hace con
+    // reenviarNotificacionTransferencia, no creando un duplicado.
+    const emailNormalizado = paraEmail.trim().toLowerCase();
+    const yaExiste = await getDocs(query(
+      collection(this.firestore, Models.Transferencias.PathTransferencias),
+      where('mascotaId', '==', mascotaId),
+      where('paraEmail', '==', emailNormalizado),
+      where('estado', '==', 'pendiente')
+    ));
+    if (!yaExiste.empty) {
+      throw new Error('Ya hay una solicitud pendiente para esta mascota con ese email. Podés reenviarla desde el panel del refugio.');
+    }
+
     const clean = this.security.sanitizeFirestoreObject({
       tipo,
       mascotaId,
@@ -835,6 +851,16 @@ export class FirestoreService {
       estado: 'cancelada',
       resueltaEn: serverTimestamp(),
     });
+  }
+
+  /** Reenvía el aviso (push) de una solicitud que sigue pendiente, sin crear
+   *  un duplicado — crearTransferencia ya no deja crear otra mientras esta
+   *  siga pendiente. */
+  async reenviarNotificacionTransferencia(transferenciaId: string): Promise<void> {
+    await this.postToCloudFunction(
+      'https://us-central1-ashbis-ae5b2.cloudfunctions.net/reenviarNotificacionTransferencia',
+      { transferenciaId }
+    );
   }
 
   // Aceptar NUNCA se hace desde el cliente directo: reasigna uidUsuario o

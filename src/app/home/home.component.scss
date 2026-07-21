@@ -308,7 +308,7 @@ swiper-slide {
   --border-color: #8b0808;
   --border-width: 2px;
   --border-style: solid;
-  --color: white;
+  --color: var(--ion-text-color);
   --background: transparent;
 }
 

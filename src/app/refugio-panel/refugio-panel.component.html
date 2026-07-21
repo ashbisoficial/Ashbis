@@ -123,7 +123,11 @@
               <h2>{{ t.mascotaNombre }}</h2>
               <p>Enviada a {{ t.paraEmail }} ({{ t.tipo === 'adopcion' ? 'adopción' : 'hogar temporal' }})</p>
             </ion-label>
-            <ion-button slot="end" size="small" fill="outline" color="medium" (click)="cancelarTransferenciaEnviada(t)">
+            <ion-button slot="end" size="small" fill="outline" color="medium"
+              [disabled]="reenviando() === t.id" (click)="reenviarTransferencia(t)">
+              {{ reenviando() === t.id ? 'Enviando...' : 'Reenviar' }}
+            </ion-button>
+            <ion-button slot="end" size="small" fill="outline" color="danger" (click)="cancelarTransferenciaEnviada(t)">
               Cancelar
             </ion-button>
           </ion-item>
