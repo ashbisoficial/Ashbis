@@ -10,7 +10,7 @@ import {
   ValidatorFn,
   Validators
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import {
   IonBadge,
   IonButton,
@@ -37,14 +37,13 @@ import {
   IonTitle,
   IonToolbar
 } from '@ionic/angular/standalone';
-import { AlertController, LoadingController, ToastController } from '@ionic/angular';
+import { LoadingController, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
   cameraOutline, createOutline, logoGoogle, closeOutline, trashOutline,
   checkmarkOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-  documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline,
-  businessOutline
+  documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
@@ -68,7 +67,6 @@ interface UsuarioActual {
   imports: [
     NgIf,
     NgFor,
-    RouterLink,
     ReactiveFormsModule,
     IonHeader,
     IonToolbar,
@@ -101,7 +99,6 @@ export class PerfilComponent implements OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
-  private readonly alertCtrl = inject(AlertController);
   private readonly security = inject(SecurityService);
 
   authenticationService: AuthenticationService = inject(AuthenticationService);
@@ -121,11 +118,11 @@ export class PerfilComponent implements OnDestroy {
   guardando = false;
 
   transferenciasPendientes: Models.Transferencias.Transferencia[] = [];
-  transferenciasEnviadas: Models.Transferencias.Transferencia[] = [];
 
   invitacionesEquipoPendientes: Models.Equipo.InvitacionEquipo[] = [];
-  invitacionesEquipoEnviadas: Models.Equipo.InvitacionEquipo[] = [];
-  miembrosEquipo: Models.Equipo.MiembroEquipo[] = [];
+  /** Refugios ajenos de cuyo equipo formo parte. Solo se muestra el nombre
+   *  acá — gestionar el equipo vive en el panel del refugio, y salir de un
+   *  equipo vive en Configuración (ver ConfiguracionComponent). */
   refugiosEnLosQueColaboro: string[] = [];
   nombresRefugios: Record<string, string> = {};
 
@@ -196,7 +193,7 @@ export class PerfilComponent implements OnDestroy {
       checkmarkOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
       documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline,
-      settingsOutline, businessOutline
+      settingsOutline
     });
 
     this.cargando = true;
@@ -212,33 +209,24 @@ export class PerfilComponent implements OnDestroy {
             providerId: res.providerData?.[0]?.providerId ?? null
           };
           this.getDatosProfile(res.uid);
-          this.cargarTransferencias(res.uid, res.email);
+          this.cargarTransferencias(res.email);
           this.cargarEquipo(res.uid, res.email);
         } else {
           this.user = null;
           this.user_profile = undefined;
           this.transferenciasPendientes = [];
-          this.transferenciasEnviadas = [];
           this.invitacionesEquipoPendientes = [];
-          this.invitacionesEquipoEnviadas = [];
-          this.miembrosEquipo = [];
           this.refugiosEnLosQueColaboro = [];
           this.cargando = false;
         }
       });
   }
 
-  private cargarTransferencias(uid: string, email: string | null): void {
-    if (email) {
-      this.firestoreService.getTransferenciasPendientesParaMi(email)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(t => this.transferenciasPendientes = t);
-    }
-    // Solo relevante para refugios, pero es barato pedirlo siempre y
-    // mostrarlo condicionado en la plantilla al rol.
-    this.firestoreService.getTransferenciasEnviadas(uid)
+  private cargarTransferencias(email: string | null): void {
+    if (!email) return;
+    this.firestoreService.getTransferenciasPendientesParaMi(email)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(t => this.transferenciasEnviadas = t.filter(tr => tr.estado === 'pendiente'));
+      .subscribe(t => this.transferenciasPendientes = t);
   }
 
   private cargarEquipo(uid: string, email: string | null): void {
@@ -247,14 +235,9 @@ export class PerfilComponent implements OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe(inv => this.invitacionesEquipoPendientes = inv);
     }
-    // Mi propio equipo (si soy refugio): invitaciones enviadas + miembros.
-    this.firestoreService.getInvitacionesEquipoEnviadas(uid)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(inv => this.invitacionesEquipoEnviadas = inv.filter(i => i.estado === 'pendiente'));
-    this.firestoreService.getMiembrosEquipo(uid)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(m => this.miembrosEquipo = m);
-    // Equipos de refugios ajenos de los que formo parte.
+    // Equipos de refugios ajenos de los que formo parte: solo para mostrar
+    // el nombre acá (gestionarlos vive en el panel del refugio y en
+    // Configuración, ver comentario arriba de refugiosEnLosQueColaboro).
     this.firestoreService.getMisRefugios(uid)
       .pipe(takeUntil(this.destroy$))
       .subscribe(refugios => {
@@ -535,102 +518,9 @@ export class PerfilComponent implements OnDestroy {
     this.router.navigate(['/tabs/configuracion']);
   }
 
-  irAMisPublicaciones(): void {
-    this.router.navigate(['/tabs/mis-publicaciones']);
-  }
-
   irANotificaciones(): void {
     this.router.navigate(['/tabs/notificaciones']);
   }
 
-  async cancelarTransferenciaEnviada(t: Models.Transferencias.Transferencia): Promise<void> {
-    if (!t.id) return;
-    try {
-      await this.firestoreService.cancelarTransferencia(t.id);
-      await this.showToast('Transferencia cancelada.', 'primary');
-    } catch {
-      await this.showToast('No se pudo cancelar la transferencia.', 'danger');
-    }
-  }
-
-  // ── Equipo de refugio ────────────────────────────────────────────────────
-
-  async invitarAlEquipo(): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Invitar al equipo',
-      message: 'La persona va a poder crear/editar mascotas y publicaciones en nombre de tu cuenta de refugio.',
-      inputs: [
-        { name: 'email', type: 'email', placeholder: 'Email de la persona' },
-      ],
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        { text: 'Como staff', handler: (data) => this.enviarInvitacionEquipo(data.email, 'staff') },
-        { text: 'Como admin', handler: (data) => this.enviarInvitacionEquipo(data.email, 'admin') },
-      ]
-    });
-    await alert.present();
-  }
-
-  private async enviarInvitacionEquipo(rawEmail: string, rolEquipo: Models.Equipo.RolEquipo): Promise<void> {
-    const email = this.security.sanitizeText(rawEmail || '', 200);
-    if (!this.security.isValidEmail(email)) {
-      await this.showToast('Ingresa un email válido.', 'danger');
-      return;
-    }
-    if (!this.user) return;
-    try {
-      const refugioNombre = this.user_profile?.nombreRefugio?.trim()
-        || `${this.user_profile?.nombre ?? ''} ${this.user_profile?.apellido ?? ''}`.trim()
-        || 'Un refugio';
-      await this.firestoreService.crearInvitacionEquipo(this.user.uid, refugioNombre, email, rolEquipo);
-      await this.showToast('Invitación enviada.', 'success');
-    } catch {
-      await this.showToast('No se pudo enviar la invitación.', 'danger');
-    }
-  }
-
-  async cancelarInvitacionEquipo(inv: Models.Equipo.InvitacionEquipo): Promise<void> {
-    if (!inv.id) return;
-    try {
-      await this.firestoreService.cancelarInvitacionEquipo(inv.id);
-      await this.showToast('Invitación cancelada.', 'primary');
-    } catch {
-      await this.showToast('No se pudo cancelar la invitación.', 'danger');
-    }
-  }
-
-  async quitarMiembro(m: Models.Equipo.MiembroEquipo): Promise<void> {
-    if (!this.user) return;
-    const alert = await this.alertCtrl.create({
-      header: 'Quitar del equipo',
-      message: `¿Sacar a ${m.nombre} del equipo? Ya no va a poder operar tu cuenta.`,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Quitar',
-          role: 'destructive',
-          handler: async () => {
-            try {
-              await this.firestoreService.quitarMiembroEquipo(this.user!.uid, m.uid);
-              await this.showToast('Se quitó del equipo.', 'primary');
-            } catch {
-              await this.showToast('No se pudo quitar del equipo.', 'danger');
-            }
-          }
-        }
-      ]
-    });
-    await alert.present();
-  }
-
-  async salirDelEquipo(refugioUid: string): Promise<void> {
-    if (!this.user) return;
-    try {
-      await this.firestoreService.quitarMiembroEquipo(refugioUid, this.user.uid);
-      await this.showToast('Saliste del equipo.', 'primary');
-    } catch {
-      await this.showToast('No se pudo salir del equipo.', 'danger');
-    }
-  }
 
 }

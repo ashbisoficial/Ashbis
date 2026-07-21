@@ -372,87 +372,17 @@
         🔔 Tienes {{ transferenciasPendientes.length + invitacionesEquipoPendientes.length }} notificación(es) pendiente(s)
       </ion-button>
 
-      <!-- Equipos ajenos de los que formo parte -->
+      <!-- Equipos ajenos de los que formo parte: solo informativo. Ver el
+           panel se hace desde el tab "Refugio" del nav, y salir del equipo
+           vive en Configuración — acá no hay nada que gestionar. -->
       <ion-card class="seccion-card" *ngIf="refugiosEnLosQueColaboro.length">
         <ion-card-header>
           <ion-card-title>Equipos en los que colaboro</ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <ion-item lines="none" class="fila-accion" *ngFor="let refugioUid of refugiosEnLosQueColaboro">
-            <ion-label>{{ nombresRefugios[refugioUid] || 'Refugio' }}</ion-label>
-            <ion-button slot="end" size="small" fill="outline" color="danger" [routerLink]="['/tabs/refugio-panel', refugioUid]">
-              Ver panel
-            </ion-button>
-            <ion-button slot="end" size="small" fill="outline" color="medium" (click)="salirDelEquipo(refugioUid)">
-              Salir del equipo
-            </ion-button>
+          <ion-item lines="none" *ngFor="let refugioUid of refugiosEnLosQueColaboro">
+            <ion-label>Formás parte del equipo de {{ nombresRefugios[refugioUid] || 'Refugio' }}</ion-label>
           </ion-item>
-        </ion-card-content>
-      </ion-card>
-
-      <!-- Solo refugios: publicaciones y transferencias enviadas -->
-      <ion-card class="seccion-card" *ngIf="user_profile.rol === 'refugio'">
-        <ion-card-header>
-          <ion-card-title>Refugio</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-button expand="block" fill="outline" color="danger" [routerLink]="['/tabs/refugio-panel', user!.uid]">
-            <ion-icon name="business-outline" slot="start"></ion-icon>
-            Panel del refugio
-          </ion-button>
-
-          <ion-button expand="block" fill="outline" color="danger" (click)="irAMisPublicaciones()">
-            <ion-icon name="document-text-outline" slot="start"></ion-icon>
-            Mis publicaciones
-          </ion-button>
-
-          <ng-container *ngIf="transferenciasEnviadas.length">
-            <p class="ion-padding-top" style="font-size: 13px; color: var(--ion-color-medium);">
-              Transferencias esperando respuesta:
-            </p>
-            <ion-item lines="none" class="fila-accion" *ngFor="let t of transferenciasEnviadas">
-              <ion-label class="ion-text-wrap">
-                <h2>{{ t.mascotaNombre }}</h2>
-                <p>Enviada a {{ t.paraEmail }} ({{ t.tipo === 'adopcion' ? 'adopción' : 'hogar temporal' }})</p>
-              </ion-label>
-              <ion-button slot="end" size="small" fill="outline" color="medium" (click)="cancelarTransferenciaEnviada(t)">
-                Cancelar
-              </ion-button>
-            </ion-item>
-          </ng-container>
-
-          <p class="ion-padding-top" style="font-size: 13px; color: var(--ion-color-medium);">
-            Mi equipo:
-          </p>
-          <ion-button expand="block" fill="outline" color="medium" (click)="invitarAlEquipo()">
-            <ion-icon name="person-outline" slot="start"></ion-icon>
-            Invitar al equipo
-          </ion-button>
-          <ion-item lines="none" class="fila-accion" *ngFor="let m of miembrosEquipo">
-            <ion-label class="ion-text-wrap">
-              <h2>{{ m.nombre }}</h2>
-              <p>{{ m.email }} · {{ m.rolEquipo === 'admin' ? 'Admin' : 'Staff' }}</p>
-            </ion-label>
-            <ion-button slot="end" size="small" fill="outline" color="danger" (click)="quitarMiembro(m)">Quitar</ion-button>
-          </ion-item>
-          <p *ngIf="!miembrosEquipo.length" style="font-size: 13px; color: var(--ion-color-medium);">
-            Todavía no tenés a nadie más en tu equipo.
-          </p>
-
-          <ng-container *ngIf="invitacionesEquipoEnviadas.length">
-            <p class="ion-padding-top" style="font-size: 13px; color: var(--ion-color-medium);">
-              Invitaciones esperando respuesta:
-            </p>
-            <ion-item lines="none" class="fila-accion" *ngFor="let inv of invitacionesEquipoEnviadas">
-              <ion-label class="ion-text-wrap">
-                <h2>{{ inv.paraEmail }}</h2>
-                <p>{{ inv.rolEquipo === 'admin' ? 'Admin' : 'Staff' }}</p>
-              </ion-label>
-              <ion-button slot="end" size="small" fill="outline" color="medium" (click)="cancelarInvitacionEquipo(inv)">
-                Cancelar
-              </ion-button>
-            </ion-item>
-          </ng-container>
         </ion-card-content>
       </ion-card>
 

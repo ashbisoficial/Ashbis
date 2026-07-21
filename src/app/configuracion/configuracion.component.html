@@ -167,6 +167,27 @@
       </ion-card-content>
     </ion-card>
 
+    <!-- ═══════════ EQUIPOS EN LOS QUE COLABORO ═══════════ -->
+    <ion-card class="seccion-card" *ngIf="refugiosEnLosQueColaboro.length">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="people-outline"></ion-icon>
+          Equipos en los que colaboro
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" class="fila-accion" *ngFor="let refugioUid of refugiosEnLosQueColaboro">
+          <ion-label>{{ nombresRefugios[refugioUid] || 'Refugio' }}</ion-label>
+          <ion-button slot="end" size="small" fill="outline" color="danger" (click)="salirDelEquipo(refugioUid)">
+            Salir del equipo
+          </ion-button>
+        </ion-item>
+        <p class="campo-nota">
+          Para ver el trabajo del refugio (mascotas, publicaciones, finanzas), usá la pestaña "Refugio" del menú.
+        </p>
+      </ion-card-content>
+    </ion-card>
+
     <!-- ═══════════ MASCOTAS ═══════════ -->
     <ion-card class="seccion-card">
       <ion-card-header>

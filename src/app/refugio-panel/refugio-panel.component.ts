@@ -78,6 +78,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   publicaciones = signal<Models.Publicaciones.Publicacion[]>([]);
   transferencias = signal<Models.Transferencias.Transferencia[]>([]);
   movimientos = signal<Models.Finanzas.Movimiento[]>([]);
+  invitacionesEquipoEnviadas = signal<Models.Equipo.InvitacionEquipo[]>([]);
 
   // ── Estadísticas (solo lectura) ─────────────────────────────────────────
   publicacionesActivas = computed(() => this.publicaciones().filter(p => p.activa).length);
@@ -87,9 +88,10 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   hogaresTemporalesActivos = computed(() =>
     this.transferencias().filter(t => t.tipo === 'hogar_temporal' && t.estado === 'aceptada').length
   );
-  transferenciasPendientes = computed(() =>
-    this.transferencias().filter(t => t.estado === 'pendiente').length
+  transferenciasPendientesLista = computed(() =>
+    this.transferencias().filter(t => t.estado === 'pendiente')
   );
+  transferenciasPendientes = computed(() => this.transferenciasPendientesLista().length);
   balanceFinanciero = computed(() => {
     const movs = this.movimientos();
     const ingresos = movs.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
@@ -150,15 +152,17 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
       conFallback(this.fs.getPublicacionesByUsuario(uid)),
       conFallback(this.fs.getTransferenciasEnviadas(uid)),
       conFallback(this.fs.getMovimientosFinancieros(uid)),
+      conFallback(this.fs.getInvitacionesEquipoEnviadas(uid)),
     ])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([mascotas, vets, miembros, publicaciones, transferencias, movimientos]) => {
+      .subscribe(([mascotas, vets, miembros, publicaciones, transferencias, movimientos, invitaciones]) => {
         this.mascotas.set(mascotas ?? []);
         this.veterinarias.set(vets ?? []);
         this.miembros.set(miembros ?? []);
         this.publicaciones.set(publicaciones ?? []);
         this.transferencias.set(transferencias ?? []);
         this.movimientos.set(movimientos ?? []);
+        this.invitacionesEquipoEnviadas.set((invitaciones ?? []).filter(i => i.estado === 'pendiente'));
         this.cargando.set(false);
       });
   }
@@ -239,6 +243,83 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
       ],
     });
     await alert.present();
+  }
+
+  // ── Equipo del refugio (invitar/quitar): solo la cuenta dueña ────────────
+
+  async invitarAlEquipo(): Promise<void> {
+    if (!this.esDueno) return;
+    const alert = await this.alertCtrl.create({
+      header: 'Invitar al equipo',
+      message: 'La persona va a poder crear/editar mascotas y publicaciones en nombre de tu cuenta de refugio.',
+      inputs: [
+        { name: 'email', type: 'email', placeholder: 'Email de la persona' },
+      ],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Como staff', handler: (data) => this.enviarInvitacionEquipo(data.email, 'staff') },
+        { text: 'Como admin', handler: (data) => this.enviarInvitacionEquipo(data.email, 'admin') },
+      ]
+    });
+    await alert.present();
+  }
+
+  private async enviarInvitacionEquipo(rawEmail: string, rolEquipo: Models.Equipo.RolEquipo): Promise<void> {
+    const email = this.security.sanitizeText(rawEmail || '', 200);
+    if (!this.security.isValidEmail(email)) {
+      await this.mostrarToast('Ingresa un email válido.', 'danger');
+      return;
+    }
+    try {
+      await this.fs.crearInvitacionEquipo(this.refugioUid, this.nombreRefugio(), email, rolEquipo);
+      await this.mostrarToast('Invitación enviada.', 'success');
+    } catch {
+      await this.mostrarToast('No se pudo enviar la invitación.', 'danger');
+    }
+  }
+
+  async cancelarInvitacionEquipo(inv: Models.Equipo.InvitacionEquipo): Promise<void> {
+    if (!inv.id || !this.esDueno) return;
+    try {
+      await this.fs.cancelarInvitacionEquipo(inv.id);
+      await this.mostrarToast('Invitación cancelada.', 'success');
+    } catch {
+      await this.mostrarToast('No se pudo cancelar la invitación.', 'danger');
+    }
+  }
+
+  async quitarMiembro(m: Models.Equipo.MiembroEquipo): Promise<void> {
+    if (!this.esDueno) return;
+    const alert = await this.alertCtrl.create({
+      header: 'Quitar del equipo',
+      message: `¿Sacar a ${m.nombre} del equipo? Ya no va a poder operar tu cuenta.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Quitar',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              await this.fs.quitarMiembroEquipo(this.refugioUid, m.uid);
+              await this.mostrarToast('Se quitó del equipo.', 'success');
+            } catch {
+              await this.mostrarToast('No se pudo quitar del equipo.', 'danger');
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async cancelarTransferenciaEnviada(t: Models.Transferencias.Transferencia): Promise<void> {
+    if (!t.id || !this.esDueno) return;
+    try {
+      await this.fs.cancelarTransferencia(t.id);
+      await this.mostrarToast('Transferencia cancelada.', 'success');
+    } catch {
+      await this.mostrarToast('No se pudo cancelar la transferencia.', 'danger');
+    }
   }
 
   private async mostrarToast(message: string, color: 'success' | 'danger'): Promise<void> {

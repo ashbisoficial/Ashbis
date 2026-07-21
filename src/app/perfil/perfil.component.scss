@@ -309,35 +309,6 @@ ion-label {
   margin-bottom: 6px !important;
 }
 
-/* Filas de solicitudes/equipo/transferencias: texto + botones de acción.
-   En pantallas angostas, si no entran uno al lado del otro, se apilan en
-   vez de desbordar. */
-.fila-accion {
-  --padding-start: 0;
-  --inner-padding-end: 0;
-  flex-wrap: wrap;
-  align-items: flex-start;
-
-  ion-button[slot="end"] {
-    margin: 4px 0 4px 8px;
-  }
-}
-
-@media (max-width: 400px) {
-  .fila-accion {
-    flex-direction: column;
-    align-items: stretch;
-
-    ion-label {
-      width: 100%;
-    }
-
-    ion-button[slot="end"] {
-      margin: 4px 4px 0 0;
-    }
-  }
-}
-
 ion-input,
 ion-textarea {
   color: var(--ion-text-color) !important;

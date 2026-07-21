@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import {
   IonBackButton,
   IonButton,
@@ -28,7 +29,7 @@ import {
   personOutline, pawOutline, warningOutline, textOutline, moonOutline,
   sunnyOutline, cameraOutline, locationOutline, keyOutline, trashOutline,
   chevronForwardOutline, checkmarkCircle, closeCircle, helpCircleOutline,
-  logOutOutline,
+  logOutOutline, peopleOutline,
 } from 'ionicons/icons';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
@@ -50,7 +51,7 @@ type EstadoPermiso = 'concedido' | 'denegado' | 'no-pedido' | 'no-soportado';
     IonSegment, IonSegmentButton, IonSpinner,
   ],
 })
-export class ConfiguracionComponent implements OnInit {
+export class ConfiguracionComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthenticationService);
   private readonly firestoreService = inject(FirestoreService);
   private readonly push = inject(PushNotificationService);
@@ -58,9 +59,16 @@ export class ConfiguracionComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
+  private readonly destroy$ = new Subject<void>();
 
   email = '';
   esCuentaGoogle = false;
+
+  /** Refugios ajenos de cuyo equipo formo parte (para poder salir). Ver, en
+   *  cambio, cómo va el trabajo del refugio vive en el panel del refugio
+   *  (tab "Refugio" del nav), no acá. */
+  refugiosEnLosQueColaboro: string[] = [];
+  nombresRefugios: Record<string, string> = {};
 
   tema: Tema = this.preferencias.tema;
   tamanoTexto: TamanoTexto = this.preferencias.tamanoTexto;
@@ -80,7 +88,7 @@ export class ConfiguracionComponent implements OnInit {
       personOutline, pawOutline, warningOutline, textOutline, moonOutline,
       sunnyOutline, cameraOutline, locationOutline, keyOutline, trashOutline,
       chevronForwardOutline, checkmarkCircle, closeCircle, helpCircleOutline,
-      logOutOutline,
+      logOutOutline, peopleOutline,
     });
   }
 
@@ -91,6 +99,27 @@ export class ConfiguracionComponent implements OnInit {
 
     this.estadoNotificaciones = await this.push.obtenerEstadoPermiso();
     await this.leerPermisosNavegador();
+
+    if (user) this.cargarEquiposEnLosQueColaboro(user.uid);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private cargarEquiposEnLosQueColaboro(uid: string): void {
+    this.firestoreService.getMisRefugios(uid)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(refugios => {
+        this.refugiosEnLosQueColaboro = refugios;
+        refugios.forEach(refugioUid => {
+          if (this.nombresRefugios[refugioUid]) return;
+          this.firestoreService.getDocument(`usuarios/${refugioUid}`).then(perfil => {
+            this.nombresRefugios[refugioUid] = perfil?.nombreRefugio?.trim() || 'Refugio';
+          });
+        });
+      });
   }
 
   private async leerPermisosNavegador(): Promise<void> {
@@ -180,6 +209,33 @@ export class ConfiguracionComponent implements OnInit {
 
   irAPrivacidad(): void {
     this.router.navigate(['/privacidad']);
+  }
+
+  // ── Equipos en los que colaboro ──────────────────────────────────────────
+  async salirDelEquipo(refugioUid: string): Promise<void> {
+    const user = this.auth.getCurrentUser();
+    if (!user) return;
+    const nombre = this.nombresRefugios[refugioUid] || 'este refugio';
+    const alert = await this.alertCtrl.create({
+      header: 'Salir del equipo',
+      message: `¿Salir del equipo de ${nombre}? Vas a perder el acceso para operar su cuenta.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Salir',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              await this.firestoreService.quitarMiembroEquipo(refugioUid, user.uid);
+              await this.mostrarToast('Saliste del equipo.', 'success');
+            } catch {
+              await this.mostrarToast('No se pudo salir del equipo. Intenta nuevamente.', 'danger');
+            }
+          },
+        },
+      ],
+    });
+    await alert.present();
   }
 
   // ── Zona irreversible ────────────────────────────────────────────────────
