@@ -16,6 +16,28 @@
 
   <div *ngIf="!cargando && mascota">
 
+    <!-- Hogar temporal activo: visible para cualquiera con acceso a la
+         mascota, pero solo dueño/equipo puede revocarlo. -->
+    <ion-card class="tarjeta-hogar-temporal" *ngIf="colaboradoresHogarTemporal.length">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="time-outline"></ion-icon>
+          Hogar temporal activo
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" *ngFor="let colab of colaboradoresHogarTemporal">
+          <ion-label class="ion-text-wrap">
+            <h2>{{ colab.nombre }}</h2>
+            <p>{{ colab.email }}</p>
+          </ion-label>
+          <ion-button *ngIf="puedoGestionarHogarTemporal" slot="end" fill="clear" color="danger" (click)="quitarHogarTemporal(colab)">
+            <ion-icon name="person-remove-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
     <ion-segment [value]="segmentoActual" (ionChange)="segmentoCambiado($event)" scrollable="true">
 
       <ion-segment-button value="vacunas" layout="icon-top">

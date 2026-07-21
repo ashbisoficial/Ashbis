@@ -12,6 +12,32 @@ ion-content .inner-scroll {
 }
 
 /* ============================================
+   HOGAR TEMPORAL ACTIVO
+============================================ */
+.tarjeta-hogar-temporal {
+  --background: var(--ashbis-warning-surface, rgba(255, 213, 79, .1));
+  border: 1px solid rgba(255, 213, 79, .4);
+  box-shadow: none;
+  margin-bottom: 14px;
+
+  ion-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+
+    ion-icon {
+      color: var(--ashbis-warning-accent, #8a6a08);
+    }
+  }
+
+  ion-item {
+    --background: transparent;
+    --padding-start: 0;
+  }
+}
+
+/* ============================================
    SEGMENTO DE PESTAÑAS
 ============================================ */
 ion-segment {

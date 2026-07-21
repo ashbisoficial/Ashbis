@@ -234,6 +234,19 @@ export class FirestoreService {
     return !snap.empty;
   }
 
+  /** Quién tiene hogar temporal activo de esta mascota ahora mismo (para
+   *  mostrarlo y poder revocarlo desde el refugio). */
+  getColaboradoresMascota(petId: string): Observable<Models.Mascotas.ColaboradorMascota[]> {
+    const r = collection(this.firestore, `mascotas/${petId}/colaboradores`);
+    return collectionData(r) as Observable<Models.Mascotas.ColaboradorMascota[]>;
+  }
+
+  /** El refugio (dueño/equipo) le quita a alguien el acceso de hogar
+   *  temporal directamente, sin esperar a que se vaya solo. */
+  async quitarColaboradorMascota(petId: string, colabUid: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, `mascotas/${petId}/colaboradores/${colabUid}`));
+  }
+
   getPetById(id: string): Observable<Mascota | undefined> {
     return docData(doc(this.firestore, 'mascotas', id), { idField: 'id' }) as Observable<Mascota | undefined>;
   }

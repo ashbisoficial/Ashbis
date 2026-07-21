@@ -772,11 +772,18 @@ export const aceptarTransferencia = onRequest(
             mascotaNombre: t['mascotaNombre'] || '',
           });
         } else {
-          // Adopción: se entrega la mascota por completo.
+          // Adopción: se entrega la mascota por completo. Un hogar temporal
+          // que tuviera con el dueño anterior deja de tener sentido con el
+          // nuevo dueño — una mascota solo puede estar en uno de los tres
+          // estados a la vez (normal / hogar temporal / recién adoptada),
+          // nunca en más de uno — así que se borra acá mismo.
+          const colaboradoresPrevios = await tx.get(mascotaRef.collection('colaboradores'));
+
           tx.update(mascotaRef, {
             uidUsuario: decoded.uid,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
+          colaboradoresPrevios.docs.forEach(d => tx.delete(d.ref));
         }
 
         tx.update(transferRef, {

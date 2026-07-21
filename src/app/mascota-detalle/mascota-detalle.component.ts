@@ -51,11 +51,14 @@ import {
   keyOutline,
   copyOutline,
   personRemoveOutline,
-  sendOutline
+  sendOutline,
+  timeOutline
 } from 'ionicons/icons';
 
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { Router } from '@angular/router';
+import { RefugioContextService } from 'src/app/services/refugio-context.service';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-mascota-detalle',
@@ -103,6 +106,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private alertCtrl = inject(AlertController);
   private toastCtrl = inject(ToastController);
+  private refugioCtx = inject(RefugioContextService);
 
   mascotaId = '';
   private miUid = '';
@@ -120,7 +124,8 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
       keyOutline,
       copyOutline,
       personRemoveOutline,
-      sendOutline
+      sendOutline,
+      timeOutline
     });
   }
 
@@ -140,9 +145,15 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   /** true si soy dueño/equipo de esta mascota: solo esa cuenta puede generar
    *  el PIN y ver/revocar accesos otorgados a veterinarios. */
   puedoCompartirConVeterinario = false;
+  /** true si soy dueño O parte del equipo del refugio dueño de esta mascota
+   *  (a diferencia de puedoCompartirConVeterinario, que es solo dueño):
+   *  gestionar hogar temporal sigue el mismo criterio que editar la
+   *  mascota, no el de veterinarias/publicaciones/equipo. */
+  puedoGestionarHogarTemporal = false;
 
   entradasHistorial: Models.HistorialMedico.Entrada[] = [];
   accesosVeterinario: Models.Mascotas.AccesoVeterinario[] = [];
+  colaboradoresHogarTemporal: Models.Mascotas.ColaboradorMascota[] = [];
   nuevaNota = '';
   enviandoNota = false;
 
@@ -171,7 +182,17 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
       this.puedoCompartirConVeterinario = !!mascota && mascota.uidUsuario === this.miUid;
       this.cargando = false;
       this.cargarSubColecciones();
+      this.calcularPuedoGestionarHogarTemporal(mascota);
     });
+  }
+
+  private calcularPuedoGestionarHogarTemporal(mascota: Mascota | undefined) {
+    if (!mascota) { this.puedoGestionarHogarTemporal = false; return; }
+    this.refugioCtx.contexto$()
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe(ctx => {
+        this.puedoGestionarHogarTemporal = ctx.todos.includes(mascota.uidUsuario);
+      });
   }
 
   ngOnDestroy() {
@@ -202,6 +223,10 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     this.firestoreService.getAccesosVeterinario(this.mascotaId)
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => this.accesosVeterinario = data);
+
+    this.firestoreService.getColaboradoresMascota(this.mascotaId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => this.colaboradoresHogarTemporal = data);
   }
 
   segmentoCambiado(evento: any) {
@@ -319,6 +344,32 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
               await this.firestoreService.revocarAccesoVeterinario(this.mascotaId, acceso.vetUid);
             } catch {
               await this.mostrarToast('No se pudo quitar el acceso. Intenta nuevamente.', 'danger');
+            }
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  // ── Hogar temporal ───────────────────────────────────────────────────────
+
+  async quitarHogarTemporal(colab: Models.Mascotas.ColaboradorMascota): Promise<void> {
+    if (!this.puedoGestionarHogarTemporal) return;
+    const alert = await this.alertCtrl.create({
+      header: 'Quitar hogar temporal',
+      message: `¿Quitarle a "${colab.nombre}" el acceso a ${this.mascota?.nombre ?? 'esta mascota'}? Deja de poder ver o actualizar su perfil.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Quitar',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              await this.firestoreService.quitarColaboradorMascota(this.mascotaId, colab.uid);
+              await this.mostrarToast('Se quitó el hogar temporal.', 'success');
+            } catch {
+              await this.mostrarToast('No se pudo quitar. Intenta nuevamente.', 'danger');
             }
           },
         },
