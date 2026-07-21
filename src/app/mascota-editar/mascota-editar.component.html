@@ -321,7 +321,7 @@
             <ng-container *ngIf="viewMode()==='mes'">
               <ng-container *ngIf="citasDelMes.length; else sinCitasMes">
                 <ng-container *ngFor="let g of citasMesAgrupadas; trackBy: trackByDia">
-                  <ion-item lines="full" color="light">
+                  <ion-item lines="full" class="dia-header">
                     <!-- usamos diaKey y lo formateamos con DatePipe -->
                     <ion-label><strong>{{ (g.diaKey + 'T00:00:00') | date:"EEEE d 'de' MMMM":"":"es-CL" }}</strong></ion-label>
                   </ion-item>
@@ -613,7 +613,7 @@
                 <ion-button fill="outline" color="medium" (click)="abrirEditarExamen(e)">
                   <ion-icon name="create-outline" slot="icon-only"></ion-icon>
                 </ion-button>
-                <ion-button color="tertiary" (click)="toggleRealizado(e)">
+                <ion-button fill="outline" [color]="e.realizado ? 'success' : 'warning'" (click)="toggleRealizado(e)">
                   <ion-icon [name]="e.realizado ? 'checkmark-done-outline' : 'checkbox-outline'" slot="icon-only"></ion-icon>
                 </ion-button>
                 <ion-button color="danger" (click)="borrarExamen(e)">

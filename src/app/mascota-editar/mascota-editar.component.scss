@@ -38,3 +38,11 @@
   color: var(--ion-color-medium);
 }
 
+/* Encabezado de día en el listado de citas por mes. Antes usaba
+   color="light" de Ionic (nunca tematizado en esta app), que en modo
+   oscuro salía como una franja blanca fuera de la paleta de la marca. */
+.dia-header {
+  --background: var(--ashbis-surface-2);
+  --color: var(--ion-text-color);
+}
+
