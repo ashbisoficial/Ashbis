@@ -15,6 +15,99 @@
   }
 }
 
+.notif-seccion-titulo {
+  margin: 4px 4px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+}
+
+.notif-card-title-chica {
+  font-size: 16px;
+}
+
+.notif-card-mascota {
+  --background: var(--ashbis-surface);
+  border-radius: 16px;
+}
+
+.solicitud-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+
+  ion-avatar {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+
+    img {
+      object-fit: cover;
+    }
+  }
+}
+
+.solicitud-info {
+  min-width: 0;
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ion-text-color);
+  }
+}
+
+.badge-tipo {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+
+  &.tipo-adopcion {
+    background: rgba(45, 211, 111, .15);
+    color: #2dd36f;
+  }
+
+  &.tipo-hogar {
+    background: rgba(255, 213, 79, .15);
+    color: #ffd54f;
+  }
+}
+
+.solicitud-texto {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ion-text-color);
+
+  strong {
+    color: var(--ion-text-color);
+  }
+}
+
+.solicitud-mensaje {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ion-color-medium);
+}
+
+.solicitud-acciones {
+  display: flex;
+  gap: 10px;
+
+  ion-button {
+    flex: 1;
+    margin: 0;
+    --border-radius: 20px;
+  }
+}
+
 .notif-error {
   background: var(--ashbis-danger-surface, rgba(139, 8, 8, .1));
   border: 1px solid rgba(139, 8, 8, .4);

@@ -14,15 +14,17 @@ import {
   IonItem,
   IonLabel,
   IonButton,
+  IonAvatar,
   IonSpinner,
   AlertController,
   ToastController
 } from '@ionic/angular/standalone';
-import { Subject, catchError, combineLatest, of, switchMap, takeUntil } from 'rxjs';
+import { Subject, catchError, combineLatest, of, switchMap, take, takeUntil } from 'rxjs';
 
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
+import { ConfettiService } from '../services/confetti.service';
 
 @Component({
   selector: 'app-notificaciones',
@@ -44,6 +46,7 @@ import { Models } from '../models/models';
     IonItem,
     IonLabel,
     IonButton,
+    IonAvatar,
     IonSpinner
   ]
 })
@@ -52,11 +55,15 @@ export class NotificacionesComponent implements OnDestroy {
   private readonly firestoreService = inject(FirestoreService);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
+  private readonly confetti = inject(ConfettiService);
   private readonly destroy$ = new Subject<void>();
 
   cargando = true;
   transferenciasPendientes: Models.Transferencias.Transferencia[] = [];
   invitacionesPendientes: Models.Equipo.InvitacionEquipo[] = [];
+  /** Foto de cada mascota en solicitudes pendientes, para mostrarla en la
+   *  tarjeta (las transferencias no guardan la foto, solo el nombre). */
+  fotosMascotas: Record<string, string | null> = {};
   /** Mensaje de error crudo de Firestore si alguna de las dos consultas
    *  falla (permission-denied, índice faltante, etc.) — sin esto, un error
    *  simplemente dejaba la lista vacía para siempre sin ninguna pista de
@@ -88,7 +95,18 @@ export class NotificacionesComponent implements OnDestroy {
         this.transferenciasPendientes = transferencias;
         this.invitacionesPendientes = invitaciones;
         this.cargando = false;
+        this.cargarFotosMascotas(transferencias);
       });
+  }
+
+  private cargarFotosMascotas(transferencias: Models.Transferencias.Transferencia[]): void {
+    for (const t of transferencias) {
+      if (!t.mascotaId || t.mascotaId in this.fotosMascotas) continue;
+      this.fotosMascotas[t.mascotaId] = null;
+      this.firestoreService.getPetById(t.mascotaId)
+        .pipe(take(1), takeUntil(this.destroy$))
+        .subscribe(m => this.fotosMascotas[t.mascotaId] = m?.fotoUrl || null);
+    }
   }
 
   ngOnDestroy(): void {
@@ -111,6 +129,7 @@ export class NotificacionesComponent implements OnDestroy {
             if (!t.id) return;
             try {
               await this.firestoreService.aceptarTransferencia(t.id);
+              this.confetti.lanzar();
               await this.showToast(
                 esAdopcion ? `¡${t.mascotaNombre} ahora es tuya! 🐾` : `Ya tenés acceso a ${t.mascotaNombre}. 🐾`,
                 'success'
