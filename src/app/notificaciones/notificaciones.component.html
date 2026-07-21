@@ -15,6 +15,12 @@
 
   <ng-container *ngIf="!cargando">
 
+    <div class="notif-error" *ngIf="errorCarga">
+      <p>⚠️ No se pudieron cargar las notificaciones.</p>
+      <p class="notif-error-detalle">{{ errorCarga }}</p>
+      <p>Sacale una captura a esta pantalla y mandásela al equipo de Ashbis.</p>
+    </div>
+
     <ion-card class="notif-card" *ngIf="transferenciasPendientes.length">
       <ion-card-header>
         <ion-card-title>Solicitudes de mascotas</ion-card-title>

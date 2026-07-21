@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { notificationsOutline } from 'ionicons/icons';
-import { Subject, combineLatest, of, switchMap, takeUntil } from 'rxjs';
+import { Subject, catchError, combineLatest, of, switchMap, takeUntil } from 'rxjs';
 
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
@@ -36,9 +36,14 @@ export class NotificacionesBellComponent implements OnDestroy {
           if (!email) {
             return of([[], []] as [Models.Transferencias.Transferencia[], Models.Equipo.InvitacionEquipo[]]);
           }
+          const conFallback = <T>(obs$: import('rxjs').Observable<T[]>) =>
+            obs$.pipe(catchError(err => {
+              console.error('Error cargando notificaciones (campanita):', err);
+              return of<T[]>([]);
+            }));
           return combineLatest([
-            this.firestoreService.getTransferenciasPendientesParaMi(email),
-            this.firestoreService.getInvitacionesEquipoPendientesParaMi(email)
+            conFallback(this.firestoreService.getTransferenciasPendientesParaMi(email)),
+            conFallback(this.firestoreService.getInvitacionesEquipoPendientesParaMi(email))
           ]);
         })
       )

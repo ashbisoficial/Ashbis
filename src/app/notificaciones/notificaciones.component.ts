@@ -18,7 +18,7 @@ import {
   AlertController,
   ToastController
 } from '@ionic/angular/standalone';
-import { Subject, combineLatest, of, switchMap, takeUntil } from 'rxjs';
+import { Subject, catchError, combineLatest, of, switchMap, takeUntil } from 'rxjs';
 
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
@@ -57,6 +57,11 @@ export class NotificacionesComponent implements OnDestroy {
   cargando = true;
   transferenciasPendientes: Models.Transferencias.Transferencia[] = [];
   invitacionesPendientes: Models.Equipo.InvitacionEquipo[] = [];
+  /** Mensaje de error crudo de Firestore si alguna de las dos consultas
+   *  falla (permission-denied, índice faltante, etc.) — sin esto, un error
+   *  simplemente dejaba la lista vacía para siempre sin ninguna pista de
+   *  qué pasó, indistinguible de "no tenés notificaciones". */
+  errorCarga: string | null = null;
 
   constructor() {
     this.auth.authState$
@@ -67,9 +72,15 @@ export class NotificacionesComponent implements OnDestroy {
           if (!email) {
             return of([[], []] as [Models.Transferencias.Transferencia[], Models.Equipo.InvitacionEquipo[]]);
           }
+          const conError = <T>(obs$: import('rxjs').Observable<T[]>) =>
+            obs$.pipe(catchError(err => {
+              console.error('Error cargando notificaciones:', err);
+              this.errorCarga = err?.message || err?.code || 'Error desconocido';
+              return of<T[]>([]);
+            }));
           return combineLatest([
-            this.firestoreService.getTransferenciasPendientesParaMi(email),
-            this.firestoreService.getInvitacionesEquipoPendientesParaMi(email)
+            conError(this.firestoreService.getTransferenciasPendientesParaMi(email)),
+            conError(this.firestoreService.getInvitacionesEquipoPendientesParaMi(email))
           ]);
         })
       )
