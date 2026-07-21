@@ -105,6 +105,33 @@
   }
 }
 
+.aviso-ios {
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border);
+
+  p {
+    margin: 0 0 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ion-text-color);
+  }
+
+  ol {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ion-text-color);
+  }
+
+  .icono-compartir {
+    font-size: 13px;
+  }
+}
+
 ion-item {
   --background: transparent;
   --padding-start: 0;

@@ -31,6 +31,7 @@ import {
   chevronForwardOutline, checkmarkCircle, closeCircle, helpCircleOutline,
   logOutOutline, peopleOutline,
 } from 'ionicons/icons';
+import { Capacitor } from '@capacitor/core';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { PushNotificationService } from '../services/push-notification.service';
@@ -75,6 +76,14 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
 
   estadoNotificaciones: EstadoPermiso = 'no-pedido';
   cargandoNotificaciones = false;
+
+  /** iPhone/iPad en Safari (no en la app nativa): Safari solo expone
+   *  notificaciones push si el sitio está agregado a la pantalla de inicio
+   *  — a diferencia de Android/Chrome, iOS no tiene un prompt nativo de
+   *  instalación, así que sin este aviso el toggle queda "no soportado"
+   *  sin que la persona entienda por qué ni cómo arreglarlo. */
+  readonly esIOSWeb = this.detectarIOSWeb();
+  readonly instaladoComoApp = this.detectarInstaladoComoApp();
 
   estadoCamara: EstadoPermiso = 'no-pedido';
   estadoUbicacion: EstadoPermiso = 'no-pedido';
@@ -270,5 +279,21 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
   private async mostrarToast(message: string, color: 'success' | 'danger' | 'warning'): Promise<void> {
     const toast = await this.toastCtrl.create({ message, duration: 3000, color, position: 'bottom' });
     await toast.present();
+  }
+
+  /** true en Safari de iPhone/iPad (incluye iPadOS 13+, que se reporta como
+   *  Mac pero tiene pantalla táctil) corriendo como pestaña web normal —
+   *  nunca en la app nativa empaquetada con Capacitor. */
+  private detectarIOSWeb(): boolean {
+    if (Capacitor.isNativePlatform()) return false;
+    const ua = navigator.userAgent;
+    const esIOS = /iPad|iPhone|iPod/.test(ua);
+    const esIPadOSComoMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return esIOS || esIPadOSComoMac;
+  }
+
+  private detectarInstaladoComoApp(): boolean {
+    return window.matchMedia?.('(display-mode: standalone)').matches
+      || (navigator as any).standalone === true;
   }
 }
