@@ -554,6 +554,19 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // "Mi QR" para agilizar adopción/hogar temporal: a diferencia de
+    // public_qr de arriba, el propósito ACÁ es justo que cualquier otra
+    // persona logueada lo pueda leer al escanearlo (así el refugio no
+    // tipea el email a mano y se equivoca) — por eso el read es más
+    // permisivo. Solo guarda nombre/email, lo mismo que ya se comparte al
+    // mandar una transferencia igual.
+    match /qrCuenta/{token} {
+      allow read:   if isAuth();
+      allow create: if isUser(request.resource.data.uid) && noLongStrings(request.resource.data);
+      allow update: if false;
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

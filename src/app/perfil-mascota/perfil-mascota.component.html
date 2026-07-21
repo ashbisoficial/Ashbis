@@ -60,6 +60,12 @@
               <ion-button fill="outline" color="tertiary" (click)="darHogarTemporal()">
                 Hogar temporal
               </ion-button>
+              <input #qrInput type="file" accept="image/*" hidden
+                (change)="onQrFileSelected($event)" />
+              <ion-button fill="outline" color="tertiary" [disabled]="escaneandoQr"
+                (click)="escanearQrParaTransferencia()">
+                {{ escaneandoQr ? 'Leyendo QR...' : 'Escanear QR' }}
+              </ion-button>
             </ng-container>
             <ion-button *ngIf="puedePublicarAdopcion()" fill="outline" color="tertiary"
               [disabled]="publicandoAdopcion" (click)="publicarEnAdopcion()">

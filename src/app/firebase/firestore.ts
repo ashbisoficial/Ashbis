@@ -696,6 +696,34 @@ export class FirestoreService {
     );
   }
 
+  /** Devuelve el token de "Mi QR" de la cuenta, creándolo la primera vez
+   *  (igual criterio que qrCarnetToken/qrPerdidaToken en mascotas: se
+   *  genera una sola vez y se reutiliza). */
+  async obtenerOCrearQrCuenta(uid: string): Promise<string> {
+    const perfil = await this.getDocument(`usuarios/${uid}`);
+    if (perfil?.qrCuentaToken) return perfil.qrCuentaToken;
+
+    const token = crypto.randomUUID().replace(/-/g, '');
+    const nombre = perfil?.nombreRefugio?.trim()
+      || `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
+      || 'Alguien de Ashbis';
+    const email = perfil?.email ?? this.auth.currentUser?.email ?? '';
+
+    await setDoc(doc(this.firestore, `${Models.Auth.PathQrCuenta}/${token}`), {
+      uid, nombre, email,
+      createdAt: serverTimestamp(),
+    });
+    await updateDoc(doc(this.firestore, `usuarios/${uid}`), { qrCuentaToken: token });
+    return token;
+  }
+
+  /** Resuelve el token escaneado de "Mi QR" a nombre/email — null si el
+   *  token no existe (QR viejo, inválido, o cualquier otra imagen). */
+  async resolverQrCuenta(token: string): Promise<Models.Auth.QrCuentaInfo | null> {
+    const snap = await getDoc(doc(this.firestore, `${Models.Auth.PathQrCuenta}/${token}`));
+    return snap.exists() ? (snap.data() as Models.Auth.QrCuentaInfo) : null;
+  }
+
   async uploadProfilePhoto(uid: string, file: File): Promise<string> {
     this.assertAuthenticated();
     const safeFilename = this.sanitizeFilename(file.name);

@@ -27,6 +27,7 @@ import {
   IonInput,
   IonItem,
   IonLabel,
+  IonModal,
   IonNote,
   IonRow,
   IonSelect,
@@ -43,8 +44,10 @@ import {
   cameraOutline, createOutline, logoGoogle, closeOutline, trashOutline,
   checkmarkOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
-  documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline
+  documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline,
+  qrCodeOutline,
 } from 'ionicons/icons';
+import { QRCodeComponent } from 'angularx-qrcode';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
@@ -91,7 +94,9 @@ interface UsuarioActual {
     IonIcon,
     IonSpinner,
     IonBadge,
-    IonNote
+    IonNote,
+    IonModal,
+    QRCodeComponent
   ],
   providers: [DatePipe]
 })
@@ -116,6 +121,11 @@ export class PerfilComponent implements OnDestroy {
   editMode = false;
   subiendoFoto = false;
   guardando = false;
+
+  // ── Mi QR (adopción/hogar temporal sin tipear el email) ──────────────────
+  mostrarModalQr = false;
+  cargandoQr = false;
+  miQrToken: string | null = null;
 
   transferenciasPendientes: Models.Transferencias.Transferencia[] = [];
 
@@ -193,7 +203,7 @@ export class PerfilComponent implements OnDestroy {
       checkmarkOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
       documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline,
-      settingsOutline
+      settingsOutline, qrCodeOutline,
     });
 
     this.cargando = true;
@@ -516,6 +526,24 @@ export class PerfilComponent implements OnDestroy {
 
   irAConfiguracion(): void {
     this.router.navigate(['/tabs/configuracion']);
+  }
+
+  async abrirMiQr(): Promise<void> {
+    if (!this.user) return;
+    this.cargandoQr = true;
+    this.mostrarModalQr = true;
+    try {
+      this.miQrToken = await this.firestoreService.obtenerOCrearQrCuenta(this.user.uid);
+    } catch {
+      this.mostrarModalQr = false;
+      await this.showToast('No se pudo generar tu QR. Intenta nuevamente.', 'danger');
+    } finally {
+      this.cargandoQr = false;
+    }
+  }
+
+  cerrarModalQr(): void {
+    this.mostrarModalQr = false;
   }
 
   irANotificaciones(): void {

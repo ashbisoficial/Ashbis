@@ -84,6 +84,24 @@ export namespace Models {
       nombre: string;
       telefono: string;
     }
+
+    /**
+     * Colección top-level `qrCuenta/{token}`, id de documento = token
+     * aleatorio. Se genera una vez por cuenta (usuarios/{uid}.qrCuentaToken
+     * guarda cuál) y cualquier otra persona logueada puede resolverlo — a
+     * diferencia de public_qr (que solo lee su dueño; lo público se sirve
+     * vía Cloud Function), acá el propósito ES que un tercero lo escanee
+     * para no tener que tipear el email a mano al mandar una transferencia
+     * de adopción/hogar temporal. Contiene solo lo que la persona ya
+     * comparte igual al mandar esa solicitud (nombre y email).
+     */
+    export const PathQrCuenta = 'qrCuenta';
+
+    export interface QrCuentaInfo {
+      uid: string;
+      nombre: string;
+      email: string;
+    }
   }
 
   // ─── MASCOTAS ──────────────────────────────────────────────────────────────

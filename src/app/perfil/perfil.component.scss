@@ -406,3 +406,29 @@ ion-item::after {
   display: none !important;
   border-bottom: none !important;
 }
+
+.modal-mi-qr {
+  --background: var(--ion-background-color);
+}
+
+.qr-cuenta-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+
+  qrcode {
+    background: #fff;
+    padding: 16px;
+    border-radius: 14px;
+  }
+}
+
+.qr-cuenta-ayuda {
+  text-align: center;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  line-height: 1.5;
+  max-width: 320px;
+}

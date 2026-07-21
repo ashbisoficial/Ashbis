@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnDestroy } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, signal, OnDestroy } from '@angular/core';
 import { NgIf, NgFor, TitleCasePipe } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle,
@@ -11,11 +11,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { addIcons } from 'ionicons';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import jsQR from 'jsqr';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { SecurityService } from 'src/app/services/security.service';
 import { PublicQrService } from 'src/app/services/public-qr.service';
+import { Models } from '../models/models';
 
 @Component({
   selector: 'app-mascota-perfil',
@@ -56,6 +58,11 @@ export class MascotaPerfilComponent implements OnDestroy {
   puedePublicarAdopcion = signal(false);
   publicandoAdopcion = false;
   actualizandoEstado = false;
+
+  // ── Escanear QR de cuenta (evita tipear el email a mano) ─────────────────
+  @ViewChild('qrInput') private qrInputRef?: ElementRef<HTMLInputElement>;
+  escaneandoQr = false;
+  private tipoEscaneoPendiente: 'adopcion' | 'hogar_temporal' | null = null;
 
   private miUid: string | null = null;
   private misRefugios: string[] = [];
@@ -299,44 +306,149 @@ editarPerfil() {
         { text: 'Cancelar', role: 'cancel' },
         {
           text: 'Enviar',
-          handler: async (data) => {
+          handler: (data) => {
             const email = this.security.sanitizeText(data.email || '', 200);
             if (!this.security.isValidEmail(email)) {
-              await this.presentToast('Ingresa un email válido.', 'danger');
+              this.presentToast('Ingresa un email válido.', 'danger');
               return false;
             }
-            try {
-              const uid = this.auth.getCurrentUser()?.uid;
-              const perfil = uid ? await this.fs.getDocument(`usuarios/${uid}`) : null;
-              const deNombre = perfil?.nombreRefugio?.trim()
-                || `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
-                || 'Un refugio';
-              await this.fs.crearTransferencia(
-                tipo,
-                m.id!,
-                m.nombre,
-                m.uidUsuario,
-                deNombre,
-                email,
-                data.mensaje ? this.security.sanitizeText(data.mensaje, 500) : undefined
-              );
-              await this.presentToast(
-                esAdopcion ? 'Solicitud de adopción enviada.' : 'Solicitud de hogar temporal enviada.',
-                'success'
-              );
-              return true;
-            } catch (err: any) {
-              await this.presentToast(
-                err?.message || 'No se pudo enviar la solicitud. Intenta nuevamente.',
-                'danger'
-              );
-              return false;
-            }
+            const mensaje = data.mensaje ? this.security.sanitizeText(data.mensaje, 500) : undefined;
+            return this.enviarSolicitudTransferencia(m, tipo, email, mensaje);
           }
         }
       ]
     });
     await alert.present();
+  }
+
+  /** Lógica común de "mandar la solicitud", ya sea que el email se haya
+   *  tipeado a mano o se haya resuelto escaneando el QR de cuenta de la
+   *  otra persona. */
+  private async enviarSolicitudTransferencia(
+    m: Mascota,
+    tipo: 'adopcion' | 'hogar_temporal',
+    email: string,
+    mensaje?: string
+  ): Promise<boolean> {
+    const esAdopcion = tipo === 'adopcion';
+    try {
+      const uid = this.auth.getCurrentUser()?.uid;
+      const perfil = uid ? await this.fs.getDocument(`usuarios/${uid}`) : null;
+      const deNombre = perfil?.nombreRefugio?.trim()
+        || `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
+        || 'Un refugio';
+      await this.fs.crearTransferencia(tipo, m.id!, m.nombre, m.uidUsuario, deNombre, email, mensaje);
+      await this.presentToast(
+        esAdopcion ? 'Solicitud de adopción enviada.' : 'Solicitud de hogar temporal enviada.',
+        'success'
+      );
+      return true;
+    } catch (err: any) {
+      await this.presentToast(err?.message || 'No se pudo enviar la solicitud. Intenta nuevamente.', 'danger');
+      return false;
+    }
+  }
+
+  /** Punto de entrada del botón "Escanear QR": pregunta para qué es (no se
+   *  puede saber de antemano mirando el QR, que solo identifica a la
+   *  persona) y recién ahí abre la cámara/galería. */
+  async escanearQrParaTransferencia(): Promise<void> {
+    if (!this.mascota()) return;
+    const alert = await this.alertCtrl.create({
+      header: 'Escanear QR',
+      message: 'Escaneá el QR de cuenta de la otra persona para mandarle la solicitud sin tipear su email.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Es para adopción', handler: () => this.iniciarEscaneoQr('adopcion') },
+        { text: 'Es para hogar temporal', handler: () => this.iniciarEscaneoQr('hogar_temporal') },
+      ],
+    });
+    await alert.present();
+  }
+
+  private async iniciarEscaneoQr(tipo: 'adopcion' | 'hogar_temporal'): Promise<void> {
+    const m = this.mascota();
+    if (!m?.id) return;
+    if (tipo === 'hogar_temporal' && await this.fs.hayHogarTemporalActivo(m.id)) {
+      await this.presentToast(`${m.nombre} ya está en un hogar temporal activo.`, 'danger');
+      return;
+    }
+    this.tipoEscaneoPendiente = tipo;
+    this.qrInputRef?.nativeElement.click();
+  }
+
+  /** El input de archivo (con capture="environment") abre directo la
+   *  cámara en el celular, igual que el resto de las fotos de la app — no
+   *  hace falta un stream de video en vivo ni un plugin nuevo. */
+  async onQrFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    const tipo = this.tipoEscaneoPendiente;
+    const m = this.mascota();
+    this.tipoEscaneoPendiente = null;
+    if (!file || !tipo || !m) return;
+
+    this.escaneandoQr = true;
+    try {
+      const token = await this.decodificarQr(file);
+      if (!token) {
+        await this.presentToast('No se detectó ningún código QR en la foto. Probá con más luz y de más cerca.', 'danger');
+        return;
+      }
+      const info = await this.fs.resolverQrCuenta(token);
+      if (!info) {
+        await this.presentToast('Ese código QR no es válido.', 'danger');
+        return;
+      }
+      await this.confirmarEnvioPorQr(m, tipo, info);
+    } catch {
+      await this.presentToast('No se pudo leer el código QR. Intenta de nuevo.', 'danger');
+    } finally {
+      this.escaneandoQr = false;
+    }
+  }
+
+  private async confirmarEnvioPorQr(
+    m: Mascota,
+    tipo: 'adopcion' | 'hogar_temporal',
+    info: Models.Auth.QrCuentaInfo
+  ): Promise<void> {
+    const esAdopcion = tipo === 'adopcion';
+    const alert = await this.alertCtrl.create({
+      header: esAdopcion ? `Adopción de ${m.nombre}` : `Hogar temporal para ${m.nombre}`,
+      message: `¿Enviarle la solicitud a ${info.nombre} (${info.email})?`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Enviar', handler: () => this.enviarSolicitudTransferencia(m, tipo, info.email) },
+      ],
+    });
+    await alert.present();
+  }
+
+  private decodificarQr(file: File): Promise<string | null> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(null); return; }
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const resultado = jsQR(imageData.data, imageData.width, imageData.height);
+          resolve(resultado?.data ?? null);
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo cargar la imagen.')); };
+      img.src = url;
+    });
   }
 
   private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
