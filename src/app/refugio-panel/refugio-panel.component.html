@@ -18,6 +18,35 @@
       No se pudo cargar toda la información (puede faltar algún dato). Si el problema sigue, avísale al equipo de Ashbis.
     </div>
 
+    <!-- Verificación (antifraude): documento legal + insignia, revisión manual del equipo de Ashbis. -->
+    <ion-card class="seccion-card tarjeta-verificacion" [class.verificado]="verificado()">
+      <ion-card-content>
+        <div class="verificacion-header">
+          <ion-icon [name]="verificado() ? 'shield-checkmark-outline' : 'document-text-outline'"></ion-icon>
+          <div>
+            <h2 *ngIf="verificado()">Refugio verificado por Ashbis</h2>
+            <h2 *ngIf="!verificado()">Cuenta sin verificar</h2>
+            <p *ngIf="verificado()">El equipo de Ashbis confirmó la identidad legal de este refugio.</p>
+            <p *ngIf="!verificado() && documentoLegalUrl()">Documento enviado, en revisión por el equipo de Ashbis.</p>
+            <p *ngIf="!verificado() && !documentoLegalUrl()">
+              Subí un documento legal (personería jurídica, RUT o certificado de constitución) para que Ashbis pueda
+              verificar la cuenta. Se muestra como insignia en tus publicaciones para dar más confianza.
+            </p>
+          </div>
+        </div>
+
+        <ng-container *ngIf="esDueno && !verificado()">
+          <input #documentoInput type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden
+            (change)="subirDocumentoVerificacion($event)" />
+          <ion-button expand="block" fill="outline" color="medium" [disabled]="subiendoDocumento()"
+            (click)="documentoInput.click()">
+            <ion-icon name="document-text-outline" slot="start"></ion-icon>
+            {{ subiendoDocumento() ? 'Subiendo...' : (documentoLegalUrl() ? 'Volver a subir documento' : 'Subir documento') }}
+          </ion-button>
+        </ng-container>
+      </ion-card-content>
+    </ion-card>
+
     <ion-button expand="block" fill="outline" color="danger" [routerLink]="['/tabs/refugio-chat', refugioUid]">
       <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
       Chat del equipo

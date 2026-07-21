@@ -98,7 +98,10 @@ service cloud.firestore {
       allow read:   if isUser(uid) || esMiembroDelRefugio(uid);
       allow create: if isUser(uid) && noLongStrings(request.resource.data)
                     && request.resource.data.get('rol', 'usuario')
-                       in ['usuario', 'refugio', 'veterinario'];
+                       in ['usuario', 'refugio', 'veterinario']
+                    // "verificado" nunca se autodeclara true al crear la
+                    // cuenta — mismo motivo que en "update" más abajo.
+                    && request.resource.data.get('verificado', false) == false;
       // El rol se autodeclara una sola vez, al crear la cuenta (no hay
       // verificación de que un "refugio" o "veterinario" lo sean de verdad).
       // Por eso "update" nunca puede cambiarlo: si se pudiera, cualquier
@@ -110,7 +113,13 @@ service cloud.firestore {
                     && request.resource.data.get('email', resource.data.get('email',''))
                        == resource.data.get('email', '')
                     && request.resource.data.get('rol', resource.data.get('rol', 'usuario'))
-                       == resource.data.get('rol', 'usuario');
+                       == resource.data.get('rol', 'usuario')
+                    // "verificado" (antifraude de veterinarios/refugios) solo
+                    // lo cambia el equipo de Ashbis a mano en Firebase
+                    // Console con el Admin SDK, que ignora estas reglas — el
+                    // cliente nunca puede tocarlo, en ningún sentido.
+                    && request.resource.data.get('verificado', false)
+                       == resource.data.get('verificado', false);
       allow delete: if false;
 
       // Si uid es un refugio, esta lista también funciona como "veterinarias
@@ -320,6 +329,17 @@ service cloud.firestore {
     match /lugares/{placeId} {
       allow read:  if isAuth();
       allow write: if isAuth() && noLongStrings(request.resource.data);
+    }
+
+    // Espejo público (antifraude) de un refugio: solo nombre, si está
+    // verificado por Ashbis, y el total de donaciones que declaró en su
+    // bitácora financiera. Lo mantienen al día únicamente Cloud Functions
+    // (Admin SDK) a partir de usuarios/{uid} y sus movimientosFinancieros —
+    // el resto del perfil (email, teléfono, dirección) sigue sin ser
+    // accesible para nadie más que el dueño/equipo.
+    match /refugiosPublico/{uid} {
+      allow read:  if isAuth();
+      allow write: if false;
     }
 
     match /publicaciones/{postId} {

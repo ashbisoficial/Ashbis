@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { onRequest } from 'firebase-functions/v2/https';
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentDeleted, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
 
 admin.initializeApp();
@@ -1088,6 +1088,61 @@ export const onTransferenciaCreada = onDocumentCreated(
       });
     } catch (error) {
       functions.logger.error('onTransferenciaCreada: error enviando push', error);
+    }
+  }
+);
+
+// ─── Antifraude de refugios: espejo público (verificación + recaudación) ──────
+// refugiosPublico/{uid} solo trae {nombreRefugio, verificado,
+// totalDonacionesDeclaradas} — lo que cualquier usuario logueado puede ver
+// de un refugio antes de postular a una adopción o donar, sin exponer el
+// resto del perfil (email, teléfono, dirección). Lo escribe únicamente el
+// Admin SDK acá; firestore.rules le niega la escritura al cliente.
+
+export const onUsuarioActualizado = onDocumentWritten(
+  { document: 'usuarios/{uid}', region: 'us-central1' },
+  async (event) => {
+    const after = event.data?.after?.data();
+    if (!after || after['rol'] !== 'refugio') return;
+    const uid = event.params.uid;
+    try {
+      await admin.firestore().doc(`refugiosPublico/${uid}`).set({
+        nombreRefugio: (after['nombreRefugio'] || 'Refugio').toString().trim() || 'Refugio',
+        verificado: after['verificado'] === true,
+      }, { merge: true });
+    } catch (error) {
+      functions.logger.error('onUsuarioActualizado: error sincronizando refugiosPublico', error);
+    }
+  }
+);
+
+async function ajustarTotalDonaciones(uid: string, mov: FirebaseFirestore.DocumentData | undefined, signo: 1 | -1) {
+  if (!mov || mov['categoria'] !== 'donacion' || mov['tipo'] !== 'ingreso') return;
+  const monto = Number(mov['monto']) || 0;
+  if (!monto) return;
+  await admin.firestore().doc(`refugiosPublico/${uid}`).set({
+    totalDonacionesDeclaradas: admin.firestore.FieldValue.increment(signo * monto),
+  }, { merge: true });
+}
+
+export const onMovimientoFinancieroCreado = onDocumentCreated(
+  { document: 'usuarios/{uid}/movimientosFinancieros/{movId}', region: 'us-central1' },
+  async (event) => {
+    try {
+      await ajustarTotalDonaciones(event.params.uid, event.data?.data(), 1);
+    } catch (error) {
+      functions.logger.error('onMovimientoFinancieroCreado: error actualizando total', error);
+    }
+  }
+);
+
+export const onMovimientoFinancieroEliminado = onDocumentDeleted(
+  { document: 'usuarios/{uid}/movimientosFinancieros/{movId}', region: 'us-central1' },
+  async (event) => {
+    try {
+      await ajustarTotalDonaciones(event.params.uid, event.data?.data(), -1);
+    } catch (error) {
+      functions.logger.error('onMovimientoFinancieroEliminado: error actualizando total', error);
     }
   }
 );

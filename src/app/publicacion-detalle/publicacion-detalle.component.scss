@@ -55,6 +55,38 @@ h1 {
   color: var(--ion-color-medium);
 }
 
+.icono-verificado {
+  color: #22c55e;
+  font-size: 15px;
+  vertical-align: -2px;
+}
+
+.aviso-donacion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+
+  ion-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  p { margin: 0; color: var(--ion-text-color); }
+
+  &.aviso-alerta {
+    background: rgba(255, 91, 91, .1);
+    border: 1px solid rgba(255, 91, 91, .4);
+    ion-icon { color: #ef4444; }
+  }
+
+  &.aviso-info {
+    background: rgba(34, 197, 94, .08);
+    border: 1px solid rgba(34, 197, 94, .3);
+    ion-icon { color: #22c55e; }
+  }
+}
+
 .postulacion-propia {
   margin-top: 12px;
   padding: 12px 14px;

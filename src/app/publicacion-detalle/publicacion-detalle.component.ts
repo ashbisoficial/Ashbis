@@ -18,7 +18,7 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { chatbubblesOutline, closeCircleOutline } from 'ionicons/icons';
+import { chatbubblesOutline, closeCircleOutline, shieldCheckmarkOutline, warningOutline } from 'ionicons/icons';
 import { Subject, combineLatest, of, switchMap, takeUntil } from 'rxjs';
 
 import { AuthenticationService } from '../firebase/authentication';
@@ -76,8 +76,10 @@ export class PublicacionDetalleComponent implements OnDestroy {
   postulacionesRecibidas: Models.Postulaciones.Postulacion[] = [];
   enviandoPostulacion = false;
 
+  infoRefugio: Models.RefugiosPublico.InfoPublicaRefugio | undefined;
+
   constructor() {
-    addIcons({ chatbubblesOutline, closeCircleOutline });
+    addIcons({ chatbubblesOutline, closeCircleOutline, shieldCheckmarkOutline, warningOutline });
 
     this.miUid = this.auth.getCurrentUser()?.uid ?? '';
 
@@ -94,8 +96,17 @@ export class PublicacionDetalleComponent implements OnDestroy {
         this.publicacion = pub;
         this.noEncontrada = !pub;
         this.cargando = false;
-        if (pub?.id) this.cargarPostulaciones(pub);
+        if (pub?.id) {
+          this.cargarPostulaciones(pub);
+          this.cargarInfoRefugio(pub.uidAutor);
+        }
       });
+  }
+
+  private cargarInfoRefugio(uidAutor: string): void {
+    this.firestoreService.getInfoPublicaRefugio(uidAutor)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(info => this.infoRefugio = info);
   }
 
   ngOnDestroy(): void {

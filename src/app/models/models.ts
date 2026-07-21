@@ -64,9 +64,15 @@ export namespace Models {
       especialidades?: string[];
       /** Solo veterinario: si atiende en el local, a domicilio, o ambas. */
       modalidadAtencion?: ModalidadAtencion;
-      /** Revisión manual del título/registro profesional; false hasta que
-       *  el equipo de Ashbis lo confirme (funcionalidad de revisión: fase futura). */
+      /** Revisión manual del título/registro profesional (veterinario) o del
+       *  documento legal (refugio); false hasta que el equipo de Ashbis lo
+       *  confirme a mano en Firebase Console. El cliente nunca puede ponerlo
+       *  en true directamente — ver la regla de Firestore de "usuarios". */
       verificado?: boolean;
+      /** Solo si rol === 'refugio'. Documento legal (personería jurídica,
+       *  RUT, certificado de constitución) subido para verificación manual —
+       *  mismo criterio que tituloUrl para veterinarios. */
+      documentoLegalUrl?: string;
       /** Hasta 2 contactos adicionales de emergencia. Se exponen en el
        *  carnet público de una mascota en las mismas condiciones que el
        *  teléfono del dueño (siempre en el carnet médico; en el QR de
@@ -477,6 +483,28 @@ export namespace Models {
       fecha: string;
       creadoPor: string;
       createdAt?: any;
+    }
+  }
+
+  // ─── INFO PÚBLICA DE REFUGIO (antifraude: verificación + recaudación) ──────
+  export namespace RefugiosPublico {
+    /** Colección top-level, id de documento = uid del refugio. La mantienen
+     *  al día únicamente Cloud Functions (Admin SDK) a partir de
+     *  usuarios/{uid} y usuarios/{uid}/movimientosFinancieros — el cliente
+     *  nunca escribe acá directo. Solo trae los campos que tiene sentido que
+     *  vea cualquier persona antes de postular a una adopción o donar,
+     *  separados del resto del perfil (email, teléfono, dirección) que
+     *  sigue siendo privado. */
+    export const PathRefugiosPublico = 'refugiosPublico';
+
+    export interface InfoPublicaRefugio {
+      nombreRefugio: string;
+      verificado: boolean;
+      /** Suma de los movimientos tipo 'ingreso' categoría 'donacion' que el
+       *  refugio cargó en su bitácora financiera — declarado por el propio
+       *  refugio, no verificado por Ashbis; se muestra igual con esa
+       *  salvedad para dar transparencia antes de donar. */
+      totalDonacionesDeclaradas: number;
     }
   }
 

@@ -27,8 +27,8 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  addOutline, cashOutline, chatbubblesOutline, documentTextOutline, medkitOutline, pawOutline,
-  peopleOutline, statsChartOutline, trashOutline,
+  addOutline, cashOutline, chatbubblesOutline, checkmarkCircleOutline, documentTextOutline,
+  medkitOutline, pawOutline, peopleOutline, shieldCheckmarkOutline, statsChartOutline, trashOutline,
 } from 'ionicons/icons';
 import { catchError, combineLatest, of, Subject, take, takeUntil } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -83,6 +83,11 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
    *  su botón mientras corre, para evitar reenvíos dobles por doble tap). */
   reenviando = signal<string | null>(null);
 
+  // ── Verificación (antifraude) ────────────────────────────────────────────
+  verificado = signal(false);
+  documentoLegalUrl = signal<string | null>(null);
+  subiendoDocumento = signal(false);
+
   // ── Estadísticas (solo lectura) ─────────────────────────────────────────
   publicacionesActivas = computed(() => this.publicaciones().filter(p => p.activa).length);
   adopcionesConcretadas = computed(() =>
@@ -104,8 +109,8 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({
-      addOutline, cashOutline, chatbubblesOutline, documentTextOutline, medkitOutline, pawOutline,
-      peopleOutline, statsChartOutline, trashOutline,
+      addOutline, cashOutline, chatbubblesOutline, checkmarkCircleOutline, documentTextOutline,
+      medkitOutline, pawOutline, peopleOutline, shieldCheckmarkOutline, statsChartOutline, trashOutline,
     });
   }
 
@@ -142,7 +147,11 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
     this.esDueno = this.auth.getCurrentUser()?.uid === uid;
 
     this.fs.getDocument(`usuarios/${uid}`)
-      .then(perfil => this.nombreRefugio.set(perfil?.nombreRefugio?.trim() || 'Refugio'))
+      .then(perfil => {
+        this.nombreRefugio.set(perfil?.nombreRefugio?.trim() || 'Refugio');
+        this.verificado.set(perfil?.verificado === true);
+        this.documentoLegalUrl.set(perfil?.documentoLegalUrl ?? null);
+      })
       .catch(() => this.errorPermisos.set(true));
 
     const conFallback = <T>(obs$: import('rxjs').Observable<T[]>) =>
@@ -183,6 +192,34 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
 
   verPublicacion(p: Models.Publicaciones.Publicacion): void {
     this.router.navigate(['/tabs/publicacion', p.id]);
+  }
+
+  async subirDocumentoVerificacion(event: Event): Promise<void> {
+    if (!this.esDueno) return;
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    const error = this.security.validateFile(file, {
+      allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+      maxMb: 15,
+    });
+    if (error) {
+      await this.mostrarToast(error, 'danger');
+      (event.target as HTMLInputElement).value = '';
+      return;
+    }
+
+    this.subiendoDocumento.set(true);
+    try {
+      const url = await this.fs.uploadDocumentoLegalRefugio(this.refugioUid, file);
+      this.documentoLegalUrl.set(url);
+      await this.mostrarToast('Documento enviado. El equipo de Ashbis lo va a revisar.', 'success');
+    } catch {
+      await this.mostrarToast('No se pudo subir el documento. Intenta nuevamente.', 'danger');
+    } finally {
+      this.subiendoDocumento.set(false);
+      (event.target as HTMLInputElement).value = '';
+    }
   }
 
   async agregarVeterinaria(): Promise<void> {

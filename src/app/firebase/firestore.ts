@@ -723,6 +723,30 @@ export class FirestoreService {
     return getDownloadURL(r);
   }
 
+  /** Sube el documento legal de una cuenta de refugio (personería jurídica,
+   *  RUT, certificado) para verificación manual futura y lo guarda en el
+   *  perfil. A diferencia del título de veterinario, esto se llama desde una
+   *  cuenta ya existente (refugio-panel), nunca durante el registro. */
+  async uploadDocumentoLegalRefugio(uid: string, file: File): Promise<string> {
+    this.assertAuthenticated();
+    const safeFilename = this.sanitizeFilename(file.name);
+    const path = `usuarios/${uid}/legal/${Date.now()}-${safeFilename}`;
+    const r = ref(this.storage, path);
+    await uploadBytes(r, file);
+    const url = await getDownloadURL(r);
+    await updateDoc(doc(this.firestore, `usuarios/${uid}`), { documentoLegalUrl: url });
+    return url;
+  }
+
+  /** Info pública (antifraude) de un refugio: nombre, si está verificado por
+   *  Ashbis y el total de donaciones que declaró — la mantienen al día solo
+   *  Cloud Functions, así que cualquier usuario logueado puede leerla sin
+   *  exponer el resto del perfil del refugio. */
+  getInfoPublicaRefugio(refugioUid: string): Observable<Models.RefugiosPublico.InfoPublicaRefugio | undefined> {
+    return docData(doc(this.firestore, `${Models.RefugiosPublico.PathRefugiosPublico}/${refugioUid}`)) as
+      Observable<Models.RefugiosPublico.InfoPublicaRefugio | undefined>;
+  }
+
   // ── Publicaciones (refugio: adopción/recolección/donación) ─────────────────
 
   getPublicacionesActivas(): Observable<Models.Publicaciones.Publicacion[]> {
