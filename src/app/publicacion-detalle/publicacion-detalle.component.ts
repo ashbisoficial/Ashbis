@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonHeader,
   IonToolbar,
@@ -10,10 +10,21 @@ import {
   IonContent,
   IonBadge,
   IonSpinner,
+  IonButton,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  AlertController,
+  ToastController,
 } from '@ionic/angular/standalone';
-import { Subject, switchMap, takeUntil } from 'rxjs';
+import { addIcons } from 'ionicons';
+import { chatbubblesOutline, closeCircleOutline } from 'ionicons/icons';
+import { Subject, combineLatest, of, switchMap, takeUntil } from 'rxjs';
 
+import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
+import { RefugioContextService } from '../services/refugio-context.service';
+import { SecurityService } from '../services/security.service';
 import { Models } from '../models/models';
 
 @Component({
@@ -31,11 +42,21 @@ import { Models } from '../models/models';
     IonContent,
     IonBadge,
     IonSpinner,
+    IonButton,
+    IonIcon,
+    IonItem,
+    IonLabel,
   ],
 })
 export class PublicacionDetalleComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly firestoreService = inject(FirestoreService);
+  private readonly auth = inject(AuthenticationService);
+  private readonly refugioCtx = inject(RefugioContextService);
+  private readonly security = inject(SecurityService);
+  private readonly alertCtrl = inject(AlertController);
+  private readonly toastCtrl = inject(ToastController);
   private readonly destroy$ = new Subject<void>();
 
   readonly etiquetasTipo: Record<Models.Publicaciones.TipoPublicacion, string> = {
@@ -49,7 +70,17 @@ export class PublicacionDetalleComponent implements OnDestroy {
   noEncontrada = false;
   publicacion: Models.Publicaciones.Publicacion | undefined;
 
+  private miUid = '';
+  soyDueno = false;
+  miPostulacion: Models.Postulaciones.Postulacion | null = null;
+  postulacionesRecibidas: Models.Postulaciones.Postulacion[] = [];
+  enviandoPostulacion = false;
+
   constructor() {
+    addIcons({ chatbubblesOutline, closeCircleOutline });
+
+    this.miUid = this.auth.getCurrentUser()?.uid ?? '';
+
     this.route.paramMap
       .pipe(
         takeUntil(this.destroy$),
@@ -63,11 +94,114 @@ export class PublicacionDetalleComponent implements OnDestroy {
         this.publicacion = pub;
         this.noEncontrada = !pub;
         this.cargando = false;
+        if (pub?.id) this.cargarPostulaciones(pub);
       });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private cargarPostulaciones(pub: Models.Publicaciones.Publicacion): void {
+    if (!pub.id || pub.tipo !== 'adopcion' || !this.miUid) return;
+
+    this.refugioCtx.contexto$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(ctx => {
+        this.soyDueno = ctx.todos.includes(pub.uidAutor);
+
+        if (this.soyDueno) {
+          this.firestoreService.getPostulacionesPorPublicacion(pub.id!)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(ps => this.postulacionesRecibidas = ps);
+        } else {
+          this.firestoreService.getMisPostulaciones(this.miUid)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(ps => {
+              this.miPostulacion = ps.find(p => p.publicacionId === pub.id && p.estado === 'pendiente') ?? null;
+            });
+        }
+      });
+  }
+
+  async postular(): Promise<void> {
+    const pub = this.publicacion;
+    if (!pub?.id || this.enviandoPostulacion) return;
+    const alert = await this.alertCtrl.create({
+      header: `Postular a adoptar a ${pub.titulo}`,
+      message: 'El refugio va a ver tu postulación y, si le interesa, se abre un chat directo con vos para coordinar.',
+      inputs: [
+        { name: 'mensaje', type: 'textarea', placeholder: 'Contale al refugio por qué querés adoptarla (opcional)' },
+      ],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Postular',
+          handler: async (data) => {
+            this.enviandoPostulacion = true;
+            try {
+              const mensaje = data.mensaje ? this.security.sanitizeText(data.mensaje, 500) : undefined;
+              await this.firestoreService.crearPostulacion(
+                pub.id!, pub.mascotaId, pub.titulo, pub.uidAutor, mensaje
+              );
+              await this.mostrarToast('¡Postulación enviada!', 'success');
+            } catch (err: any) {
+              await this.mostrarToast(err?.message || 'No se pudo enviar la postulación.', 'danger');
+            } finally {
+              this.enviandoPostulacion = false;
+            }
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  async cancelarMiPostulacion(): Promise<void> {
+    if (!this.miPostulacion?.id) return;
+    try {
+      await this.firestoreService.cancelarPostulacion(this.miPostulacion.id);
+      await this.mostrarToast('Postulación cancelada.', 'success');
+    } catch {
+      await this.mostrarToast('No se pudo cancelar. Intenta nuevamente.', 'danger');
+    }
+  }
+
+  async aceptarPostulacion(p: Models.Postulaciones.Postulacion): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Aceptar postulación',
+      message: `Se abre un chat directo con ${p.postulanteNombre} para coordinar la adopción. Todavía no transfiere la mascota — eso lo hacés después, ya charlando.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Aceptar y abrir chat',
+          handler: async () => {
+            try {
+              const chatId = await this.firestoreService.aceptarPostulacion(p);
+              this.router.navigate(['/tabs/chat-directo', chatId]);
+            } catch (err: any) {
+              await this.mostrarToast(err?.message || 'No se pudo aceptar la postulación.', 'danger');
+            }
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  async rechazarPostulacion(p: Models.Postulaciones.Postulacion): Promise<void> {
+    if (!p.id) return;
+    try {
+      await this.firestoreService.rechazarPostulacion(p.id);
+      await this.mostrarToast('Postulación rechazada.', 'success');
+    } catch {
+      await this.mostrarToast('No se pudo rechazar. Intenta nuevamente.', 'danger');
+    }
+  }
+
+  private async mostrarToast(message: string, color: 'success' | 'danger'): Promise<void> {
+    const toast = await this.toastCtrl.create({ message, duration: 2500, color });
+    await toast.present();
   }
 }

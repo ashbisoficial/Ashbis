@@ -354,6 +354,66 @@ service cloud.firestore {
       allow delete: if isUser(resource.data.uidAutor);
     }
 
+    match /postulaciones/{postulacionId} {
+      // El postulante ve la propia; el refugio (dueño/equipo) ve las suyas.
+      allow read: if isUser(resource.data.postulanteUid)
+                  || puedeOperarComoRefugio(resource.data.refugioUid);
+
+      // Cualquier usuario autenticado puede postular a una publicación de
+      // adopción activa, siempre que sea realmente del refugio indicado.
+      allow create: if isUser(request.resource.data.postulanteUid)
+                    && request.resource.data.estado == 'pendiente'
+                    && get(/databases/$(database)/documents/publicaciones/$(request.resource.data.publicacionId)).data.tipo == 'adopcion'
+                    && get(/databases/$(database)/documents/publicaciones/$(request.resource.data.publicacionId)).data.activa == true
+                    && get(/databases/$(database)/documents/publicaciones/$(request.resource.data.publicacionId)).data.uidAutor == request.resource.data.refugioUid
+                    && noLongStrings(request.resource.data);
+
+      // El refugio acepta o rechaza mientras siga pendiente. Aceptar NO
+      // transfiere la mascota, solo habilita crear el ChatDirecto (ver más
+      // abajo) — el traspaso real sigue siendo una Transferencia aparte.
+      allow update: if puedeOperarComoRefugio(resource.data.refugioUid)
+                    && resource.data.estado == 'pendiente'
+                    && request.resource.data.estado in ['aceptada', 'rechazada']
+                    && request.resource.data.postulanteUid == resource.data.postulanteUid
+                    && request.resource.data.refugioUid == resource.data.refugioUid;
+
+      // El propio postulante puede arrepentirse mientras siga pendiente.
+      allow update: if isUser(resource.data.postulanteUid)
+                    && resource.data.estado == 'pendiente'
+                    && request.resource.data.estado == 'cancelada'
+                    && request.resource.data.postulanteUid == resource.data.postulanteUid
+                    && request.resource.data.refugioUid == resource.data.refugioUid;
+
+      allow delete: if false;
+    }
+
+    // Chat directo usuario ↔ refugio, para coordinar una adopción después
+    // de que el refugio acepta una postulación (mismo id que la postulación).
+    match /chatsDirectos/{chatId} {
+      allow read: if isAuth() && request.auth.uid in resource.data.participantes;
+      // Solo se crea al aceptar una postulación: lo crea el refugio de esa
+      // postulación, y siempre con exactamente los dos participantes.
+      allow create: if puedeOperarComoRefugio(request.resource.data.refugioUid)
+                    && request.auth.uid in request.resource.data.participantes
+                    && request.resource.data.participantes.size() == 2
+                    && noLongStrings(request.resource.data);
+      allow update: if false;
+      allow delete: if false;
+
+      match /mensajes/{msgId} {
+        allow read: if isAuth()
+                    && request.auth.uid in get(/databases/$(database)/documents/chatsDirectos/$(chatId)).data.participantes;
+        allow create: if isAuth()
+                      && request.auth.uid in get(/databases/$(database)/documents/chatsDirectos/$(chatId)).data.participantes
+                      && request.resource.data.autorUid == request.auth.uid
+                      && request.resource.data.texto is string
+                      && request.resource.data.texto.size() > 0
+                      && noLongStrings(request.resource.data);
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+
     match /transferencias/{transferId} {
       // Un refugio (dueño o equipo) inicia la transferencia de una mascota
       // que le pertenece hacia el email de otra persona. tipo='adopcion'

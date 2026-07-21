@@ -1,9 +1,9 @@
 <ion-header translucent="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/tabs/refugio-panel"></ion-back-button>
+      <ion-back-button defaultHref="/tabs/mis-chats"></ion-back-button>
     </ion-buttons>
-    <ion-title>Chat · {{ nombreRefugio() }}</ion-title>
+    <ion-title>{{ titulo() }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -15,7 +15,7 @@
     </div>
 
     <p class="vacio" *ngIf="!cargando() && !mensajes().length">
-      Todavía no hay mensajes. Escribí el primero para avisarle algo al equipo.
+      Todavía no hay mensajes. Escribí el primero para coordinar la adopción.
     </p>
 
     <div class="message-bubble" *ngFor="let m of mensajes(); trackBy: trackById"
@@ -30,9 +30,6 @@
 
 </ion-content>
 
-<!-- ion-footer (no un div suelto dentro de ion-content): así la barra de
-     escribir queda SIEMPRE pegada abajo del viewport, sin que el scroll del
-     contenido ni el teclado la desplacen — mismo criterio que WhatsApp. -->
 <ion-footer class="input-footer">
   <div class="input-panel">
     <ion-input

@@ -1,0 +1,68 @@
+.chats-content {
+  --background: var(--ion-background-color);
+}
+
+.vacio {
+  text-align: center;
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  margin-top: 40px;
+  padding: 0 24px;
+}
+
+.chats-list {
+  padding: 10px 12px;
+}
+
+.item-chat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--ashbis-surface);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ion-text-color);
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.info-chat {
+  flex: 1;
+  min-width: 0;
+}
+
+.chevron {
+  color: var(--ion-color-medium);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.avatar-chat {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #8b0808;
+  color: #ffffff;
+  flex-shrink: 0;
+
+  ion-icon { font-size: 22px; }
+
+  &.avatar-equipo {
+    background: var(--ion-color-medium);
+  }
+}

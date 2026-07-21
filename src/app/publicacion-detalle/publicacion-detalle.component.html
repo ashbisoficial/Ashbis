@@ -35,6 +35,42 @@
       <p class="fecha" *ngIf="pub.createdAt">
         {{ pub.createdAt.toDate ? (pub.createdAt.toDate() | date:'dd/MM/yyyy') : '' }}
       </p>
+
+      <!-- Postular (cualquiera menos el propio refugio) -->
+      <ng-container *ngIf="pub.tipo === 'adopcion' && !soyDueno">
+        <ion-button expand="block" color="danger" *ngIf="!miPostulacion && pub.activa"
+          [disabled]="enviandoPostulacion" (click)="postular()">
+          Postular a esta adopción
+        </ion-button>
+        <div class="postulacion-propia" *ngIf="miPostulacion">
+          <p>✅ Ya postulaste. Esperando respuesta del refugio.</p>
+          <ion-button fill="clear" color="medium" (click)="cancelarMiPostulacion()">
+            <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+            Cancelar postulación
+          </ion-button>
+        </div>
+      </ng-container>
+
+      <!-- Postulaciones recibidas (dueño/equipo del refugio) -->
+      <div class="postulaciones-recibidas" *ngIf="soyDueno && postulacionesRecibidas.length">
+        <h3>Postulaciones ({{ postulacionesRecibidas.length }})</h3>
+        <ion-item lines="none" class="item-postulacion" *ngFor="let p of postulacionesRecibidas">
+          <ion-label class="ion-text-wrap">
+            <h2>{{ p.postulanteNombre }}</h2>
+            <p>{{ p.postulanteEmail }}</p>
+            <p class="mensaje" *ngIf="p.mensaje">"{{ p.mensaje }}"</p>
+          </ion-label>
+          <div class="acciones-postulacion">
+            <ion-button size="small" color="danger" (click)="aceptarPostulacion(p)">
+              <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+              Aceptar
+            </ion-button>
+            <ion-button size="small" fill="outline" color="medium" (click)="rechazarPostulacion(p)">
+              Rechazar
+            </ion-button>
+          </div>
+        </ion-item>
+      </div>
     </div>
   </div>
 

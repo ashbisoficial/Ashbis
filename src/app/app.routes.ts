@@ -168,6 +168,18 @@ export const routes: Routes = [
             .then(m => m.RefugioChatComponent),
       },
       {
+        path: 'mis-chats',
+        loadComponent: () =>
+          import('./mis-chats/mis-chats.component')
+            .then(m => m.MisChatsComponent),
+      },
+      {
+        path: 'chat-directo/:chatId',
+        loadComponent: () =>
+          import('./chat-directo/chat-directo.component')
+            .then(m => m.ChatDirectoComponent),
+      },
+      {
         path: 'veterinario-panel',
         loadComponent: () =>
           import('./veterinario-panel/veterinario-panel.component')

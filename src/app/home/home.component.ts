@@ -106,8 +106,10 @@ export class HomePage implements OnInit, OnDestroy {
 
   /** Refugios a los que tengo acceso (dueño y/o colaborador); vacío = sin chat de equipo. */
   private misRefugios: string[] = [];
-  get mostrarChatRefugio(): boolean {
-    return this.misRefugios.length > 0;
+  /** Chats directos de adopción (como postulante o como refugio). */
+  private misChatsDirectos: Models.ChatDirecto.Chat[] = [];
+  get mostrarMisChats(): boolean {
+    return this.misRefugios.length > 0 || this.misChatsDirectos.length > 0;
   }
 
   userEmail$ = this.auth.authState$.pipe(map(u => u?.email ?? ''));
@@ -177,11 +179,32 @@ export class HomePage implements OnInit, OnDestroy {
   private cargarContextoRefugio(): void {
     runInInjectionContext(this.injector, () => this.refugioCtx.contexto$())
       .pipe(take(1), takeUntil(this.destroy$))
-      .subscribe(ctx => { this.misRefugios = ctx.todos; });
+      .subscribe(ctx => {
+        this.misRefugios = ctx.todos;
+        if (!ctx.miUid) return;
+        runInInjectionContext(this.injector, () =>
+          this.firestoreService.getMisChatsDirectos(ctx.miUid!)
+        ).pipe(take(1), takeUntil(this.destroy$))
+          .subscribe(chats => { this.misChatsDirectos = chats; });
+      });
   }
 
-  irAlChatDelEquipo(): void {
-    this.refugioCtx.irARefugio(this.misRefugios, '/tabs/refugio-chat');
+  /** Si hay más de un chat en total (equipos + directos) lleva al listado
+   *  estilo WhatsApp; si hay uno solo, abre esa conversación directamente. */
+  irAMisChats(): void {
+    const totalDirectos = this.misChatsDirectos.length;
+    const total = this.misRefugios.length + totalDirectos;
+    if (total === 0) return;
+
+    if (total > 1) {
+      this.router.navigate(['/tabs/mis-chats']);
+      return;
+    }
+    if (totalDirectos === 1) {
+      this.router.navigate(['/tabs/chat-directo', this.misChatsDirectos[0].id]);
+    } else {
+      this.refugioCtx.irARefugio(this.misRefugios, '/tabs/refugio-chat');
+    }
   }
 
   private cargarPublicacionesActivas() {

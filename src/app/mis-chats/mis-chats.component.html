@@ -1,0 +1,33 @@
+<ion-header translucent="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Mis chats</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="chats-content">
+
+  <div class="ion-text-center ion-padding" *ngIf="cargando">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <p class="vacio" *ngIf="!cargando && !filas.length">
+    Todavía no tenés chats. Postulá a una adopción o sumate al equipo de un refugio para empezar uno.
+  </p>
+
+  <div class="chats-list" *ngIf="!cargando && filas.length">
+    <div class="item-chat" *ngFor="let f of filas" (click)="abrir(f)">
+      <div class="avatar-chat" [class.avatar-equipo]="f.tipo === 'equipo'">
+        <ion-icon [name]="f.tipo === 'equipo' ? 'people-outline' : 'paw-outline'"></ion-icon>
+      </div>
+      <div class="info-chat">
+        <h2>{{ f.titulo }}</h2>
+        <p>{{ f.subtitulo }}</p>
+      </div>
+      <ion-icon name="chevron-forward-outline" class="chevron"></ion-icon>
+    </div>
+  </div>
+
+</ion-content>

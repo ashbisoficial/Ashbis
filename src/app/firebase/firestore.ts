@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import {
   Firestore,
   collection, collectionData, collectionGroup, deleteDoc, doc, getDoc, getDocs,
-  serverTimestamp, setDoc, updateDoc, docData, addDoc,
+  serverTimestamp, setDoc, updateDoc, docData, addDoc, writeBatch,
   query, where, orderBy, limit, CollectionReference, Timestamp,
   arrayUnion, arrayRemove,
 } from '@angular/fire/firestore';
@@ -783,6 +783,129 @@ export class FirestoreService {
 
   async eliminarPublicacion(id: string): Promise<void> {
     await deleteDoc(doc(this.firestore, `${Models.Publicaciones.PathPublicaciones}/${id}`));
+  }
+
+  // ── Postulaciones de adopción ────────────────────────────────────────────────
+
+  async crearPostulacion(
+    publicacionId: string,
+    mascotaId: string | undefined,
+    mascotaNombre: string,
+    refugioUid: string,
+    mensaje?: string
+  ): Promise<string> {
+    const uid = this.assertAuthenticated();
+    const perfil = await this.getDocument(`usuarios/${uid}`);
+    const postulanteNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || 'Alguien';
+    const clean = this.security.sanitizeFirestoreObject({
+      publicacionId,
+      ...(mascotaId ? { mascotaId } : {}),
+      mascotaNombre,
+      refugioUid,
+      postulanteUid: uid,
+      postulanteNombre,
+      postulanteEmail: perfil?.email ?? this.auth.currentUser?.email ?? '',
+      estado: 'pendiente' as const,
+      ...(mensaje?.trim() ? { mensaje } : {}),
+    });
+    const refDoc = doc(collection(this.firestore, Models.Postulaciones.PathPostulaciones));
+    await setDoc(refDoc, { ...clean, createdAt: serverTimestamp() });
+    return refDoc.id;
+  }
+
+  /** Postulaciones pendientes de una publicación puntual — para que el
+   *  refugio elija con quién seguir la conversación. */
+  getPostulacionesPorPublicacion(publicacionId: string): Observable<Models.Postulaciones.Postulacion[]> {
+    const r = collection(this.firestore, Models.Postulaciones.PathPostulaciones);
+    const q = query(r, where('publicacionId', '==', publicacionId), where('estado', '==', 'pendiente'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Postulaciones.Postulacion[]>;
+  }
+
+  /** Mis propias postulaciones (para saber si ya postulé a esta publicación). */
+  getMisPostulaciones(uid: string): Observable<Models.Postulaciones.Postulacion[]> {
+    const r = collection(this.firestore, Models.Postulaciones.PathPostulaciones);
+    const q = query(r, where('postulanteUid', '==', uid));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Postulaciones.Postulacion[]>;
+  }
+
+  async cancelarPostulacion(id: string): Promise<void> {
+    await updateDoc(doc(this.firestore, `${Models.Postulaciones.PathPostulaciones}/${id}`), {
+      estado: 'cancelada',
+      resueltaEn: serverTimestamp(),
+    });
+  }
+
+  async rechazarPostulacion(id: string): Promise<void> {
+    await updateDoc(doc(this.firestore, `${Models.Postulaciones.PathPostulaciones}/${id}`), {
+      estado: 'rechazada',
+      resueltaEn: serverTimestamp(),
+    });
+  }
+
+  /** Acepta la postulación (no transfiere la mascota) y crea el ChatDirecto
+   *  para coordinar — mismo id que la postulación, para no tener que
+   *  guardar la relación aparte. */
+  async aceptarPostulacion(p: Models.Postulaciones.Postulacion): Promise<string> {
+    if (!p.id) throw new Error('Postulación inválida.');
+    const perfilRefugio = await this.getDocument(`usuarios/${p.refugioUid}`);
+    const refugioNombre = perfilRefugio?.nombreRefugio?.trim()
+      || `${perfilRefugio?.nombre ?? ''} ${perfilRefugio?.apellido ?? ''}`.trim()
+      || 'Refugio';
+
+    const batch = writeBatch(this.firestore);
+    batch.update(doc(this.firestore, `${Models.Postulaciones.PathPostulaciones}/${p.id}`), {
+      estado: 'aceptada',
+      resueltaEn: serverTimestamp(),
+    });
+    const chatPayload: Omit<Models.ChatDirecto.Chat, 'id'> = {
+      participantes: [p.refugioUid, p.postulanteUid],
+      ...(p.mascotaId ? { mascotaId: p.mascotaId } : {}),
+      mascotaNombre: p.mascotaNombre,
+      refugioUid: p.refugioUid,
+      refugioNombre,
+      postulanteUid: p.postulanteUid,
+      postulanteNombre: p.postulanteNombre,
+      postulacionId: p.id,
+      createdAt: serverTimestamp(),
+    };
+    batch.set(
+      doc(this.firestore, `${Models.ChatDirecto.PathChats}/${p.id}`),
+      this.security.sanitizeFirestoreObject(chatPayload as any)
+    );
+    await batch.commit();
+    return p.id;
+  }
+
+  // ── Chat directo (usuario ↔ refugio, por una adopción) ───────────────────────
+
+  /** Mis chats directos, sea como postulante o como refugio. */
+  getMisChatsDirectos(uid: string): Observable<Models.ChatDirecto.Chat[]> {
+    const r = collection(this.firestore, Models.ChatDirecto.PathChats);
+    const q = query(r, where('participantes', 'array-contains', uid));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.ChatDirecto.Chat[]>;
+  }
+
+  getMensajesChatDirecto(chatId: string): Observable<Models.ChatDirecto.Mensaje[]> {
+    const r = collection(this.firestore, `${Models.ChatDirecto.PathChats}/${chatId}/${Models.ChatDirecto.PathMensajes}`);
+    const q = query(r, orderBy('createdAt', 'asc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.ChatDirecto.Mensaje[]>;
+  }
+
+  async enviarMensajeChatDirecto(chatId: string, texto: string): Promise<void> {
+    const uid = this.assertAuthenticated();
+    const perfil = await this.getDocument(`usuarios/${uid}`);
+    const autorNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
+      || perfil?.nombreRefugio?.trim() || 'Alguien';
+    const payload: Omit<Models.ChatDirecto.Mensaje, 'id'> = {
+      texto,
+      autorUid: uid,
+      autorNombre,
+      createdAt: serverTimestamp(),
+    };
+    await addDoc(
+      collection(this.firestore, `${Models.ChatDirecto.PathChats}/${chatId}/${Models.ChatDirecto.PathMensajes}`),
+      this.security.sanitizeFirestoreObject(payload as any)
+    );
   }
 
   // ── Transferencias de dueño (adopción) y hogar temporal ─────────────────────

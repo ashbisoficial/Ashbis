@@ -368,6 +368,69 @@ export namespace Models {
     }
   }
 
+  // ─── POSTULACIONES DE ADOPCIÓN ──────────────────────────────────────────────
+  export namespace Postulaciones {
+    export const PathPostulaciones = 'postulaciones';
+
+    export type EstadoPostulacion = 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada';
+
+    /**
+     * Cualquier usuario postula a adoptar una mascota desde su publicación
+     * (tipo 'adopcion'). El refugio ve todas las postulaciones pendientes y
+     * elige con quién seguir la conversación. Aceptar una postulación NO
+     * transfiere la mascota — solo abre un ChatDirecto para coordinar; el
+     * traspaso real de dueño sigue pasando por Transferencias, como ya
+     * funciona hoy (el refugio la manda desde el chat una vez que se
+     * pusieron de acuerdo).
+     */
+    export interface Postulacion {
+      id?: string;
+      publicacionId: string;
+      mascotaId?: string;
+      mascotaNombre: string;
+      refugioUid: string;
+      postulanteUid: string;
+      postulanteNombre: string;
+      postulanteEmail: string;
+      mensaje?: string;
+      estado: EstadoPostulacion;
+      createdAt?: any;
+      resueltaEn?: any;
+    }
+  }
+
+  // ─── CHAT DIRECTO (usuario ↔ refugio, por una postulación aceptada) ────────
+  export namespace ChatDirecto {
+    export const PathChats = 'chatsDirectos'; // colección top-level
+    export const PathMensajes = 'mensajes'; // subcolección de chatsDirectos/{id}
+
+    /**
+     * Se crea al aceptar una Postulacion, con el mismo id que ella (así no
+     * hace falta buscarlo aparte). Mensajes append-only, mismo criterio que
+     * ChatEquipo.
+     */
+    export interface Chat {
+      id?: string;
+      participantes: string[]; // [refugioUid, postulanteUid]
+      mascotaId?: string;
+      mascotaNombre: string;
+      refugioUid: string;
+      refugioNombre: string;
+      postulanteUid: string;
+      postulanteNombre: string;
+      postulacionId: string;
+      createdAt?: any;
+    }
+
+    export interface Mensaje {
+      id?: string;
+      texto: string;
+      autorUid: string;
+      autorNombre: string;
+      createdAt?: any;
+    }
+  }
+
   // ─── VETERINARIAS FAVORITAS ────────────────────────────────────────────────
   export namespace Veterinarias {
     export interface VeterinariaFavorita {

@@ -54,3 +54,57 @@ h1 {
   font-size: 12px;
   color: var(--ion-color-medium);
 }
+
+.postulacion-propia {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--ashbis-surface);
+  border-radius: 12px;
+
+  p {
+    margin: 0 0 6px;
+    font-size: 14px;
+    color: var(--ion-text-color);
+  }
+
+  ion-button {
+    margin: 0;
+    --padding-start: 0;
+  }
+}
+
+.postulaciones-recibidas {
+  margin-top: 20px;
+
+  h3 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ion-color-medium);
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+}
+
+.item-postulacion {
+  --background: var(--ashbis-surface);
+  --padding-start: 14px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+
+  ion-label {
+    h2 { font-size: 15px; font-weight: 700; color: var(--ion-text-color); }
+    p { font-size: 13px; color: var(--ion-color-medium); margin: 2px 0 0; }
+    .mensaje { font-style: italic; }
+  }
+}
+
+.acciones-postulacion {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  width: 100%;
+
+  ion-button { margin: 0; }
+}
