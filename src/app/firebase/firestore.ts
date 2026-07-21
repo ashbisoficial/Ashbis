@@ -797,9 +797,19 @@ export class FirestoreService {
     // una pendiente para esta mascota + este email, no se crea otra —
     // reenviar el aviso a esa misma solicitud se hace con
     // reenviarNotificacionTransferencia, no creando un duplicado.
+    //
+    // El filtro por deUid es imprescindible para que las reglas de
+    // Firestore puedan aprobar esta consulta: las reglas evalúan el
+    // conjunto de resultados POTENCIAL de la consulta, no los documentos
+    // reales que devuelve — sin deUid como filtro, Firestore no puede
+    // garantizar que todo posible resultado cumple
+    // puedeOperarComoRefugio(resource.data.deUid) (paraEmail es el email
+    // del destinatario, no el propio, así que esa otra rama tampoco sirve),
+    // y rechaza la consulta entera con "Missing or insufficient permissions".
     const emailNormalizado = paraEmail.trim().toLowerCase();
     const yaExiste = await getDocs(query(
       collection(this.firestore, Models.Transferencias.PathTransferencias),
+      where('deUid', '==', deUid),
       where('mascotaId', '==', mascotaId),
       where('paraEmail', '==', emailNormalizado),
       where('estado', '==', 'pendiente')
