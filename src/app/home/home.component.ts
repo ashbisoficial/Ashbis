@@ -22,7 +22,7 @@ import {
   informationCircleOutline
 } from 'ionicons/icons';
 import { register } from 'swiper/element/bundle';
-import { FirestoreService, Mascota, VeterinariaFavorita } from '../firebase/firestore';
+import { FirestoreService, VeterinariaFavorita } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { NotificacionesBellComponent } from '../notificaciones/notificaciones-bell.component';
 import { RefugioContextService } from '../services/refugio-context.service';
@@ -174,11 +174,13 @@ export class HomePage implements OnInit, OnDestroy {
   publicacionesCarrusel: Models.Publicaciones.Publicacion[] = [];
 
   // Sección de tarjetas "Mascotas en adopción" (debajo del segundo
-  // carrusel): solo publicaciones tipo 'adopcion', mostrando la info real
-  // de la ficha de la mascota (no solo lo que dice la publicación) cuando
-  // está vinculada a una.
+  // carrusel): solo publicaciones tipo 'adopcion'. La publicación misma
+  // guarda su propia copia de la info pública de la mascota (foto, especie,
+  // raza, sexo, edad...) — mascotas/{id} no es legible por cualquiera, así
+  // que NO se puede hacer un lookup en vivo acá para nadie que no sea el
+  // dueño/equipo (Cloud Function onMascotaActualizada mantiene esa copia al
+  // día si el dueño edita la ficha después de publicar).
   publicacionesAdopcion: Models.Publicaciones.Publicacion[] = [];
-  private infoMascotaAdopcion: Record<string, Mascota | undefined> = {};
 
   constructor() {
     addIcons({ chatbubblesOutline, locateOutline, bagOutline });
@@ -238,7 +240,6 @@ export class HomePage implements OnInit, OnDestroy {
         // tarjetas más abajo, para no mostrarlas duplicadas.
         this.publicacionesCarrusel = pubs.filter(p => p.tipo !== 'adopcion');
         this.publicacionesAdopcion = pubs.filter(p => p.tipo === 'adopcion');
-        this.cargarInfoMascotasAdopcion(this.publicacionesAdopcion);
       });
   }
 
@@ -249,39 +250,22 @@ export class HomePage implements OnInit, OnDestroy {
     return (this.publicacionesCarrusel.length || this.imagenesCarruselInferior.length) >= 4;
   }
 
-  /** Trae la ficha real de cada mascota vinculada a una publicación de
-   *  adopción (nombre/foto/especie/raza/edad), para mostrar la info
-   *  principal de la mascota y no solo lo que dice la publicación. */
-  private cargarInfoMascotasAdopcion(pubs: Models.Publicaciones.Publicacion[]): void {
-    for (const pub of pubs) {
-      const mascotaId = pub.mascotaId;
-      if (!mascotaId || mascotaId in this.infoMascotaAdopcion) continue;
-      this.infoMascotaAdopcion[mascotaId] = undefined;
-      runInInjectionContext(this.injector, () =>
-        this.firestoreService.getPetById(mascotaId)
-      ).pipe(take(1), takeUntil(this.destroy$))
-        .subscribe(m => { this.infoMascotaAdopcion[mascotaId] = m; });
-    }
-  }
-
-  /** Foto/nombre/info principal para la tarjeta: prioriza la ficha de la
-   *  mascota vinculada por sobre lo que dice la publicación. */
+  /** Foto/nombre/info principal para la tarjeta: la publicación ya trae su
+   *  propia copia de la info pública de la mascota (ver nota en
+   *  publicacionesAdopcion más arriba). */
   fotoAdopcion(pub: Models.Publicaciones.Publicacion): string {
-    const m = pub.mascotaId ? this.infoMascotaAdopcion[pub.mascotaId] : undefined;
-    return m?.fotoUrl || pub.fotoUrl || 'assets/img/9.jpg';
+    return pub.fotoUrl || 'assets/img/9.jpg';
   }
 
   nombreAdopcion(pub: Models.Publicaciones.Publicacion): string {
-    const m = pub.mascotaId ? this.infoMascotaAdopcion[pub.mascotaId] : undefined;
-    return m?.nombre || pub.titulo;
+    return pub.titulo;
   }
 
   infoPrincipalAdopcion(pub: Models.Publicaciones.Publicacion): string {
-    const m = pub.mascotaId ? this.infoMascotaAdopcion[pub.mascotaId] : undefined;
-    if (!m) return pub.nombreAutor;
-    return [m.especie, m.raza, m.edad != null ? `${m.edad} años` : null]
+    const info = [pub.especie, pub.raza, pub.edad != null ? `${pub.edad} años` : null]
       .filter(Boolean)
       .join(' · ');
+    return info || pub.nombreAutor;
   }
 
   verPublicacion(pub: Models.Publicaciones.Publicacion): void {

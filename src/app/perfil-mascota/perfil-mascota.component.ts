@@ -256,6 +256,17 @@ editarPerfil() {
                 mascotaId: m.id!,
                 aceptaVeracidad: true,
                 ...(m.fotoUrl ? { fotoUrl: m.fotoUrl } : {}),
+                // Info pública de la mascota: mascotas/{id} no es legible por
+                // cualquiera, así que esto es lo único que va a poder ver
+                // alguien que no sea el dueño/equipo. La Cloud Function
+                // onMascotaActualizada la mantiene al día si después editás
+                // la ficha (nueva foto, edad, etc.).
+                ...(m.especie ? { especie: m.especie } : {}),
+                ...(m.raza ? { raza: m.raza } : {}),
+                ...(m.sexo ? { sexo: m.sexo } : {}),
+                ...(m.edad != null ? { edad: m.edad } : {}),
+                ...(m.color ? { color: m.color } : {}),
+                ...(m.castrado ? { castrado: m.castrado } : {}),
               });
               await this.presentToast('¡Publicado! Ya aparece en el feed de adopciones del Home.', 'success');
               return true;

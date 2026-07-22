@@ -224,6 +224,14 @@ export class MisPublicacionesComponent implements OnDestroy {
         aceptaVeracidad: data.aceptaVeracidad === true,
         ...(data.mascotaId ? { mascotaId: data.mascotaId } : {}),
         ...(fotoUrl ? { fotoUrl } : {}),
+        // Info pública de la mascota vinculada: ver nota en
+        // perfil-mascota.component.ts (publicarEnAdopcion).
+        ...(mascota?.especie ? { especie: mascota.especie } : {}),
+        ...(mascota?.raza ? { raza: mascota.raza } : {}),
+        ...(mascota?.sexo ? { sexo: mascota.sexo } : {}),
+        ...(mascota?.edad != null ? { edad: mascota.edad } : {}),
+        ...(mascota?.color ? { color: mascota.color } : {}),
+        ...(mascota?.castrado ? { castrado: mascota.castrado } : {}),
       });
 
       this.toggleForm();

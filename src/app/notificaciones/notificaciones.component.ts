@@ -127,7 +127,15 @@ export class NotificacionesComponent implements OnDestroy {
       if (!mascotaId || mascotaId in this.fotosMascotas) continue;
       this.fotosMascotas[mascotaId] = null;
       this.firestoreService.getPetById(mascotaId)
-        .pipe(take(1), takeUntil(this.destroy$))
+        .pipe(
+          take(1),
+          takeUntil(this.destroy$),
+          // Una transferencia pendiente todavía no me hace dueño de la
+          // mascota (recién al aceptarla) — hasta entonces no tengo permiso
+          // para leerla directo, así que se resuelve con una foto vacía en
+          // vez de dejar el error sin manejar.
+          catchError(() => of(undefined))
+        )
         .subscribe(m => this.fotosMascotas[mascotaId] = m?.fotoUrl || null);
     }
   }

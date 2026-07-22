@@ -492,8 +492,12 @@ service cloud.firestore {
         (puedeOperarComoRefugio(resource.data.deUid) ||
          resource.data.paraEmail == request.auth.token.email.lower());
 
+      // Nota: NO se exige esCuentaRefugio(deUid) acá — desde que cualquier
+      // cuenta puede publicar/traspasar su propia mascota en adopción
+      // (#51), el dueño real puede ser una cuenta 'usuario' común. Lo que
+      // de verdad autoriza la transferencia es que deUid sea el dueño
+      // real de la mascota (el get() de abajo), no su rol autodeclarado.
       allow create: if puedeOperarComoRefugio(request.resource.data.deUid)
-                    && esCuentaRefugio(request.resource.data.deUid)
                     && request.resource.data.tipo in ['adopcion', 'hogar_temporal']
                     && request.resource.data.estado == 'pendiente'
                     && get(/databases/$(database)/documents/mascotas/$(request.resource.data.mascotaId)).data.uidUsuario

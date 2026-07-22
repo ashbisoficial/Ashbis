@@ -1175,6 +1175,48 @@ export const onMensajeChatEquipoCreado = onDocumentCreated(
   }
 );
 
+// ─── Sincronizar info pública de mascota en sus publicaciones de adopción ──────
+// mascotas/{id} NO es legible por cualquiera (tiene datos privados: contacto
+// de emergencia, PIN del historial, etc.), así que la publicación de
+// adopción guarda su propia copia de los datos públicos (foto, especie,
+// raza, sexo, edad, color, castrado) para que cualquiera pueda verla sin
+// necesitar leer la mascota directamente. Si el dueño edita la ficha
+// después de publicar (nueva foto, etc.), esta función mantiene esa copia
+// al día en cualquier publicación de adopción activa que la referencie.
+export const onMascotaActualizada = onDocumentWritten(
+  { document: 'mascotas/{petId}', region: 'us-central1' },
+  async (event) => {
+    const after = event.data?.after?.data();
+    if (!after) return; // se borró la mascota: nada que resincronizar
+    const petId = event.params.petId;
+    try {
+      const db = admin.firestore();
+      const pubsSnap = await db.collection('publicaciones')
+        .where('mascotaId', '==', petId)
+        .where('tipo', '==', 'adopcion')
+        .where('activa', '==', true)
+        .get();
+      if (pubsSnap.empty) return;
+
+      const datosPublicos: Record<string, unknown> = {};
+      if (after['fotoUrl']) datosPublicos['fotoUrl'] = after['fotoUrl'];
+      if (after['especie']) datosPublicos['especie'] = after['especie'];
+      if (after['raza']) datosPublicos['raza'] = after['raza'];
+      if (after['sexo']) datosPublicos['sexo'] = after['sexo'];
+      if (after['edad'] != null) datosPublicos['edad'] = after['edad'];
+      if (after['color']) datosPublicos['color'] = after['color'];
+      if (after['castrado']) datosPublicos['castrado'] = after['castrado'];
+      if (!Object.keys(datosPublicos).length) return;
+
+      const batch = db.batch();
+      pubsSnap.docs.forEach(doc => batch.update(doc.ref, datosPublicos));
+      await batch.commit();
+    } catch (error) {
+      functions.logger.error('onMascotaActualizada: error resincronizando publicaciones', error);
+    }
+  }
+);
+
 // ─── Antifraude de refugios: espejo público (verificación + recaudación) ──────
 // refugiosPublico/{uid} solo trae {nombreRefugio, verificado,
 // totalDonacionesDeclaradas} — lo que cualquier usuario logueado puede ver

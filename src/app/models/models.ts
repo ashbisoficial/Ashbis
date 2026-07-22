@@ -395,6 +395,18 @@ export namespace Models {
       fotoUrl?: string;
       /** Opcional: vincula la publicación a una ficha de mascota ya creada. */
       mascotaId?: string;
+      /** Info pública de la mascota vinculada (solo para tipo='adopcion'),
+       *  copiada de mascotas/{mascotaId} al publicar y resincronizada por la
+       *  Cloud Function onMascotaActualizada cada vez que el dueño edita la
+       *  ficha. Necesario porque mascotas/{id} NO es legible por cualquiera
+       *  (tiene datos privados) — esta es la única fuente de esos datos que
+       *  puede ver alguien que no sea el dueño/equipo. */
+      especie?: string;
+      raza?: string;
+      sexo?: string;
+      edad?: number;
+      color?: string;
+      castrado?: 'Sí' | 'No';
       activa: boolean;
       createdAt?: any;
       updatedAt?: any;
