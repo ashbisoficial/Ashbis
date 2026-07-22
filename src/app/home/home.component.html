@@ -2,8 +2,9 @@
   <ion-toolbar class="header-menu">
     <img src="assets/img/ashbis.png" alt="Logo Ashbis" class="logo-header">
     <ion-buttons slot="end">
-      <ion-button fill="clear" (click)="irAMisChats()" aria-label="Mis chats">
+      <ion-button fill="clear" class="boton-chat" (click)="irAMisChats()" aria-label="Mis chats">
         <ion-icon slot="icon-only" name="chatbubbles-outline"></ion-icon>
+        <span class="punto-no-leido" *ngIf="tengoChatsNoLeidos$ | async"></span>
       </ion-button>
       <app-notificaciones-bell></app-notificaciones-bell>
     </ion-buttons>

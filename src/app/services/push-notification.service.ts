@@ -67,9 +67,12 @@ export class PushNotificationService {
       });
 
       // Notificación tocada estando la app en segundo plano o cerrada: la
-      // llevamos a la pantalla de notificaciones.
-      FirebaseMessaging.addListener('notificationActionPerformed', () => {
-        this.router.navigate(['/tabs/notificaciones']);
+      // llevamos a la ruta que mandó la Cloud Function (data.ruta), o a
+      // Notificaciones si no vino ninguna.
+      FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
+        const data = event.notification.data as Record<string, string> | undefined;
+        const ruta = data?.['ruta'] || '/tabs/notificaciones';
+        this.router.navigateByUrl(ruta);
       });
 
       const { token } = await FirebaseMessaging.getToken();

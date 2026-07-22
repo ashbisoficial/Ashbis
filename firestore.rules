@@ -171,6 +171,14 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Marca de "hasta cuándo leí el chat de equipo" — un doc por miembro
+      // (id = su propio uid), para el círculo rojo de mensajes sin leer.
+      // Cada quien solo puede tocar el suyo.
+      match /chatEquipoLecturas/{lectorUid} {
+        allow read:  if puedeOperarComoRefugio(uid);
+        allow write: if isUser(lectorUid) && puedeOperarComoRefugio(uid);
+      }
+
       // Tokens de push (FCM) de los dispositivos donde el usuario inició
       // sesión. Cada doc = un token; el id del doc es el token mismo. Solo
       // el dueño los lee/escribe; las Cloud Functions que envían el push
@@ -445,6 +453,14 @@ service cloud.firestore {
                       && noLongStrings(request.resource.data);
         allow update: if false;
         allow delete: if false;
+      }
+
+      // Marca de "hasta cuándo leí este chat" — un doc por participante (id
+      // = su propio uid), para el círculo rojo de mensajes sin leer.
+      match /lecturas/{lectorUid} {
+        allow read:  if isAuth() && request.auth.uid in get(/databases/$(database)/documents/chatsDirectos/$(chatId)).data.participantes;
+        allow write: if isUser(lectorUid)
+                     && request.auth.uid in get(/databases/$(database)/documents/chatsDirectos/$(chatId)).data.participantes;
       }
     }
 

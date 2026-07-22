@@ -1122,6 +1122,59 @@ export const onPostulacionCreada = onDocumentCreated(
   }
 );
 
+function previewTexto(texto: string): string {
+  const limpio = (texto || '').trim();
+  return limpio.length > 80 ? `${limpio.slice(0, 80)}…` : limpio;
+}
+
+// Chat directo (adopción/hogar temporal): push a la otra persona del chat,
+// no a quien escribió. El círculo rojo en el ícono de chat del Home lo
+// calcula el propio cliente (comparando el último mensaje contra su marca
+// de lectura); esto es solo el aviso fuera de la app.
+export const onMensajeChatDirectoCreado = onDocumentCreated(
+  { document: 'chatsDirectos/{chatId}/mensajes/{msgId}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    try {
+      const chatSnap = await admin.firestore().doc(`chatsDirectos/${event.params.chatId}`).get();
+      const participantes: string[] = chatSnap.data()?.['participantes'] || [];
+      const destinatario = participantes.find(uid => uid !== data['autorUid']);
+      if (!destinatario) return;
+      await enviarPushAUid(destinatario, {
+        title: data['autorNombre'] || 'Nuevo mensaje',
+        body: previewTexto(data['texto']),
+        ruta: '/tabs/chat-directo/' + event.params.chatId,
+      });
+    } catch (error) {
+      functions.logger.error('onMensajeChatDirectoCreado: error enviando push', error);
+    }
+  }
+);
+
+// Chat de equipo del refugio: push a todo el equipo (dueño + miembros)
+// menos a quien escribió.
+export const onMensajeChatEquipoCreado = onDocumentCreated(
+  { document: 'usuarios/{refugioUid}/chatEquipo/{msgId}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    const refugioUid = event.params.refugioUid;
+    try {
+      const miembrosSnap = await admin.firestore().collection(`usuarios/${refugioUid}/miembros`).get();
+      const destinatarios = [refugioUid, ...miembrosSnap.docs.map(d => d.id)]
+        .filter(uid => uid !== data['autorUid']);
+      await Promise.all(destinatarios.map(uid => enviarPushAUid(uid, {
+        title: data['autorNombre'] || 'Nuevo mensaje del equipo',
+        body: previewTexto(data['texto']),
+        ruta: '/tabs/refugio-chat/' + refugioUid,
+      })));
+    } catch (error) {
+      functions.logger.error('onMensajeChatEquipoCreado: error enviando push', error);
+    }
+  }
+);
+
 // ─── Antifraude de refugios: espejo público (verificación + recaudación) ──────
 // refugiosPublico/{uid} solo trae {nombreRefugio, verificado,
 // totalDonacionesDeclaradas} — lo que cualquier usuario logueado puede ver

@@ -69,6 +69,9 @@ export class RefugioChatComponent implements OnInit, OnDestroy, AfterViewChecked
         this.mensajes.set(mensajes ?? []);
         this.cargando.set(false);
         this.debeHacerScroll = true;
+        // Estoy viendo el chat: cualquier mensaje que llegue mientras tanto
+        // ya no debe contar como "sin leer" para el círculo rojo del Home.
+        if (mensajes?.length) this.fs.marcarChatEquipoLeido(this.refugioUid);
       });
   }
 

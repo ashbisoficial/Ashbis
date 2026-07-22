@@ -27,6 +27,7 @@ import { Models } from '../models/models';
 import { NotificacionesBellComponent } from '../notificaciones/notificaciones-bell.component';
 import { RefugioContextService } from '../services/refugio-context.service';
 import { PreferenciasService } from '../services/preferencias.service';
+import { ChatUnreadService } from '../services/chat-unread.service';
 import { firstValueFrom, of, Subject, takeUntil } from 'rxjs';
 import { User } from '@angular/fire/auth';
 import { environment } from 'src/environments/environment';
@@ -104,6 +105,7 @@ export class HomePage implements OnInit, OnDestroy {
   private firestoreService= inject(FirestoreService);
   private refugioCtx      = inject(RefugioContextService);
   private preferencias    = inject(PreferenciasService);
+  private chatUnread      = inject(ChatUnreadService);
   private injector        = inject(EnvironmentInjector);
 
   /** Refugios a los que tengo acceso (dueño y/o colaborador); vacío = sin chat de equipo. */
@@ -112,6 +114,8 @@ export class HomePage implements OnInit, OnDestroy {
   private misChatsDirectos: Models.ChatDirecto.Chat[] = [];
 
   userEmail$ = this.auth.authState$.pipe(map(u => u?.email ?? ''));
+  /** Círculo rojo sobre el ícono de chat: hay algún mensaje sin leer. */
+  tengoChatsNoLeidos$ = this.chatUnread.tengoNoLeidos$();
 
   // Estado general
   estaCargando = false;

@@ -625,6 +625,28 @@ export class FirestoreService {
     );
   }
 
+  /** Último mensaje del chat de equipo (para saber si hay algo nuevo sin abrirlo). */
+  getUltimoMensajeChatEquipo(refugioUid: string): Observable<Models.ChatEquipo.Mensaje | undefined> {
+    const r = collection(this.firestore, `usuarios/${refugioUid}/${Models.ChatEquipo.PathMensajes}`);
+    const q = query(r, orderBy('createdAt', 'desc'), limit(1));
+    return (collectionData(q, { idField: 'id' }) as Observable<Models.ChatEquipo.Mensaje[]>)
+      .pipe(map(ms => ms[0]));
+  }
+
+  /** Marca que ya vi los mensajes del chat de equipo hasta ahora — un doc
+   *  propio por miembro, para el círculo rojo de mensajes sin leer. */
+  async marcarChatEquipoLeido(refugioUid: string): Promise<void> {
+    const uid = this.assertAuthenticated();
+    await setDoc(
+      doc(this.firestore, `usuarios/${refugioUid}/chatEquipoLecturas/${uid}`),
+      { leidoHasta: serverTimestamp() }
+    );
+  }
+
+  getLecturaChatEquipo(refugioUid: string, uid: string): Observable<{ leidoHasta?: Timestamp } | undefined> {
+    return docData(doc(this.firestore, `usuarios/${refugioUid}/chatEquipoLecturas/${uid}`)) as Observable<any>;
+  }
+
   // ── Lugares públicos (caché mapa) ──────────────────────────────────────────
 
   async getLugaresInfo(placeIds: string[]): Promise<Record<string, any>> {
@@ -1000,6 +1022,28 @@ export class FirestoreService {
       collection(this.firestore, `${Models.ChatDirecto.PathChats}/${chatId}/${Models.ChatDirecto.PathMensajes}`),
       this.security.sanitizeFirestoreObject(payload as any)
     );
+  }
+
+  /** Último mensaje del chat (para saber si hay algo nuevo sin abrir el chat). */
+  getUltimoMensajeChatDirecto(chatId: string): Observable<Models.ChatDirecto.Mensaje | undefined> {
+    const r = collection(this.firestore, `${Models.ChatDirecto.PathChats}/${chatId}/${Models.ChatDirecto.PathMensajes}`);
+    const q = query(r, orderBy('createdAt', 'desc'), limit(1));
+    return (collectionData(q, { idField: 'id' }) as Observable<Models.ChatDirecto.Mensaje[]>)
+      .pipe(map(ms => ms[0]));
+  }
+
+  /** Marca que ya vi los mensajes de este chat hasta ahora — un doc propio
+   *  por participante, para el círculo rojo de mensajes sin leer. */
+  async marcarChatDirectoLeido(chatId: string): Promise<void> {
+    const uid = this.assertAuthenticated();
+    await setDoc(
+      doc(this.firestore, `${Models.ChatDirecto.PathChats}/${chatId}/lecturas/${uid}`),
+      { leidoHasta: serverTimestamp() }
+    );
+  }
+
+  getLecturaChatDirecto(chatId: string, uid: string): Observable<{ leidoHasta?: Timestamp } | undefined> {
+    return docData(doc(this.firestore, `${Models.ChatDirecto.PathChats}/${chatId}/lecturas/${uid}`)) as Observable<any>;
   }
 
   // ── Transferencias de dueño (adopción) y hogar temporal ─────────────────────
