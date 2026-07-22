@@ -1004,26 +1004,11 @@ export const aceptarInvitacionEquipo = onRequest(
 // El token de cada dispositivo lo guarda PushNotificationService (Angular) en
 // usuarios/{uid}/fcmTokens/{token}.
 
-async function enviarPushPorEmail(
-  email: string,
+async function enviarPushAUid(
+  uid: string,
   payload: { title: string; body: string; ruta?: string }
 ): Promise<void> {
-  const emailNormalizado = (email || '').trim().toLowerCase();
-  if (!emailNormalizado) return;
-
-  // Se busca el uid por Firebase Auth (no por el campo "email" de
-  // Firestore): es la misma fuente de verdad que ya usan
-  // aceptarTransferencia/aceptarInvitacionEquipo para validar al
-  // destinatario, y evita depender de que el campo en Firestore esté
-  // guardado con exactamente la misma capitalización.
-  let uid: string;
-  try {
-    const userRecord = await admin.auth().getUserByEmail(emailNormalizado);
-    uid = userRecord.uid;
-  } catch {
-    // Todavía no tiene cuenta en Ashbis con ese correo — nada que notificar.
-    return;
-  }
+  if (!uid) return;
 
   const db = admin.firestore();
   const tokensSnap = await db.collection(`usuarios/${uid}/fcmTokens`).get();
@@ -1057,6 +1042,30 @@ async function enviarPushPorEmail(
   }
 }
 
+async function enviarPushPorEmail(
+  email: string,
+  payload: { title: string; body: string; ruta?: string }
+): Promise<void> {
+  const emailNormalizado = (email || '').trim().toLowerCase();
+  if (!emailNormalizado) return;
+
+  // Se busca el uid por Firebase Auth (no por el campo "email" de
+  // Firestore): es la misma fuente de verdad que ya usan
+  // aceptarTransferencia/aceptarInvitacionEquipo para validar al
+  // destinatario, y evita depender de que el campo en Firestore esté
+  // guardado con exactamente la misma capitalización.
+  let uid: string;
+  try {
+    const userRecord = await admin.auth().getUserByEmail(emailNormalizado);
+    uid = userRecord.uid;
+  } catch {
+    // Todavía no tiene cuenta en Ashbis con ese correo — nada que notificar.
+    return;
+  }
+
+  await enviarPushAUid(uid, payload);
+}
+
 export const onInvitacionEquipoCreada = onDocumentCreated(
   { document: 'invitacionesEquipo/{id}', region: 'us-central1' },
   async (event) => {
@@ -1088,6 +1097,27 @@ export const onTransferenciaCreada = onDocumentCreated(
       });
     } catch (error) {
       functions.logger.error('onTransferenciaCreada: error enviando push', error);
+    }
+  }
+);
+
+// Cuando alguien postula a una publicación de adopción, el refugio/dueño de
+// la publicación (postulaciones.refugioUid) no tenía ninguna forma de
+// enterarse: la página de Notificaciones solo miraba transferencias e
+// invitaciones de equipo, y no había push. Este trigger cierra ese hueco.
+export const onPostulacionCreada = onDocumentCreated(
+  { document: 'postulaciones/{id}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    try {
+      await enviarPushAUid(data['refugioUid'], {
+        title: 'Nueva postulación',
+        body: `${data['postulanteNombre']} quiere adoptar a ${data['mascotaNombre']}.`,
+        ruta: '/tabs/notificaciones',
+      });
+    } catch (error) {
+      functions.logger.error('onPostulacionCreada: error enviando push', error);
     }
   }
 );

@@ -138,7 +138,11 @@ export class PublicacionDetalleComponent implements OnDestroy {
     this.refugioCtx.contexto$()
       .pipe(takeUntil(this.destroy$))
       .subscribe(ctx => {
-        this.soyDueno = ctx.todos.includes(pub.uidAutor);
+        // ctx.todos solo incluye el uid propio cuando la cuenta es de rol
+        // 'refugio' — pero desde que cualquier cuenta puede publicar una
+        // mascota en adopción, hay que reconocer también al autor directo
+        // de la publicación, sea o no refugio.
+        this.soyDueno = pub.uidAutor === ctx.miUid || ctx.todos.includes(pub.uidAutor);
 
         if (this.soyDueno) {
           this.firestoreService.getPostulacionesPorPublicacion(pub.id!)

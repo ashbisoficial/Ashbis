@@ -191,7 +191,10 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     this.refugioCtx.contexto$()
       .pipe(take(1), takeUntil(this.destroy$))
       .subscribe(ctx => {
-        this.puedoGestionarHogarTemporal = ctx.todos.includes(mascota.uidUsuario);
+        // Mismo caso que en publicacion-detalle: ctx.todos no incluye el uid
+        // propio si la cuenta no es de rol 'refugio', pero cualquier cuenta
+        // puede ser dueña directa de una mascota en hogar temporal.
+        this.puedoGestionarHogarTemporal = mascota.uidUsuario === ctx.miUid || ctx.todos.includes(mascota.uidUsuario);
       });
   }
 

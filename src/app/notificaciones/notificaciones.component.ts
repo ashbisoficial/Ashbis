@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   IonHeader,
   IonToolbar,
@@ -25,6 +26,7 @@ import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { ConfettiService } from '../services/confetti.service';
+import { RefugioContextService } from '../services/refugio-context.service';
 
 @Component({
   selector: 'app-notificaciones',
@@ -53,6 +55,8 @@ import { ConfettiService } from '../services/confetti.service';
 export class NotificacionesComponent implements OnDestroy {
   private readonly auth = inject(AuthenticationService);
   private readonly firestoreService = inject(FirestoreService);
+  private readonly refugioCtx = inject(RefugioContextService);
+  private readonly router = inject(Router);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
   private readonly confetti = inject(ConfettiService);
@@ -61,6 +65,7 @@ export class NotificacionesComponent implements OnDestroy {
   cargando = true;
   transferenciasPendientes: Models.Transferencias.Transferencia[] = [];
   invitacionesPendientes: Models.Equipo.InvitacionEquipo[] = [];
+  postulacionesPendientes: Models.Postulaciones.Postulacion[] = [];
   /** Foto de cada mascota en solicitudes pendientes, para mostrarla en la
    *  tarjeta (las transferencias no guardan la foto, solo el nombre). */
   fotosMascotas: Record<string, string | null> = {};
@@ -76,36 +81,54 @@ export class NotificacionesComponent implements OnDestroy {
         takeUntil(this.destroy$),
         switchMap(user => {
           const email = user?.email ?? null;
-          if (!email) {
-            return of([[], []] as [Models.Transferencias.Transferencia[], Models.Equipo.InvitacionEquipo[]]);
-          }
           const conError = <T>(obs$: import('rxjs').Observable<T[]>) =>
             obs$.pipe(catchError(err => {
               console.error('Error cargando notificaciones:', err);
               this.errorCarga = err?.message || err?.code || 'Error desconocido';
               return of<T[]>([]);
             }));
+
+          const postulaciones$ = this.refugioCtx.contexto$().pipe(
+            switchMap(ctx => {
+              // ctx.todos solo trae el uid propio si la cuenta es de rol
+              // 'refugio' — pero cualquier cuenta puede publicar su propia
+              // mascota en adopción y recibir postulaciones.
+              const uids = ctx.miUid ? Array.from(new Set([ctx.miUid, ...ctx.todos])) : ctx.todos;
+              return conError(this.firestoreService.getPostulacionesPendientesParaMi(uids));
+            })
+          );
+
+          if (!email) {
+            return combineLatest([
+              of<Models.Transferencias.Transferencia[]>([]),
+              of<Models.Equipo.InvitacionEquipo[]>([]),
+              postulaciones$,
+            ]);
+          }
           return combineLatest([
             conError(this.firestoreService.getTransferenciasPendientesParaMi(email)),
-            conError(this.firestoreService.getInvitacionesEquipoPendientesParaMi(email))
+            conError(this.firestoreService.getInvitacionesEquipoPendientesParaMi(email)),
+            postulaciones$,
           ]);
         })
       )
-      .subscribe(([transferencias, invitaciones]) => {
+      .subscribe(([transferencias, invitaciones, postulaciones]) => {
         this.transferenciasPendientes = transferencias;
         this.invitacionesPendientes = invitaciones;
+        this.postulacionesPendientes = postulaciones;
         this.cargando = false;
-        this.cargarFotosMascotas(transferencias);
+        this.cargarFotosMascotas([...transferencias, ...postulaciones]);
       });
   }
 
-  private cargarFotosMascotas(transferencias: Models.Transferencias.Transferencia[]): void {
-    for (const t of transferencias) {
-      if (!t.mascotaId || t.mascotaId in this.fotosMascotas) continue;
-      this.fotosMascotas[t.mascotaId] = null;
-      this.firestoreService.getPetById(t.mascotaId)
+  private cargarFotosMascotas(conMascotaId: { mascotaId?: string }[]): void {
+    for (const t of conMascotaId) {
+      const mascotaId = t.mascotaId;
+      if (!mascotaId || mascotaId in this.fotosMascotas) continue;
+      this.fotosMascotas[mascotaId] = null;
+      this.firestoreService.getPetById(mascotaId)
         .pipe(take(1), takeUntil(this.destroy$))
-        .subscribe(m => this.fotosMascotas[t.mascotaId] = m?.fotoUrl || null);
+        .subscribe(m => this.fotosMascotas[mascotaId] = m?.fotoUrl || null);
     }
   }
 
@@ -184,6 +207,38 @@ export class NotificacionesComponent implements OnDestroy {
       await this.showToast('Invitación rechazada.', 'primary');
     } catch {
       await this.showToast('No se pudo rechazar la invitación.', 'danger');
+    }
+  }
+
+  async aceptarPostulacion(p: Models.Postulaciones.Postulacion): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Aceptar postulación',
+      message: `Se abre un chat directo con ${p.postulanteNombre} para coordinar la adopción de ${p.mascotaNombre}. Todavía no transfiere la mascota — eso lo hacés después, ya charlando.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Aceptar y abrir chat',
+          handler: async () => {
+            try {
+              const chatId = await this.firestoreService.aceptarPostulacion(p);
+              this.router.navigate(['/tabs/chat-directo', chatId]);
+            } catch (error: any) {
+              await this.showToast(error?.message || 'No se pudo aceptar la postulación.', 'danger');
+            }
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  async rechazarPostulacion(p: Models.Postulaciones.Postulacion): Promise<void> {
+    if (!p.id) return;
+    try {
+      await this.firestoreService.rechazarPostulacion(p.id);
+      await this.showToast('Postulación rechazada.', 'primary');
+    } catch {
+      await this.showToast('No se pudo rechazar la postulación.', 'danger');
     }
   }
 

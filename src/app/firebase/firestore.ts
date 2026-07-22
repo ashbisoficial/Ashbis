@@ -911,6 +911,16 @@ export class FirestoreService {
     return collectionData(q, { idField: 'id' }) as Observable<Models.Postulaciones.Postulacion[]>;
   }
 
+  /** Postulaciones pendientes recibidas en cualquiera de mis publicaciones
+   *  (la propia cuenta y/o refugios de cuyo equipo formo parte) — para la
+   *  campanita de Notificaciones. `uids` sale de RefugioContextService. */
+  getPostulacionesPendientesParaMi(uids: string[]): Observable<Models.Postulaciones.Postulacion[]> {
+    if (!uids.length) return of([]);
+    const r = collection(this.firestore, Models.Postulaciones.PathPostulaciones);
+    const q = query(r, where('refugioUid', 'in', uids.slice(0, 10)), where('estado', '==', 'pendiente'));
+    return collectionData(q, { idField: 'id' }) as Observable<Models.Postulaciones.Postulacion[]>;
+  }
+
   async cancelarPostulacion(id: string): Promise<void> {
     await updateDoc(doc(this.firestore, `${Models.Postulaciones.PathPostulaciones}/${id}`), {
       estado: 'cancelada',

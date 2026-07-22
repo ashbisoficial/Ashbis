@@ -53,6 +53,34 @@
       </ion-card>
     </ng-container>
 
+    <ng-container *ngIf="postulacionesPendientes.length">
+      <h3 class="notif-seccion-titulo">Postulaciones a tus adopciones</h3>
+
+      <ion-card class="notif-card notif-card-mascota" *ngFor="let p of postulacionesPendientes">
+        <ion-card-content>
+          <div class="solicitud-header">
+            <ion-avatar>
+              <img [src]="(p.mascotaId && fotosMascotas[p.mascotaId]) || 'assets/img/logo_ashbis.jpeg'" alt="{{ p.mascotaNombre }}" />
+            </ion-avatar>
+            <div class="solicitud-info">
+              <h2>{{ p.mascotaNombre }}</h2>
+              <span class="badge-tipo tipo-adopcion">🐾 Postulación</span>
+            </div>
+          </div>
+
+          <p class="solicitud-texto">
+            <strong>{{ p.postulanteNombre }}</strong> quiere adoptar a {{ p.mascotaNombre }}.
+          </p>
+          <p class="solicitud-mensaje" *ngIf="p.mensaje">"{{ p.mensaje }}"</p>
+
+          <div class="solicitud-acciones">
+            <ion-button color="danger" (click)="aceptarPostulacion(p)">Aceptar y chatear</ion-button>
+            <ion-button fill="outline" color="medium" (click)="rechazarPostulacion(p)">Rechazar</ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </ng-container>
+
     <ion-card class="notif-card" *ngIf="invitacionesPendientes.length">
       <ion-card-header>
         <ion-card-title class="notif-card-title-chica">Invitaciones de equipo</ion-card-title>
@@ -69,7 +97,7 @@
       </ion-card-content>
     </ion-card>
 
-    <div *ngIf="!transferenciasPendientes.length && !invitacionesPendientes.length" class="notif-vacio">
+    <div *ngIf="!transferenciasPendientes.length && !invitacionesPendientes.length && !postulacionesPendientes.length" class="notif-vacio">
       <p>🔔</p>
       <p>No tienes notificaciones pendientes.</p>
     </div>

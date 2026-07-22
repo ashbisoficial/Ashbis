@@ -9,6 +9,7 @@ import { Subject, catchError, combineLatest, of, switchMap, takeUntil } from 'rx
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
+import { RefugioContextService } from '../services/refugio-context.service';
 
 @Component({
   selector: 'app-notificaciones-bell',
@@ -20,6 +21,7 @@ import { Models } from '../models/models';
 export class NotificacionesBellComponent implements OnDestroy {
   private readonly auth = inject(AuthenticationService);
   private readonly firestoreService = inject(FirestoreService);
+  private readonly refugioCtx = inject(RefugioContextService);
   private readonly router = inject(Router);
   private readonly destroy$ = new Subject<void>();
 
@@ -33,22 +35,35 @@ export class NotificacionesBellComponent implements OnDestroy {
         takeUntil(this.destroy$),
         switchMap(user => {
           const email = user?.email ?? null;
-          if (!email) {
-            return of([[], []] as [Models.Transferencias.Transferencia[], Models.Equipo.InvitacionEquipo[]]);
-          }
           const conFallback = <T>(obs$: import('rxjs').Observable<T[]>) =>
             obs$.pipe(catchError(err => {
               console.error('Error cargando notificaciones (campanita):', err);
               return of<T[]>([]);
             }));
+
+          const postulaciones$ = this.refugioCtx.contexto$().pipe(
+            switchMap(ctx => {
+              const uids = ctx.miUid ? Array.from(new Set([ctx.miUid, ...ctx.todos])) : ctx.todos;
+              return conFallback(this.firestoreService.getPostulacionesPendientesParaMi(uids));
+            })
+          );
+
+          if (!email) {
+            return combineLatest([
+              of<Models.Transferencias.Transferencia[]>([]),
+              of<Models.Equipo.InvitacionEquipo[]>([]),
+              postulaciones$,
+            ]);
+          }
           return combineLatest([
             conFallback(this.firestoreService.getTransferenciasPendientesParaMi(email)),
-            conFallback(this.firestoreService.getInvitacionesEquipoPendientesParaMi(email))
+            conFallback(this.firestoreService.getInvitacionesEquipoPendientesParaMi(email)),
+            postulaciones$,
           ]);
         })
       )
-      .subscribe(([transferencias, invitaciones]) => {
-        this.cantidad = transferencias.length + invitaciones.length;
+      .subscribe(([transferencias, invitaciones, postulaciones]) => {
+        this.cantidad = transferencias.length + invitaciones.length + postulaciones.length;
       });
   }
 
