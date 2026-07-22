@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">miApp</string>
-    <string name="title_activity_main">miApp</string>
+    <string name="app_name">Ashbis</string>
+    <string name="title_activity_main">Ashbis</string>
     <string name="package_name">io.ionic.starter</string>
     <string name="custom_url_scheme">io.ionic.starter</string>
     <string name="server_client_id">691736988474-1k8beq55v07k8tsbj3d1rsle52q5s12l.apps.googleusercontent.com</string>
