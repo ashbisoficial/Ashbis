@@ -17,12 +17,12 @@
           <input #filesInputMulti type="file" accept="image/*" multiple (change)="onImagesSelected($event)" hidden />
 
           <div class="botones-imagenes">
-            <ion-button class="btn-base btn-foto" size="small" fill="outline" (click)="fileInput.click()">
+            <ion-button class="btn-base btn-foto" size="small" fill="outline" (click)="abrirSelectorArchivo(fileInput)">
               <ion-icon name="camera-outline" slot="start"></ion-icon>
               Foto principal
             </ion-button>
 
-            <ion-button class="btn-base btn-galeria" size="small" fill="solid" (click)="filesInputMulti.click()">
+            <ion-button class="btn-base btn-galeria" size="small" fill="solid" (click)="abrirSelectorArchivo(filesInputMulti)">
               <ion-icon name="images-outline" slot="start"></ion-icon>
               Agregar a galería
             </ion-button>

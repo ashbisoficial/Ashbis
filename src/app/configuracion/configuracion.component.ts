@@ -184,6 +184,26 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ── Cámara / Ubicación ───────────────────────────────────────────────────
+  // Preferencia propia de Ashbis (no el permiso real del navegador, que
+  // nunca se puede revocar por código): si está apagada, la app no llama a
+  // esas APIs aunque el permiso del navegador siga concedido.
+  get camaraHabilitada(): boolean {
+    return this.preferencias.camaraHabilitada;
+  }
+
+  get ubicacionHabilitada(): boolean {
+    return this.preferencias.ubicacionHabilitada;
+  }
+
+  alternarCamara(activar: boolean): void {
+    this.preferencias.setCamaraHabilitada(activar);
+  }
+
+  alternarUbicacion(activar: boolean): void {
+    this.preferencias.setUbicacionHabilitada(activar);
+  }
+
   // ── Cuenta ───────────────────────────────────────────────────────────────
   async cambiarContrasena(): Promise<void> {
     if (!this.email) return;

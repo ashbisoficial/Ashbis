@@ -54,7 +54,7 @@
             hidden
             (change)="onFotoSelected($event)"
           />
-          <div *ngIf="!fotoPreview" class="foto-picker-vacio" (click)="fotoInput.click()">
+          <div *ngIf="!fotoPreview" class="foto-picker-vacio" (click)="abrirSelectorArchivo(fotoInput)">
             <ion-icon name="add-outline"></ion-icon>
             <span>Agregar foto (opcional)</span>
           </div>

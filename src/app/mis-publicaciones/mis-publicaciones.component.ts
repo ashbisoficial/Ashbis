@@ -34,6 +34,7 @@ import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
+import { PreferenciasService } from '../services/preferencias.service';
 
 @Component({
   selector: 'app-mis-publicaciones',
@@ -73,6 +74,7 @@ export class MisPublicacionesComponent implements OnDestroy {
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
   private readonly security = inject(SecurityService);
+  private readonly preferencias = inject(PreferenciasService);
   private readonly fb = inject(FormBuilder);
 
   private uid: string | null = null;
@@ -159,6 +161,17 @@ export class MisPublicacionesComponent implements OnDestroy {
       this.fotoFile = null;
       this.fotoPreview = null;
     }
+  }
+
+  /** Abre el selector de archivo solo si la cámara/galería está habilitada
+   *  en Configuración → Permisos (preferencia propia de Ashbis, no el
+   *  permiso real del navegador). */
+  abrirSelectorArchivo(input: HTMLInputElement): void {
+    if (!this.preferencias.camaraHabilitada) {
+      this.presentToast('Activá la cámara en Configuración → Permisos para subir fotos.', 'danger');
+      return;
+    }
+    input.click();
   }
 
   onFotoSelected(event: Event): void {

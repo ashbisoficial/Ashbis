@@ -4,7 +4,11 @@ ion-content {
 }
 
 .container {
-  max-width: 640px;
+  // Más ancho que el resto de los paneles a propósito: esta pantalla la usa
+  // habitualmente el propio veterinario (o su secretaria) desde escritorio,
+  // así que el formulario de perfil/personalización aprovecha el espacio en
+  // vez de quedar angosto como en una pantalla pensada solo para celular.
+  max-width: 820px;
   margin: 0 auto;
   padding: 12px 16px 32px;
 }
@@ -116,4 +120,110 @@ ion-item {
 
 .tarjeta-verificacion.verificado .verificacion-header ion-icon {
   color: #22c55e;
+}
+
+.header-con-accion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  ion-card-title { margin: 0; }
+  ion-button { margin: 0; --padding-start: 6px; --padding-end: 6px; }
+}
+
+.chip-especie {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+// Formulario de edición: en pantallas anchas (escritorio) los campos se
+// acomodan en dos columnas; en celular, uno debajo del otro.
+.form-edicion {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 16px;
+
+  ion-item { --border-color: var(--ashbis-surface-border); }
+}
+
+.label-especies {
+  display: block;
+  grid-column: 1 / -1;
+  margin: 10px 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.grid-especies {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+
+  ion-item { --padding-start: 0; }
+}
+
+.acciones-form {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+
+  ion-button { margin: 0; }
+}
+
+.lista-notas {
+  background: transparent;
+  margin-bottom: 8px;
+
+  ion-item { --background: var(--ion-background-color); border-radius: 10px; margin-bottom: 4px; }
+}
+
+.fila-nota {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+
+  ion-input {
+    --background: var(--ion-background-color);
+    --color: var(--ion-text-color);
+    --padding-start: 12px;
+    border-radius: 10px;
+    flex: 1;
+  }
+
+  ion-button { margin: 0; --border-radius: 50%; width: 40px; height: 40px; flex-shrink: 0; }
+}
+
+.label-imagenes {
+  margin-top: 18px;
+}
+
+.grid-imagenes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.item-imagen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--ion-background-color);
+  border: 1px dashed var(--ashbis-surface-border);
+  border-radius: 12px;
+
+  img {
+    max-width: 100%;
+    max-height: 80px;
+    object-fit: contain;
+  }
+
+  ion-button { margin: 0; width: 100%; }
 }

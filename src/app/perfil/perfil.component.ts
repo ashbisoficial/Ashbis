@@ -53,6 +53,7 @@ import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
+import { PreferenciasService } from '../services/preferencias.service';
 
 interface UsuarioActual {
   uid: string;
@@ -105,6 +106,7 @@ export class PerfilComponent implements OnDestroy {
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
   private readonly security = inject(SecurityService);
+  private readonly preferencias = inject(PreferenciasService);
 
   authenticationService: AuthenticationService = inject(AuthenticationService);
   firestoreService: FirestoreService = inject(FirestoreService);
@@ -347,9 +349,16 @@ export class PerfilComponent implements OnDestroy {
     return this.datePipe.transform(fecha, 'MMMM yyyy', undefined, 'es-CL');
   }
 
-  /** Abre el selector de archivos nativo (oculto) para elegir una foto nueva. */
+  /** Abre el selector de archivos nativo (oculto) para elegir una foto
+   *  nueva, solo si la cámara/galería está habilitada en Configuración →
+   *  Permisos (preferencia propia de Ashbis, no el permiso real del
+   *  navegador). */
   abrirSelectorFoto(): void {
     if (this.subiendoFoto) return;
+    if (!this.preferencias.camaraHabilitada) {
+      this.showToast('Activá la cámara en Configuración → Permisos para subir fotos.', 'danger');
+      return;
+    }
     this.fotoInputRef?.nativeElement.click();
   }
 

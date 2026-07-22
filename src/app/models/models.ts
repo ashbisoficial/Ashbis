@@ -60,10 +60,25 @@ export namespace Models {
       numeroRegistroProfesional?: string;
       /** Certificado de título subido para verificación manual futura (ver `verificado`). */
       tituloUrl?: string;
-      /** Solo clínicas grandes: lista de especialidades que ofrece. */
+      /** Solo veterinario: áreas de especialización (antes limitado a
+       *  clínicas grandes en el registro; ahora cualquier veterinario lo
+       *  puede completar/editar desde su panel). */
       especialidades?: string[];
       /** Solo veterinario: si atiende en el local, a domicilio, o ambas. */
       modalidadAtencion?: ModalidadAtencion;
+      /** Solo veterinario: universidad/instituto donde estudió. */
+      lugarEstudios?: string;
+      /** Solo veterinario: especies que atiende habitualmente (perros,
+       *  gatos, exóticos, ganado, etc). */
+      especiesAtendidas?: string[];
+      /** Solo veterinario: notas prediseñadas para completar más rápido el
+       *  historial médico de un paciente. */
+      notasPredisenadas?: string[];
+      /** Solo veterinario: logo/timbre/firma para personalizar la atención
+       *  (por ejemplo, al imprimir o compartir una ficha). */
+      logoUrl?: string;
+      timbreUrl?: string;
+      firmaUrl?: string;
       /** Revisión manual del título/registro profesional (veterinario) o del
        *  documento legal (refugio); false hasta que el equipo de Ashbis lo
        *  confirme a mano en Firebase Console. El cliente nunca puede ponerlo

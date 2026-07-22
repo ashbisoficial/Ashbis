@@ -26,6 +26,7 @@ import { FirestoreService, Mascota, VeterinariaFavorita } from '../firebase/fire
 import { Models } from '../models/models';
 import { NotificacionesBellComponent } from '../notificaciones/notificaciones-bell.component';
 import { RefugioContextService } from '../services/refugio-context.service';
+import { PreferenciasService } from '../services/preferencias.service';
 import { firstValueFrom, of, Subject, takeUntil } from 'rxjs';
 import { User } from '@angular/fire/auth';
 import { environment } from 'src/environments/environment';
@@ -102,15 +103,13 @@ export class HomePage implements OnInit, OnDestroy {
   private toastController = inject(ToastController);
   private firestoreService= inject(FirestoreService);
   private refugioCtx      = inject(RefugioContextService);
+  private preferencias    = inject(PreferenciasService);
   private injector        = inject(EnvironmentInjector);
 
   /** Refugios a los que tengo acceso (dueño y/o colaborador); vacío = sin chat de equipo. */
   private misRefugios: string[] = [];
   /** Chats directos de adopción (como postulante o como refugio). */
   private misChatsDirectos: Models.ChatDirecto.Chat[] = [];
-  get mostrarMisChats(): boolean {
-    return this.misRefugios.length > 0 || this.misChatsDirectos.length > 0;
-  }
 
   userEmail$ = this.auth.authState$.pipe(map(u => u?.email ?? ''));
 
@@ -159,10 +158,16 @@ export class HomePage implements OnInit, OnDestroy {
     { src: 'assets/img/10.jpg', titulo: 'Evento 4' },
   ];
 
-  // Feed público de publicaciones de refugios (adopción/recolección/
-  // donación). Si no hay ninguna activa, el carrusel de abajo muestra las
-  // imágenes genéricas de imagenesCarruselInferior en su lugar.
+  // Feed público completo de publicaciones de refugios (adopción/
+  // recolección/donación/otro), sin filtrar — de acá se derivan
+  // publicacionesCarrusel y publicacionesAdopcion.
   publicacionesActivas: Models.Publicaciones.Publicacion[] = [];
+
+  // Carrusel general: campañas/eventos (recolección, donación, otro), sin
+  // las publicaciones de adopción de una mascota puntual. Si no hay
+  // ninguna activa, el carrusel muestra las imágenes genéricas de
+  // imagenesCarruselInferior en su lugar.
+  publicacionesCarrusel: Models.Publicaciones.Publicacion[] = [];
 
   // Sección de tarjetas "Mascotas en adopción" (debajo del segundo
   // carrusel): solo publicaciones tipo 'adopcion', mostrando la info real
@@ -198,12 +203,15 @@ export class HomePage implements OnInit, OnDestroy {
 
   /** Si hay más de un chat en total (equipos + directos) lleva al listado
    *  estilo WhatsApp; si hay uno solo, abre esa conversación directamente. */
+  /** El ícono de chat está siempre visible, tenga o no chats: si no tiene
+   *  ninguno todavía, "Mis chats" muestra un estado vacío que explica cómo
+   *  se genera uno (postular a una adopción o sumarse a un equipo), en vez
+   *  de que el botón no haga nada y nadie entienda para qué sirve. */
   irAMisChats(): void {
     const totalDirectos = this.misChatsDirectos.length;
     const total = this.misRefugios.length + totalDirectos;
-    if (total === 0) return;
 
-    if (total > 1) {
+    if (total > 1 || total === 0) {
       this.router.navigate(['/tabs/mis-chats']);
       return;
     }
@@ -220,9 +228,21 @@ export class HomePage implements OnInit, OnDestroy {
     ).pipe(takeUntil(this.destroy$))
       .subscribe(pubs => {
         this.publicacionesActivas = pubs;
+        // El carrusel general es para campañas/eventos del refugio
+        // (recolección, donación, otro) — las publicaciones de una
+        // mascota puntual en adopción tienen su propia sección de
+        // tarjetas más abajo, para no mostrarlas duplicadas.
+        this.publicacionesCarrusel = pubs.filter(p => p.tipo !== 'adopcion');
         this.publicacionesAdopcion = pubs.filter(p => p.tipo === 'adopcion');
         this.cargarInfoMascotasAdopcion(this.publicacionesAdopcion);
       });
+  }
+
+  /** Con muy pocos slides, loop="true" de Swiper queda roto/glitcheado
+   *  (advertencia propia de la librería) — se desactiva el loop en vez de
+   *  mostrar un carrusel visualmente partido. */
+  get loopCarruselInferior(): boolean {
+    return (this.publicacionesCarrusel.length || this.imagenesCarruselInferior.length) >= 4;
   }
 
   /** Trae la ficha real de cada mascota vinculada a una publicación de
@@ -383,6 +403,10 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   getCurrentLocation() {
+    if (!this.preferencias.ubicacionHabilitada) {
+      this.presentToast('Activá la ubicación en Configuración → Permisos para usar esto.', 'warning');
+      return;
+    }
     if (!navigator.geolocation) {
       this.presentToast('Geolocalización no disponible.', 'danger');
       return;

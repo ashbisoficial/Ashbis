@@ -36,6 +36,7 @@ import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService, Mascota, VeterinariaFavorita } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
+import { PreferenciasService } from '../services/preferencias.service';
 import { RefugioContextService } from '../services/refugio-context.service';
 
 @Component({
@@ -57,6 +58,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   private readonly fs = inject(FirestoreService);
   private readonly auth = inject(AuthenticationService);
   private readonly security = inject(SecurityService);
+  private readonly preferencias = inject(PreferenciasService);
   private readonly alertCtrl = inject(AlertController);
   private readonly toastCtrl = inject(ToastController);
   private readonly refugioCtx = inject(RefugioContextService);
@@ -192,6 +194,17 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
 
   verPublicacion(p: Models.Publicaciones.Publicacion): void {
     this.router.navigate(['/tabs/publicacion', p.id]);
+  }
+
+  /** Abre el selector de archivo solo si la cámara/galería está habilitada
+   *  en Configuración → Permisos (preferencia propia de Ashbis, no el
+   *  permiso real del navegador). */
+  abrirSelectorArchivo(input: HTMLInputElement): void {
+    if (!this.preferencias.camaraHabilitada) {
+      this.mostrarToast('Activá la cámara en Configuración → Permisos para subir archivos.', 'danger');
+      return;
+    }
+    input.click();
   }
 
   async subirDocumentoVerificacion(event: Event): Promise<void> {

@@ -2,6 +2,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    function isAuth() {
+      return request.auth != null;
+    }
+
     function isUser(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
@@ -68,6 +72,17 @@ service firebase.storage {
     match /usuarios/{uid}/legal/{filename} {
       allow read:          if isUser(uid);
       allow create, update: if isUser(uid) && isImageOrPDF() && maxSize(15);
+      allow delete:        if isUser(uid);
+    }
+
+    // Logo/timbre/firma de una cuenta veterinaria, para personalizar la
+    // atención (por ejemplo, notas del historial médico que ve el dueño de
+    // la mascota) — a diferencia de título/legal, esto SÍ está pensado
+    // para que otras personas lo vean, no es un documento de verificación
+    // privado de revisión exclusiva de Ashbis.
+    match /usuarios/{uid}/personalizacion/{filename} {
+      allow read:          if isAuth();
+      allow create, update: if isUser(uid) && isImage() && maxSize(5);
       allow delete:        if isUser(uid);
     }
 

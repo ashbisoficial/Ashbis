@@ -763,6 +763,25 @@ export class FirestoreService {
     return url;
   }
 
+  /** Sube el logo, timbre o firma de una cuenta veterinaria, para
+   *  personalizar su atención (a diferencia del título, esto está pensado
+   *  para que lo vea el dueño de la mascota, no solo Ashbis). */
+  async subirImagenPersonalizacion(
+    uid: string,
+    tipo: 'logo' | 'timbre' | 'firma',
+    file: File
+  ): Promise<string> {
+    this.assertAuthenticated();
+    const safeFilename = this.sanitizeFilename(file.name);
+    const path = `usuarios/${uid}/personalizacion/${tipo}-${Date.now()}-${safeFilename}`;
+    const r = ref(this.storage, path);
+    await uploadBytes(r, file);
+    const url = await getDownloadURL(r);
+    const campo = tipo === 'logo' ? 'logoUrl' : tipo === 'timbre' ? 'timbreUrl' : 'firmaUrl';
+    await updateDoc(doc(this.firestore, `usuarios/${uid}`), { [campo]: url });
+    return url;
+  }
+
   /** Sube el documento legal de una cuenta de refugio (personería jurídica,
    *  RUT, certificado) para verificación manual futura y lo guarda en el
    *  perfil. A diferencia del título de veterinario, esto se llama desde una

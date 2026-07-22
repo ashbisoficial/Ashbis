@@ -2,7 +2,7 @@
   <ion-toolbar class="header-menu">
     <img src="assets/img/ashbis.png" alt="Logo Ashbis" class="logo-header">
     <ion-buttons slot="end">
-      <ion-button *ngIf="mostrarMisChats" fill="clear" (click)="irAMisChats()" aria-label="Mis chats">
+      <ion-button fill="clear" (click)="irAMisChats()" aria-label="Mis chats">
         <ion-icon slot="icon-only" name="chatbubbles-outline"></ion-icon>
       </ion-button>
       <app-notificaciones-bell></app-notificaciones-bell>
@@ -258,19 +258,21 @@
 
   </ion-card>
 
-  <!-- CARRUSEL INFERIOR: publicaciones activas de refugios (adopción,
-       recolección, donación), o imágenes genéricas si todavía no hay
-       ninguna publicada. -->
+  <!-- CARRUSEL INFERIOR: campañas/eventos del refugio (recolección,
+       donación, otro — NO adopción, que tiene su propia sección de
+       tarjetas más abajo), o imágenes genéricas si todavía no hay ninguna
+       publicada. loop solo si hay slides de sobra: con pocos, Swiper queda
+       roto visualmente (advertencia propia de la librería). -->
   <div class="carrusel-inferior-wrapper">
     <swiper-container
       slides-per-view="2.2"
       space-between="12"
-      loop="true"
+      [attr.loop]="loopCarruselInferior"
       autoplay-delay="3000"
       autoplay-disable-on-interaction="false"
     >
-      <ng-container *ngIf="publicacionesActivas.length; else carruselGenerico">
-        <swiper-slide *ngFor="let pub of publicacionesActivas" (click)="verPublicacion(pub)">
+      <ng-container *ngIf="publicacionesCarrusel.length; else carruselGenerico">
+        <swiper-slide *ngFor="let pub of publicacionesCarrusel" (click)="verPublicacion(pub)">
           <div class="slide-content-inferior">
             <img [src]="pub.fotoUrl || 'assets/img/9.jpg'" [alt]="pub.titulo" />
             <span class="slide-titulo">{{ pub.titulo }}</span>

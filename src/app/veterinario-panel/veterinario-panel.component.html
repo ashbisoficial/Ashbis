@@ -12,20 +12,91 @@
 
     <ion-card class="seccion-card">
       <ion-card-header>
-        <ion-card-title>{{ nombre() }}</ion-card-title>
+        <div class="header-con-accion">
+          <ion-card-title>{{ nombre() }}</ion-card-title>
+          <ion-button *ngIf="!modoEdicionPerfil()" fill="clear" size="small" (click)="iniciarEdicionPerfil()">
+            <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
         <p class="seccion-subtitulo">
           Accede al historial médico de tus pacientes con el ID de la mascota
           y el PIN que te comparta su dueño.
         </p>
       </ion-card-header>
-      <ion-card-content *ngIf="nombreClinica() || etiquetaTipoNegocio()">
+
+      <!-- Vista de solo lectura -->
+      <ion-card-content *ngIf="!modoEdicionPerfil()">
         <p class="dato-perfil" *ngIf="nombreClinica()"><ion-icon name="medkit-outline"></ion-icon> {{ nombreClinica() }}</p>
         <p class="dato-perfil" *ngIf="etiquetaTipoNegocio()">{{ etiquetaTipoNegocio() }}</p>
         <p class="dato-perfil" *ngIf="nombreDoctor()">Director/a técnico: {{ nombreDoctor() }}</p>
         <p class="dato-perfil" *ngIf="numeroRegistroProfesional()">Registro profesional: {{ numeroRegistroProfesional() }}</p>
+        <p class="dato-perfil" *ngIf="lugarEstudios()"><ion-icon name="ribbon-outline"></ion-icon> {{ lugarEstudios() }}</p>
         <p class="dato-perfil" *ngIf="etiquetaModalidad()">{{ etiquetaModalidad() }}</p>
         <div class="chips-especialidades" *ngIf="especialidades().length">
           <span class="chip" *ngFor="let e of especialidades()">{{ e }}</span>
+        </div>
+        <div class="chips-especialidades" *ngIf="especiesAtendidas().length">
+          <span class="chip chip-especie" *ngFor="let e of especiesAtendidas()">{{ e }}</span>
+        </div>
+        <p class="vacio" *ngIf="!nombreClinica() && !etiquetaTipoNegocio() && !lugarEstudios() && !especiesAtendidas().length">
+          Todavía no completaste tu perfil profesional — tocá el lápiz para agregar tus datos.
+        </p>
+      </ion-card-content>
+
+      <!-- Edición: pensado para verse bien tanto en celular como en escritorio
+           (la usa el propio veterinario o, muchas veces, su secretaria). -->
+      <ion-card-content *ngIf="modoEdicionPerfil()" class="form-edicion">
+        <ion-item lines="full">
+          <ion-label position="stacked">Nombre de la clínica/consulta</ion-label>
+          <ion-input [(ngModel)]="formPerfil.nombreClinica" placeholder="Ej: Clínica Veterinaria Ashbis"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Tipo de profesional</ion-label>
+          <ion-select [(ngModel)]="formPerfil.tipoNegocioVeterinario" interface="popover" placeholder="Elegí una opción">
+            <ion-select-option *ngFor="let opt of opcionesTipoNegocio" [value]="opt[0]">{{ opt[1] }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Modalidad de atención</ion-label>
+          <ion-select [(ngModel)]="formPerfil.modalidadAtencion" interface="popover" placeholder="Elegí una opción">
+            <ion-select-option *ngFor="let opt of opcionesModalidad" [value]="opt[0]">{{ opt[1] }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Director/a técnico (si es clínica)</ion-label>
+          <ion-input [(ngModel)]="formPerfil.nombreDoctor"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Registro profesional</ion-label>
+          <ion-input [(ngModel)]="formPerfil.numeroRegistroProfesional"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Lugar de estudios</ion-label>
+          <ion-input [(ngModel)]="formPerfil.lugarEstudios" placeholder="Universidad/instituto donde estudiaste"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Áreas de especialización</ion-label>
+          <ion-input [(ngModel)]="formPerfil.especialidadesTexto" placeholder="Separadas por coma: cirugía, dermatología..."></ion-input>
+        </ion-item>
+
+        <ion-label class="label-especies">Especies que atendés</ion-label>
+        <div class="grid-especies">
+          <ion-item lines="none" *ngFor="let especie of especiesDisponibles">
+            <ion-checkbox slot="start"
+              [checked]="formPerfil.especiesAtendidas.includes(especie)"
+              (ionChange)="toggleEspecie(especie, $event.detail.checked)"
+            ></ion-checkbox>
+            <ion-label>{{ especie }}</ion-label>
+          </ion-item>
+        </div>
+
+        <div class="acciones-form">
+          <ion-button [disabled]="guardandoPerfil" (click)="guardarPerfilProfesional()">
+            {{ guardandoPerfil ? 'Guardando...' : 'Guardar' }}
+          </ion-button>
+          <ion-button fill="outline" color="medium" [disabled]="guardandoPerfil" (click)="cancelarEdicionPerfil()">
+            Cancelar
+          </ion-button>
         </div>
       </ion-card-content>
     </ion-card>
@@ -50,11 +121,76 @@
           <input #tituloInput type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden
             (change)="subirTitulo($event)" />
           <ion-button expand="block" fill="outline" color="medium" [disabled]="subiendoTitulo()"
-            (click)="tituloInput.click()">
+            (click)="abrirSelectorArchivo(tituloInput)">
             <ion-icon name="document-text-outline" slot="start"></ion-icon>
             {{ subiendoTitulo() ? 'Subiendo...' : (tituloUrl() ? 'Volver a subir título' : 'Subir título') }}
           </ion-button>
         </ng-container>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Personalización de la atención: notas prediseñadas + logo/timbre/
+         firma, para agilizar cuando cargan el historial médico de un
+         paciente (uso pensado sobre todo para escritorio). -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="ribbon-outline"></ion-icon>
+          Personalización de la atención
+        </ion-card-title>
+        <p class="seccion-subtitulo">
+          Notas rápidas, logo, timbre y firma para completar más rápido el historial médico.
+        </p>
+      </ion-card-header>
+      <ion-card-content>
+
+        <ion-label class="label-especies">Notas prediseñadas</ion-label>
+        <ion-list *ngIf="notasPredisenadas().length" class="lista-notas">
+          <ion-item lines="none" *ngFor="let nota of notasPredisenadas()">
+            <ion-label class="ion-text-wrap">{{ nota }}</ion-label>
+            <ion-button slot="end" fill="clear" color="medium" (click)="quitarNotaPredisenada(nota)">
+              <ion-icon name="close-circle-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+          </ion-item>
+        </ion-list>
+        <p class="vacio" *ngIf="!notasPredisenadas().length">
+          Todavía no tenés notas guardadas. Agregá frases que uses seguido en el historial.
+        </p>
+        <div class="fila-nota">
+          <ion-input [(ngModel)]="nuevaNotaPredisenada" placeholder="Ej: Control anual sin novedad" (keyup.enter)="agregarNotaPredisenada()"></ion-input>
+          <ion-button [disabled]="!nuevaNotaPredisenada.trim() || guardandoNota" (click)="agregarNotaPredisenada()">
+            <ion-icon name="add-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+
+        <ion-label class="label-especies label-imagenes">Logo, timbre y firma</ion-label>
+        <div class="grid-imagenes">
+
+          <div class="item-imagen">
+            <img *ngIf="logoUrl()" [src]="logoUrl()" alt="Logo" />
+            <input #logoInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="subirImagenPersonalizacion($event, 'logo')" />
+            <ion-button size="small" fill="outline" color="medium" [disabled]="subiendoLogo()" (click)="abrirSelectorArchivo(logoInput)">
+              {{ subiendoLogo() ? 'Subiendo...' : (logoUrl() ? 'Cambiar logo' : 'Subir logo') }}
+            </ion-button>
+          </div>
+
+          <div class="item-imagen">
+            <img *ngIf="timbreUrl()" [src]="timbreUrl()" alt="Timbre" />
+            <input #timbreInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="subirImagenPersonalizacion($event, 'timbre')" />
+            <ion-button size="small" fill="outline" color="medium" [disabled]="subiendoTimbre()" (click)="abrirSelectorArchivo(timbreInput)">
+              {{ subiendoTimbre() ? 'Subiendo...' : (timbreUrl() ? 'Cambiar timbre' : 'Subir timbre') }}
+            </ion-button>
+          </div>
+
+          <div class="item-imagen">
+            <img *ngIf="firmaUrl()" [src]="firmaUrl()" alt="Firma" />
+            <input #firmaInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="subirImagenPersonalizacion($event, 'firma')" />
+            <ion-button size="small" fill="outline" color="medium" [disabled]="subiendoFirma()" (click)="abrirSelectorArchivo(firmaInput)">
+              {{ subiendoFirma() ? 'Subiendo...' : (firmaUrl() ? 'Cambiar firma' : 'Subir firma') }}
+            </ion-button>
+          </div>
+
+        </div>
       </ion-card-content>
     </ion-card>
 

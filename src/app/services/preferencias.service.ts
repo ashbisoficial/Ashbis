@@ -5,6 +5,8 @@ export type TamanoTexto = 'pequeno' | 'normal' | 'grande' | 'muy-grande';
 
 const CLAVE_TEMA = 'ashbis-tema';
 const CLAVE_TAMANO_TEXTO = 'ashbis-tamano-texto';
+const CLAVE_CAMARA = 'ashbis-camara-habilitada';
+const CLAVE_UBICACION = 'ashbis-ubicacion-habilitada';
 
 const ESCALAS_TEXTO: Record<TamanoTexto, number> = {
   'pequeno': 92,
@@ -14,8 +16,17 @@ const ESCALAS_TEXTO: Record<TamanoTexto, number> = {
 };
 
 /**
- * Preferencias de apariencia (tema claro/oscuro, tamaño de texto),
- * persistidas en localStorage y aplicadas como clase/CSS var en <html>.
+ * Preferencias de apariencia (tema claro/oscuro, tamaño de texto) y de uso
+ * de cámara/ubicación, persistidas en localStorage y aplicadas como
+ * clase/CSS var en <html> (apariencia) o leídas por los componentes que
+ * disparan esas funciones (cámara/ubicación).
+ *
+ * camaraHabilitada/ubicacionHabilitada NO son el permiso real del
+ * navegador/SO — eso nunca se puede revocar por código, solo la persona
+ * puede hacerlo desde la configuración de su dispositivo (ver
+ * ConfiguracionComponent). Son un interruptor propio de Ashbis: si está
+ * apagado, la app directamente no llama a esas APIs aunque el permiso del
+ * navegador siga concedido.
  *
  * Además de la clase, fija --ion-background-color/--ion-text-color y el
  * `color-scheme` real del documento: index.html declara
@@ -28,10 +39,14 @@ const ESCALAS_TEXTO: Record<TamanoTexto, number> = {
 export class PreferenciasService {
   private temaActual: Tema = 'oscuro';
   private tamanoActual: TamanoTexto = 'normal';
+  private camaraActual = true;
+  private ubicacionActual = true;
 
   constructor() {
     this.temaActual = (localStorage.getItem(CLAVE_TEMA) as Tema) || 'oscuro';
     this.tamanoActual = (localStorage.getItem(CLAVE_TAMANO_TEXTO) as TamanoTexto) || 'normal';
+    this.camaraActual = localStorage.getItem(CLAVE_CAMARA) !== 'false';
+    this.ubicacionActual = localStorage.getItem(CLAVE_UBICACION) !== 'false';
     this.aplicarTema(this.temaActual);
     this.aplicarTamanoTexto(this.tamanoActual);
   }
@@ -44,6 +59,14 @@ export class PreferenciasService {
     return this.tamanoActual;
   }
 
+  get camaraHabilitada(): boolean {
+    return this.camaraActual;
+  }
+
+  get ubicacionHabilitada(): boolean {
+    return this.ubicacionActual;
+  }
+
   setTema(tema: Tema): void {
     this.temaActual = tema;
     localStorage.setItem(CLAVE_TEMA, tema);
@@ -54,6 +77,16 @@ export class PreferenciasService {
     this.tamanoActual = tamano;
     localStorage.setItem(CLAVE_TAMANO_TEXTO, tamano);
     this.aplicarTamanoTexto(tamano);
+  }
+
+  setCamaraHabilitada(habilitada: boolean): void {
+    this.camaraActual = habilitada;
+    localStorage.setItem(CLAVE_CAMARA, String(habilitada));
+  }
+
+  setUbicacionHabilitada(habilitada: boolean): void {
+    this.ubicacionActual = habilitada;
+    localStorage.setItem(CLAVE_UBICACION, String(habilitada));
   }
 
   private aplicarTema(tema: Tema): void {

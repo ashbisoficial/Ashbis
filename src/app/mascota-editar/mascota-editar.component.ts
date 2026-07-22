@@ -10,6 +10,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { FirestoreService, Mascota, Cita, Vacuna, Examen, Medicamento } from '../firebase/firestore';
 import { NotificationService } from '../services/notification.service';
+import { PreferenciasService } from '../services/preferencias.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { Auth } from '@angular/fire/auth';
@@ -54,6 +55,7 @@ export class MascotaEditarComponent implements OnDestroy {
   private router = inject(Router);
   private fs = inject(FirestoreService);
   private notificationService = inject(NotificationService);
+  private preferencias = inject(PreferenciasService);
   private fb = inject(FormBuilder);
   private auth = inject(Auth);
 
@@ -275,6 +277,17 @@ export class MascotaEditarComponent implements OnDestroy {
   showToast(msg: string) {
     this.toastMsg.set(msg);
     this.toastOpen.set(true);
+  }
+
+  /** Abre el selector de archivo solo si la cámara/galería está habilitada
+   *  en Configuración → Permisos (preferencia propia de Ashbis, no el
+   *  permiso real del navegador). */
+  abrirSelectorArchivo(input: HTMLInputElement): void {
+    if (!this.preferencias.camaraHabilitada) {
+      this.showToast('Activá la cámara en Configuración → Permisos para subir archivos.');
+      return;
+    }
+    input.click();
   }
 
   // ---------- GALERÍA ----------

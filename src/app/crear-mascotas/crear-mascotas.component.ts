@@ -33,6 +33,7 @@ import { FirestoreService } from 'src/app/firebase/firestore';
 import { Firestore, doc, getDoc, getDocs, collection, query, where, increment, updateDoc } from '@angular/fire/firestore';
 import { Models } from 'src/app/models/models';
 import { SecurityService } from 'src/app/services/security.service';
+import { PreferenciasService } from 'src/app/services/preferencias.service';
 import { getFriendlyErrorMessage } from 'src/app/services/firebase-error.util';
 
 @Component({
@@ -74,6 +75,7 @@ export class CrearMascotasComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly alertCtrl = inject(AlertController);
   private readonly security = inject(SecurityService);
+  private readonly preferencias = inject(PreferenciasService);
   private readonly publicQrService = inject(PublicQrService);
   mascotaForm!: FormGroup;
   cargando = false;
@@ -133,6 +135,17 @@ export class CrearMascotasComponent implements OnInit {
    *  texto de ayuda en vez de agregar un campo nuevo. */
   get esReptil(): boolean {
     return this.mascotaForm.get('especie')?.value === 'Reptil';
+  }
+
+  /** Abre el selector de archivo solo si la cámara/galería está habilitada
+   *  en Configuración → Permisos (preferencia propia de Ashbis, no el
+   *  permiso real del navegador). */
+  async abrirSelectorArchivo(input: HTMLInputElement): Promise<void> {
+    if (!this.preferencias.camaraHabilitada) {
+      await this.presentAlert('Activá la cámara en Configuración → Permisos para subir fotos.');
+      return;
+    }
+    input.click();
   }
 
   async onImageSelected(event: any): Promise<void> {

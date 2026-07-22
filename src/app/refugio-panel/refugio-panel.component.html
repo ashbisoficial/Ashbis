@@ -39,7 +39,7 @@
           <input #documentoInput type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden
             (change)="subirDocumentoVerificacion($event)" />
           <ion-button expand="block" fill="outline" color="medium" [disabled]="subiendoDocumento()"
-            (click)="documentoInput.click()">
+            (click)="abrirSelectorArchivo(documentoInput)">
             <ion-icon name="document-text-outline" slot="start"></ion-icon>
             {{ subiendoDocumento() ? 'Subiendo...' : (documentoLegalUrl() ? 'Volver a subir documento' : 'Subir documento') }}
           </ion-button>

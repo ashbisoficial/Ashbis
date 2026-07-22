@@ -189,7 +189,7 @@
                   hidden
                   #galInput
                   (change)="onAddPhotos($event)" />
-                <ion-button slot="end" color="danger" [disabled]="uploading()" (click)="galInput.click()">
+                <ion-button slot="end" color="danger" [disabled]="uploading()" (click)="abrirSelectorArchivo(galInput)">
                   <ion-icon name="images-outline" slot="start"></ion-icon>
                   {{ uploading() ? 'Subiendo…' : 'Agregar fotos' }}
                 </ion-button>
@@ -574,7 +574,7 @@
                     </ng-container>
                     <ng-template #noOrden>
                       <input type="file" accept="image/*,.pdf" hidden #ordenInput (change)="onUploadOrden($event, e)">
-                      <ion-button size="small" [disabled]="subiendoOrden()" (click)="ordenInput.click()" color="danger" class="ion-margin-start">
+                      <ion-button size="small" [disabled]="subiendoOrden()" (click)="abrirSelectorArchivo(ordenInput)" color="danger" class="ion-margin-start">
                         <ion-icon name="cloud-upload-outline" slot="start"></ion-icon>
                         {{ subiendoOrden() ? 'Subiendo…' : 'Subir orden' }}
                       </ion-button>
@@ -596,7 +596,7 @@
                     </ng-container>
                     <ng-template #noRes>
                       <input type="file" accept="image/*,.pdf" hidden #resultadoInput (change)="onUploadResultado($event, e)">
-                      <ion-button size="small" [disabled]="subiendoResultado()" (click)="resultadoInput.click()" color="danger" class="ion-margin-start">
+                      <ion-button size="small" [disabled]="subiendoResultado()" (click)="abrirSelectorArchivo(resultadoInput)" color="danger" class="ion-margin-start">
                         <ion-icon name="cloud-upload-outline" slot="start"></ion-icon>
                         {{ subiendoResultado() ? 'Subiendo…' : 'Subir resultado' }}
                       </ion-button>

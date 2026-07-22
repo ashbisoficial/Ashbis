@@ -16,6 +16,7 @@ import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { SecurityService } from 'src/app/services/security.service';
+import { PreferenciasService } from 'src/app/services/preferencias.service';
 import { PublicQrService } from 'src/app/services/public-qr.service';
 import { Models } from '../models/models';
 
@@ -40,6 +41,7 @@ export class MascotaPerfilComponent implements OnDestroy {
   private alertCtrl = inject(AlertController);
   private toastCtrl = inject(ToastController);
   private security = inject(SecurityService);
+  private preferencias = inject(PreferenciasService);
   private publicQrSvc = inject(PublicQrService);
 
   veterinariasFavoritas: VeterinariaFavorita[] = [];
@@ -210,7 +212,7 @@ editarPerfil() {
 
   darEnAdopcion(): void {
     const m = this.mascota();
-    if (m?.id) this.pedirDatosTransferencia(m, 'adopcion');
+    if (m?.id) this.elegirMetodoTransferencia(m, 'adopcion');
   }
 
   /** Publica a la mascota en el feed público de adopción (a diferencia de
@@ -285,7 +287,28 @@ editarPerfil() {
       await alert.present();
       return;
     }
-    this.pedirDatosTransferencia(m, 'hogar_temporal');
+    this.elegirMetodoTransferencia(m, 'hogar_temporal');
+  }
+
+  /** Un solo botón por tipo de solicitud (adopción / hogar temporal): al
+   *  tocarlo se pregunta cómo identificar a la otra persona — tipeando su
+   *  email o escaneando su QR de cuenta. Ambos métodos hacen exactamente
+   *  lo mismo, solo cambia cómo se llega al email. */
+  private async elegirMetodoTransferencia(
+    m: Mascota,
+    tipo: 'adopcion' | 'hogar_temporal'
+  ): Promise<void> {
+    const esAdopcion = tipo === 'adopcion';
+    const alert = await this.alertCtrl.create({
+      header: esAdopcion ? `Adopción de ${m.nombre}` : `Hogar temporal para ${m.nombre}`,
+      message: '¿Cómo querés identificar a la persona? Las dos formas hacen lo mismo.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Escribir su email', handler: () => this.pedirDatosTransferencia(m, tipo) },
+        { text: 'Escanear su QR', handler: () => this.iniciarEscaneoQr(tipo) },
+      ],
+    });
+    await alert.present();
   }
 
   private async pedirDatosTransferencia(
@@ -349,28 +372,15 @@ editarPerfil() {
     }
   }
 
-  /** Punto de entrada del botón "Escanear QR": pregunta para qué es (no se
-   *  puede saber de antemano mirando el QR, que solo identifica a la
-   *  persona) y recién ahí abre la cámara/galería. */
-  async escanearQrParaTransferencia(): Promise<void> {
-    if (!this.mascota()) return;
-    const alert = await this.alertCtrl.create({
-      header: 'Escanear QR',
-      message: 'Escaneá el QR de cuenta de la otra persona para mandarle la solicitud sin tipear su email.',
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        { text: 'Es para adopción', handler: () => this.iniciarEscaneoQr('adopcion') },
-        { text: 'Es para hogar temporal', handler: () => this.iniciarEscaneoQr('hogar_temporal') },
-      ],
-    });
-    await alert.present();
-  }
-
   private async iniciarEscaneoQr(tipo: 'adopcion' | 'hogar_temporal'): Promise<void> {
     const m = this.mascota();
     if (!m?.id) return;
     if (tipo === 'hogar_temporal' && await this.fs.hayHogarTemporalActivo(m.id)) {
       await this.presentToast(`${m.nombre} ya está en un hogar temporal activo.`, 'danger');
+      return;
+    }
+    if (!this.preferencias.camaraHabilitada) {
+      await this.presentToast('Activá la cámara en Configuración → Permisos para escanear un QR.', 'danger');
       return;
     }
     this.tipoEscaneoPendiente = tipo;

@@ -117,23 +117,26 @@
           Permisos
         </ion-card-title>
         <p class="seccion-subtitulo">
-          Ashbis no puede cambiar estos permisos por ti — si querés modificarlos, hacelo desde la configuración de tu navegador o sistema operativo.
+          El permiso real del navegador/sistema no lo podemos cambiar nosotros — pero podés decirle a Ashbis
+          que no use la cámara o tu ubicación aunque el permiso siga concedido.
         </p>
       </ion-card-header>
       <ion-card-content>
-        <ion-item lines="none">
+        <ion-item lines="none" class="item-toggle">
           <ion-icon name="camera-outline" slot="start"></ion-icon>
-          <ion-label>Cámara</ion-label>
-          <span class="estado-chip" [attr.data-estado]="estadoCamara" slot="end">
-            {{ estadoCamara === 'concedido' ? 'Concedido' : estadoCamara === 'denegado' ? 'Bloqueado' : estadoCamara === 'no-soportado' ? 'No disponible' : 'Sin pedir' }}
-          </span>
+          <ion-label>
+            Usar la cámara en la app
+            <p>Permiso del navegador: {{ estadoCamara === 'concedido' ? 'Concedido' : estadoCamara === 'denegado' ? 'Bloqueado' : estadoCamara === 'no-soportado' ? 'No disponible' : 'Sin pedir' }}</p>
+          </ion-label>
+          <ion-toggle slot="end" [checked]="camaraHabilitada" (ionChange)="alternarCamara($event.detail.checked)"></ion-toggle>
         </ion-item>
-        <ion-item lines="none">
+        <ion-item lines="none" class="item-toggle">
           <ion-icon name="location-outline" slot="start"></ion-icon>
-          <ion-label>Ubicación</ion-label>
-          <span class="estado-chip" [attr.data-estado]="estadoUbicacion" slot="end">
-            {{ estadoUbicacion === 'concedido' ? 'Concedido' : estadoUbicacion === 'denegado' ? 'Bloqueado' : estadoUbicacion === 'no-soportado' ? 'No disponible' : 'Sin pedir' }}
-          </span>
+          <ion-label>
+            Usar mi ubicación en la app
+            <p>Permiso del navegador: {{ estadoUbicacion === 'concedido' ? 'Concedido' : estadoUbicacion === 'denegado' ? 'Bloqueado' : estadoUbicacion === 'no-soportado' ? 'No disponible' : 'Sin pedir' }}</p>
+          </ion-label>
+          <ion-toggle slot="end" [checked]="ubicacionHabilitada" (ionChange)="alternarUbicacion($event.detail.checked)"></ion-toggle>
         </ion-item>
         <ion-item lines="none">
           <ion-icon name="notifications-outline" slot="start"></ion-icon>
@@ -142,6 +145,7 @@
             {{ estadoNotificaciones === 'concedido' ? 'Concedido' : estadoNotificaciones === 'denegado' ? 'Bloqueado' : estadoNotificaciones === 'no-soportado' ? 'No disponible' : 'Sin pedir' }}
           </span>
         </ion-item>
+        <p class="campo-nota">La de notificaciones se activa desde la tarjeta "Notificaciones" más arriba.</p>
       </ion-card-content>
     </ion-card>
 
