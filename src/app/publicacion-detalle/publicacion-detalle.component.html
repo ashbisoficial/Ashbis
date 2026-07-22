@@ -18,21 +18,52 @@
   </div>
 
   <div *ngIf="!cargando && publicacion as pub" class="detalle">
-    <img
-      class="foto-grande"
-      [src]="pub.fotoUrl || 'assets/img/9.jpg'"
-      [alt]="pub.titulo"
-    />
+    <div class="foto-wrap">
+      <img
+        class="foto-grande"
+        [src]="fotoPublicacion"
+        [alt]="mascota?.nombre || pub.titulo"
+      />
+      <ion-badge color="danger" class="badge-tipo">{{ etiquetasTipo[pub.tipo] }}</ion-badge>
+    </div>
 
     <div class="cuerpo">
-      <ion-badge color="danger" class="badge-tipo">{{ etiquetasTipo[pub.tipo] }}</ion-badge>
-
-      <h1>{{ pub.titulo }}</h1>
+      <h1>{{ mascota?.nombre || pub.titulo }}</h1>
       <p class="autor">
         Publicado por {{ pub.nombreAutor }}
         <ion-icon *ngIf="infoRefugio?.verificado" name="shield-checkmark-outline" class="icono-verificado"
           title="Refugio verificado por Ashbis"></ion-icon>
       </p>
+
+      <!-- Info pública de la mascota vinculada: especie, raza, sexo, edad,
+           color y si está castrada — solo si la publicación está vinculada
+           a una ficha real. -->
+      <div class="info-mascota" *ngIf="mascota as m">
+        <div class="dato-mascota" *ngIf="m.especie">
+          <span class="dato-tit">Especie</span>
+          <span class="dato-val">{{ m.especie }}</span>
+        </div>
+        <div class="dato-mascota" *ngIf="m.raza">
+          <span class="dato-tit">Raza</span>
+          <span class="dato-val">{{ m.raza }}</span>
+        </div>
+        <div class="dato-mascota" *ngIf="m.sexo">
+          <span class="dato-tit">Sexo</span>
+          <span class="dato-val">{{ m.sexo }}</span>
+        </div>
+        <div class="dato-mascota" *ngIf="m.edad !== undefined && m.edad !== null">
+          <span class="dato-tit">Edad</span>
+          <span class="dato-val">{{ m.edad }} {{ m.edad === 1 ? 'año' : 'años' }}</span>
+        </div>
+        <div class="dato-mascota" *ngIf="m.color">
+          <span class="dato-tit">Color</span>
+          <span class="dato-val">{{ m.color }}</span>
+        </div>
+        <div class="dato-mascota" *ngIf="m.castrado">
+          <span class="dato-tit">Castrado/a</span>
+          <span class="dato-val">{{ m.castrado }}</span>
+        </div>
+      </div>
 
       <p class="descripcion">{{ pub.descripcion }}</p>
 

@@ -22,7 +22,7 @@ import { chatbubblesOutline, closeCircleOutline, shieldCheckmarkOutline, warning
 import { Subject, combineLatest, of, switchMap, takeUntil } from 'rxjs';
 
 import { AuthenticationService } from '../firebase/authentication';
-import { FirestoreService } from '../firebase/firestore';
+import { FirestoreService, Mascota } from '../firebase/firestore';
 import { RefugioContextService } from '../services/refugio-context.service';
 import { SecurityService } from '../services/security.service';
 import { Models } from '../models/models';
@@ -77,6 +77,10 @@ export class PublicacionDetalleComponent implements OnDestroy {
   enviandoPostulacion = false;
 
   infoRefugio: Models.RefugiosPublico.InfoPublicaRefugio | undefined;
+  /** Ficha real de la mascota vinculada (si la publicación tiene
+   *  mascotaId) — se prioriza sobre lo que dice la publicación para la
+   *  foto y para mostrar su información pública (especie, sexo, edad...). */
+  mascota: Mascota | undefined;
 
   constructor() {
     addIcons({ chatbubblesOutline, closeCircleOutline, shieldCheckmarkOutline, warningOutline });
@@ -96,11 +100,25 @@ export class PublicacionDetalleComponent implements OnDestroy {
         this.publicacion = pub;
         this.noEncontrada = !pub;
         this.cargando = false;
+        this.mascota = undefined;
         if (pub?.id) {
           this.cargarPostulaciones(pub);
           this.cargarInfoRefugio(pub.uidAutor);
+          if (pub.mascotaId) this.cargarMascota(pub.mascotaId);
         }
       });
+  }
+
+  private cargarMascota(mascotaId: string): void {
+    this.firestoreService.getPetById(mascotaId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(m => this.mascota = m);
+  }
+
+  /** Foto real de la mascota si está vinculada; si no, la que tenga la
+   *  publicación (puede haber sido subida aparte, ej. desde Mis Publicaciones). */
+  get fotoPublicacion(): string {
+    return this.mascota?.fotoUrl || this.publicacion?.fotoUrl || 'assets/img/9.jpg';
   }
 
   private cargarInfoRefugio(uidAutor: string): void {
