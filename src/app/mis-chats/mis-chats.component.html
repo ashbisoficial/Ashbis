@@ -21,6 +21,7 @@
     <div class="item-chat" *ngFor="let f of filas" (click)="abrir(f)">
       <div class="avatar-chat" [class.avatar-equipo]="f.tipo === 'equipo'">
         <ion-icon [name]="f.tipo === 'equipo' ? 'people-outline' : 'paw-outline'"></ion-icon>
+        <span class="punto-no-leido" *ngIf="noLeidoPorFila[claveFila(f)]"></span>
       </div>
       <div class="info-chat">
         <h2>{{ f.titulo }}</h2>

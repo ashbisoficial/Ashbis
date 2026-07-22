@@ -87,8 +87,19 @@
 
   .hora {
     font-size: 0.72rem;
-    display: block;
-    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+  }
+
+  .tilde {
+    font-size: 0.9rem;
+    vertical-align: -1px;
+  }
+
+  .tilde-leido {
+    color: #4fc3f7;
   }
 }
 

@@ -34,11 +34,7 @@ export class ChatUnreadService {
 
     const directos$ = this.fs.getMisChatsDirectos(miUid).pipe(
       switchMap(chats => chats.length
-        ? combineLatest(chats.map(c => this.tieneNoLeido(
-            this.fs.getUltimoMensajeChatDirecto(c.id!),
-            this.fs.getLecturaChatDirecto(c.id!, miUid),
-            miUid,
-          )))
+        ? combineLatest(chats.map(c => this.tieneNoLeidoDirecto$(c.id!, miUid)))
         : of([] as boolean[])
       ),
       map(flags => flags.some(Boolean)),
@@ -46,11 +42,7 @@ export class ChatUnreadService {
 
     const equipos$ = this.refugioCtx.contexto$().pipe(
       switchMap(ctx => ctx.todos.length
-        ? combineLatest(ctx.todos.map(refugioUid => this.tieneNoLeido(
-            this.fs.getUltimoMensajeChatEquipo(refugioUid),
-            this.fs.getLecturaChatEquipo(refugioUid, miUid),
-            miUid,
-          )))
+        ? combineLatest(ctx.todos.map(refugioUid => this.tieneNoLeidoEquipo$(refugioUid, miUid)))
         : of([] as boolean[])
       ),
       map(flags => flags.some(Boolean)),
@@ -58,6 +50,29 @@ export class ChatUnreadService {
 
     return combineLatest([directos$, equipos$]).pipe(
       map(([hayDirectos, hayEquipo]) => hayDirectos || hayEquipo)
+    );
+  }
+
+  /** Igual que tengoNoLeidos$() pero para un chat directo puntual — para el
+   *  puntito rojo de esa fila en la lista de "Mis chats". */
+  tieneNoLeidoDirecto$(chatId: string, miUid?: string): Observable<boolean> {
+    const uid = miUid ?? this.auth.getCurrentUser()?.uid;
+    if (!uid) return of(false);
+    return this.tieneNoLeido(
+      this.fs.getUltimoMensajeChatDirecto(chatId),
+      this.fs.getLecturaChatDirecto(chatId, uid),
+      uid,
+    );
+  }
+
+  /** Igual que tieneNoLeidoDirecto$() pero para el chat de equipo de un refugio. */
+  tieneNoLeidoEquipo$(refugioUid: string, miUid?: string): Observable<boolean> {
+    const uid = miUid ?? this.auth.getCurrentUser()?.uid;
+    if (!uid) return of(false);
+    return this.tieneNoLeido(
+      this.fs.getUltimoMensajeChatEquipo(refugioUid),
+      this.fs.getLecturaChatEquipo(refugioUid, uid),
+      uid,
     );
   }
 

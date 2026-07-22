@@ -38,7 +38,14 @@
       <div class="bubble-inner">
         <p class="autor" *ngIf="m.autorUid !== miUid">{{ m.autorNombre }}</p>
         <p class="texto">{{ m.texto }}</p>
-        <span class="hora">{{ horaDe(m) }}</span>
+        <span class="hora">
+          {{ horaDe(m) }}
+          <ng-container *ngIf="m.autorUid === miUid">
+            <ion-icon *ngIf="estadoMensaje(m) === 'enviando'" name="checkmark-outline" class="tilde"></ion-icon>
+            <ion-icon *ngIf="estadoMensaje(m) === 'entregado'" name="checkmark-done-outline" class="tilde"></ion-icon>
+            <ion-icon *ngIf="estadoMensaje(m) === 'leido'" name="checkmark-done-outline" class="tilde tilde-leido"></ion-icon>
+          </ng-container>
+        </span>
       </div>
     </div>
   </div>

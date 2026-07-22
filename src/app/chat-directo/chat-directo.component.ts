@@ -18,7 +18,7 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { pawOutline, sendOutline } from 'ionicons/icons';
+import { checkmarkDoneOutline, checkmarkOutline, pawOutline, sendOutline } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
@@ -61,9 +61,11 @@ export class ChatDirectoComponent implements OnInit, OnDestroy, AfterViewChecked
   esRefugio = signal(false);
   estadoTraspaso = signal<EstadoTraspaso>('ninguno');
   enviandoTraspaso = false;
+  /** Marca de lectura de la otra persona — para las tildes de "entregado"/"leído". */
+  lecturaOtro = signal<{ leidoHasta?: { toMillis?: () => number } } | undefined>(undefined);
 
   constructor() {
-    addIcons({ sendOutline, pawOutline });
+    addIcons({ sendOutline, pawOutline, checkmarkOutline, checkmarkDoneOutline });
   }
 
   ngOnInit(): void {
@@ -81,6 +83,13 @@ export class ChatDirectoComponent implements OnInit, OnDestroy, AfterViewChecked
       const soyRefugio = chat.refugioUid === this.miUid;
       this.esRefugio.set(soyRefugio);
       if (soyRefugio && chat.mascotaId) this.cargarEstadoTraspaso(chat);
+
+      const otroUid = chat.participantes.find(p => p !== this.miUid);
+      if (otroUid) {
+        this.fs.getLecturaChatDirecto(this.chatId, otroUid)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(l => this.lecturaOtro.set(l));
+      }
     });
 
     this.fs.getMensajesChatDirecto(this.chatId)
@@ -126,6 +135,19 @@ export class ChatDirectoComponent implements OnInit, OnDestroy, AfterViewChecked
     const ts = m.createdAt?.toDate?.();
     if (!ts) return 'enviando…';
     return ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /** Estado de un mensaje propio, para las tildes estilo WhatsApp:
+   *  "enviando" (todavía no confirma el servidor), "entregado" (ya está en
+   *  Firestore, pero la otra persona no lo leyó) o "leido" (su marca de
+   *  lectura es igual o posterior a este mensaje). Solo aplica a mensajes
+   *  propios — los de la otra persona no muestran tilde. */
+  estadoMensaje(m: Models.ChatDirecto.Mensaje): 'enviando' | 'entregado' | 'leido' {
+    const tsMsg = m.createdAt?.toMillis?.();
+    if (!tsMsg) return 'enviando';
+    const tsLeido = this.lecturaOtro()?.leidoHasta?.toMillis?.();
+    if (tsLeido && tsLeido >= tsMsg) return 'leido';
+    return 'entregado';
   }
 
   async enviar(): Promise<void> {

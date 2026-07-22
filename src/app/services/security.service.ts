@@ -100,8 +100,18 @@ export class SecurityService {
         output[key] = val
           .slice(0, 100)
           .map(item => typeof item === 'string' ? this.sanitizeText(item) : item);
+      } else if (typeof val === 'object' && val.constructor !== Object) {
+        // Tipos especiales de Firestore (serverTimestamp()/increment()/
+        // arrayUnion() como FieldValue, Timestamp, GeoPoint,
+        // DocumentReference, etc.): NO son objetos planos, son instancias
+        // con su propio constructor. Si se recorren con Object.entries()
+        // igual que un objeto común, se reconstruyen como un objeto plano
+        // que perdió su tipo especial — Firestore ya no los reconoce (ej.
+        // serverTimestamp() roto queda como un campo que nunca resuelve a
+        // una fecha real). Se pasan tal cual, sin tocarlos.
+        output[key] = val;
       } else if (typeof val === 'object') {
-        // Objetos anidados: recursión un nivel
+        // Objetos anidados planos: recursión un nivel
         output[key] = this.sanitizeFirestoreObject(val as Record<string, any>);
       }
       // Descarta funciones, Symbols y otros tipos

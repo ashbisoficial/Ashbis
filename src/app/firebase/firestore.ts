@@ -501,16 +501,21 @@ export class FirestoreService {
     const uid = this.assertAuthenticated();
     const perfil = await this.getDocument(`usuarios/${uid}`);
     const autorNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || perfil?.email || 'Alguien';
-    const payload: Omit<Models.HistorialMedico.Entrada, 'id'> = {
+    const payload: Omit<Models.HistorialMedico.Entrada, 'id' | 'createdAt'> = {
       texto,
       autorUid: uid,
       autorNombre,
       autorRol: (perfil?.rol as Models.Auth.Rol) ?? 'usuario',
-      createdAt: serverTimestamp(),
     };
     await addDoc(
       collection(this.firestore, `mascotas/${petId}/${Models.HistorialMedico.PathEntradas}`),
-      this.security.sanitizeFirestoreObject(payload as any)
+      // createdAt se agrega DESPUÉS de sanitizeFirestoreObject: es un
+      // FieldValue especial (sentinel), no un dato plano — si se sanitiza
+      // junto con el resto, sanitizeFirestoreObject lo reconstruye como un
+      // objeto común y Firestore deja de reconocerlo como "hora del
+      // servidor", así que el campo queda roto para siempre (nunca se
+      // resuelve a una fecha real).
+      { ...this.security.sanitizeFirestoreObject(payload as any), createdAt: serverTimestamp() }
     );
   }
 
@@ -586,14 +591,11 @@ export class FirestoreService {
     data: Omit<Models.Finanzas.Movimiento, 'id' | 'creadoPor' | 'createdAt'>
   ): Promise<void> {
     const uid = this.assertAuthenticated();
-    const payload = {
-      ...data,
-      creadoPor: uid,
-      createdAt: serverTimestamp(),
-    };
+    const payload = { ...data, creadoPor: uid };
     await addDoc(
       collection(this.firestore, `usuarios/${refugioUid}/${Models.Finanzas.PathMovimientos}`),
-      this.security.sanitizeFirestoreObject(payload as any)
+      // createdAt fuera de sanitizeFirestoreObject: ver nota en agregarEntradaHistorial.
+      { ...this.security.sanitizeFirestoreObject(payload as any), createdAt: serverTimestamp() }
     );
   }
 
@@ -613,15 +615,15 @@ export class FirestoreService {
     const uid = this.assertAuthenticated();
     const perfil = await this.getDocument(`usuarios/${uid}`);
     const autorNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || 'Alguien del equipo';
-    const payload: Omit<Models.ChatEquipo.Mensaje, 'id'> = {
+    const payload: Omit<Models.ChatEquipo.Mensaje, 'id' | 'createdAt'> = {
       texto,
       autorUid: uid,
       autorNombre,
-      createdAt: serverTimestamp(),
     };
     await addDoc(
       collection(this.firestore, `usuarios/${refugioUid}/${Models.ChatEquipo.PathMensajes}`),
-      this.security.sanitizeFirestoreObject(payload as any)
+      // createdAt fuera de sanitizeFirestoreObject: ver nota en agregarEntradaHistorial.
+      { ...this.security.sanitizeFirestoreObject(payload as any), createdAt: serverTimestamp() }
     );
   }
 
@@ -1012,15 +1014,15 @@ export class FirestoreService {
     const perfil = await this.getDocument(`usuarios/${uid}`);
     const autorNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
       || perfil?.nombreRefugio?.trim() || 'Alguien';
-    const payload: Omit<Models.ChatDirecto.Mensaje, 'id'> = {
+    const payload: Omit<Models.ChatDirecto.Mensaje, 'id' | 'createdAt'> = {
       texto,
       autorUid: uid,
       autorNombre,
-      createdAt: serverTimestamp(),
     };
     await addDoc(
       collection(this.firestore, `${Models.ChatDirecto.PathChats}/${chatId}/${Models.ChatDirecto.PathMensajes}`),
-      this.security.sanitizeFirestoreObject(payload as any)
+      // createdAt fuera de sanitizeFirestoreObject: ver nota en agregarEntradaHistorial.
+      { ...this.security.sanitizeFirestoreObject(payload as any), createdAt: serverTimestamp() }
     );
   }
 
