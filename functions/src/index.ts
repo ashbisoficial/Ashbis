@@ -779,11 +779,27 @@ export const aceptarTransferencia = onRequest(
           // nunca en más de uno — así que se borra acá mismo.
           const colaboradoresPrevios = await tx.get(mascotaRef.collection('colaboradores'));
 
+          // Ya tiene dueño nuevo: la publicación de adopción de esta mascota
+          // deja de tener sentido — se desactiva para que desaparezca del
+          // feed (mismo mecanismo que usa el resto de la app para "borrar"
+          // una publicación sin perder el registro de postulaciones/chats
+          // que ya la referencian).
+          const publicacionesActivas = await tx.get(
+            db.collection('publicaciones')
+              .where('mascotaId', '==', t['mascotaId'])
+              .where('tipo', '==', 'adopcion')
+              .where('activa', '==', true)
+          );
+
           tx.update(mascotaRef, {
             uidUsuario: decoded.uid,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
           colaboradoresPrevios.docs.forEach(d => tx.delete(d.ref));
+          publicacionesActivas.docs.forEach(d => tx.update(d.ref, {
+            activa: false,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }));
         }
 
         tx.update(transferRef, {
