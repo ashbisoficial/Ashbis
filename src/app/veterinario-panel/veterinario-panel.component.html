@@ -194,10 +194,18 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-button expand="block" (click)="agregarPaciente()">
-      <ion-icon name="add-outline" slot="start"></ion-icon>
-      Agregar paciente
-    </ion-button>
+    <div class="acciones-agregar-paciente">
+      <ion-button expand="block" (click)="agregarPaciente()">
+        <ion-icon name="add-outline" slot="start"></ion-icon>
+        Agregar paciente
+      </ion-button>
+      <input #qrPacienteInput type="file" accept="image/*" hidden (change)="onQrPacienteSeleccionado($event)" />
+      <ion-button expand="block" fill="outline" color="medium"
+        [disabled]="escaneandoQrPaciente" (click)="escanearQrPaciente(qrPacienteInput)">
+        <ion-icon name="qr-code-outline" slot="start"></ion-icon>
+        {{ escaneandoQrPaciente ? 'Leyendo QR...' : 'Escanear QR de la mascota' }}
+      </ion-button>
+    </div>
 
     <div *ngIf="cargando()" class="ion-text-center ion-padding">
       <ion-spinner name="crescent"></ion-spinner>

@@ -46,6 +46,7 @@
       <ion-segment [(ngModel)]="tipoQR" class=" qr-switch ion-margin-vertical">
         <ion-segment-button value="medico">🏥 Ficha Médica</ion-segment-button>
         <ion-segment-button value="emergencia">🚨 Emergencia</ion-segment-button>
+        <ion-segment-button value="veterinario">🩺 Veterinario</ion-segment-button>
       </ion-segment>
 
       <!-- Tarjeta QR Médico -->
@@ -89,6 +90,28 @@
             <p *ngIf="userProfile?.telefono">📞 {{ userProfile?.telefono }}</p>
             <p *ngIf="userProfile?.nombre">👤 {{ userProfile?.nombre }} {{ userProfile?.apellido }}</p>
           </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Tarjeta QR Veterinario -->
+      <ion-card *ngIf="tipoQR === 'veterinario'" id="qrVeterinarioCard" #qrVeterinarioEl>
+        <ion-card-header>
+          <ion-card-title>🩺 {{ mascotaSeleccionada()?.nombre }}</ion-card-title>
+          <ion-card-subtitle>Registrar como paciente</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content class="qr-content">
+          <qrcode
+            id="qr-veterinario"
+            *ngIf="qrVeterinario"
+            [qrdata]="qrVeterinario"
+            [width]="220"
+            errorCorrectionLevel="M"
+          ></qrcode>
+          <p class="qr-desc">
+            El veterinario lo escanea desde su panel para agregar a {{ mascotaSeleccionada()?.nombre }} como
+            paciente sin tipear el ID a mano. Igual va a necesitar el PIN que le compartas — el QR por sí solo
+            no da acceso al historial.
+          </p>
         </ion-card-content>
       </ion-card>
 

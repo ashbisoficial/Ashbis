@@ -227,3 +227,12 @@ ion-item {
 
   ion-button { margin: 0; width: 100%; }
 }
+
+.acciones-agregar-paciente {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  ion-button { margin: 0; }
+}

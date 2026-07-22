@@ -53,6 +53,10 @@
             <ion-button fill="outline" color="medium" (click)="editarPerfil()">Editar perfil</ion-button>
             <ion-button fill="outline" color="medium" (click)="verHistorial()">Historial</ion-button>
             <ion-button color="danger" (click)="verQR()">QR</ion-button>
+            <ion-button *ngIf="puedePublicarAdopcion()" fill="outline" color="medium"
+              (click)="compartirConVeterinario()">
+              PIN para veterinario
+            </ion-button>
             <ng-container *ngIf="puedeTransferir()">
               <input #qrInput type="file" accept="image/*" hidden
                 (change)="onQrFileSelected($event)" />

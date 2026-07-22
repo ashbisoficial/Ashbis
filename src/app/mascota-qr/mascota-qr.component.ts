@@ -61,23 +61,32 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
   private medicamentosSub?: Subscription;
 
   // ── Tipo de QR activo ───────────────────────────────────────────────────
-  tipoQR: 'medico' | 'emergencia' = 'medico';
+  tipoQR: 'medico' | 'emergencia' | 'veterinario' = 'medico';
   qrFichaMedica  = '';
   qrEmergencia   = '';
+  /** Para que un veterinario registre a esta mascota como paciente
+   *  escaneando en vez de tipeando el ID a mano. NO da acceso por sí solo:
+   *  el veterinario igual necesita el PIN que le compartas — este QR solo
+   *  evita el paso de escribir el ID. */
+  qrVeterinario  = '';
   cuidadosEspecialesTexto = 'Sin indicadores especiales';
 
   get qrActivo() {
-    return this.tipoQR === 'medico' ? this.qrFichaMedica : this.qrEmergencia;
+    if (this.tipoQR === 'medico') return this.qrFichaMedica;
+    if (this.tipoQR === 'emergencia') return this.qrEmergencia;
+    return this.qrVeterinario;
   }
 
   get tituloQR() {
-    return this.tipoQR === 'medico' ? '🏥 Ficha Médica' : '🚨 QR de Emergencia';
+    if (this.tipoQR === 'medico') return '🏥 Ficha Médica';
+    if (this.tipoQR === 'emergencia') return '🚨 QR de Emergencia';
+    return '🩺 QR para veterinario';
   }
 
   get descripcionQR() {
-    return this.tipoQR === 'medico'
-      ? 'Escanea para ver el historial veterinario completo'
-      : 'Si pierdo a mi mascota, escanea para contactar al dueño';
+    if (this.tipoQR === 'medico') return 'Escanea para ver el historial veterinario completo';
+    if (this.tipoQR === 'emergencia') return 'Si pierdo a mi mascota, escanea para contactar al dueño';
+    return 'El veterinario lo escanea para agregar a tu mascota como paciente, sin tipear el ID a mano — igual va a necesitar el PIN que le compartas.';
   }
 
   // ── Validación previa a generar/descargar el QR ─────────────────────────
@@ -247,6 +256,11 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     // generaría un QR inescaneable desde otro teléfono.
     const baseUrl = environment.appUrl;
 
+    // QR para veterinario: no necesita token del servidor (a diferencia del
+    // de ficha médica/emergencia) — el ID de la mascota no es sensible por
+    // sí solo, lo que de verdad autoriza el acceso es el PIN, que el
+    // veterinario sigue teniendo que tipear a mano después de escanear.
+    this.qrVeterinario = mascota.id ? `ASHBIS-MASCOTA:${mascota.id}` : '';
 
     if (m.qrCarnetToken) {
       this.qrFichaMedica =
@@ -342,15 +356,21 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
 
   // ── Descargar QR como imagen JPG ────────────────────────────────────────
   // angularx-qrcode renderiza un <canvas> por defecto (elementType='canvas').
-  // El mismo botón sirve para ambos tipos de QR según la pestaña activa, por
-  // eso el selector se resuelve a partir de tipoQR en vez de recibirlo fijo.
+  // El mismo botón sirve para los tres tipos de QR según la pestaña activa,
+  // por eso el selector se resuelve a partir de tipoQR en vez de recibirlo fijo.
+  private static readonly SELECTOR_POR_TIPO: Record<'medico' | 'emergencia' | 'veterinario', string> = {
+    medico: '#qr-carnet canvas',
+    emergencia: '#qr-perdida canvas',
+    veterinario: '#qr-veterinario canvas',
+  };
+
   async descargarQR() {
     const mascota = this.mascotaSeleccionada();
     if (!mascota || this.camposFaltantes.length) return;
 
     this.descargandoQR = true;
     try {
-      const selector = this.tipoQR === 'medico' ? '#qr-carnet canvas' : '#qr-perdida canvas';
+      const selector = MascotaQrComponent.SELECTOR_POR_TIPO[this.tipoQR];
       const qrCanvas = document.querySelector(selector) as HTMLCanvasElement | null;
       if (!qrCanvas) throw new Error('QR no encontrado en pantalla');
 
@@ -365,7 +385,8 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(qrCanvas, padding, padding);
 
-      const tipoArchivo = this.tipoQR === 'medico' ? 'ficha-medica' : 'emergencia';
+      const tipoArchivo = this.tipoQR === 'medico' ? 'ficha-medica'
+        : this.tipoQR === 'emergencia' ? 'emergencia' : 'veterinario';
       const link = document.createElement('a');
       link.download = `QR-${tipoArchivo}-${mascota.nombre || 'mascota'}.jpg`;
       link.href = canvas.toDataURL('image/jpeg', 0.95);

@@ -29,7 +29,7 @@ import {
 import { addIcons } from 'ionicons';
 import {
   addOutline, closeCircleOutline, createOutline, documentTextOutline, medkitOutline,
-  pawOutline, ribbonOutline, shieldCheckmarkOutline,
+  pawOutline, qrCodeOutline, ribbonOutline, shieldCheckmarkOutline,
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
@@ -37,6 +37,7 @@ import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
 import { PreferenciasService } from '../services/preferencias.service';
+import { QrDecodeService } from '../services/qr-decode.service';
 
 interface FormPerfilVeterinario {
   nombreClinica: string;
@@ -87,7 +88,13 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
   private readonly toastCtrl = inject(ToastController);
   private readonly security = inject(SecurityService);
   private readonly preferencias = inject(PreferenciasService);
+  private readonly qrDecodeSvc = inject(QrDecodeService);
   private readonly destroy$ = new Subject<void>();
+
+  /** Prefijo que usa mascota-qr.component al generar el QR "para
+   *  veterinario" — ver ASHBIS-MASCOTA en ese archivo. */
+  private static readonly PREFIJO_QR_MASCOTA = 'ASHBIS-MASCOTA:';
+  escaneandoQrPaciente = false;
 
   miUid = '';
   nombre = signal('Veterinario');
@@ -135,7 +142,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
   constructor() {
     addIcons({
       addOutline, pawOutline, documentTextOutline, shieldCheckmarkOutline, medkitOutline,
-      createOutline, closeCircleOutline, ribbonOutline,
+      createOutline, closeCircleOutline, ribbonOutline, qrCodeOutline,
     });
   }
 
@@ -239,12 +246,16 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  async agregarPaciente(): Promise<void> {
+  /** @param mascotaIdPrellenado Si viene de escanear el QR "para
+   *  veterinario" de mascota-qr.component, ya trae el ID cargado — el PIN
+   *  igual hay que tipearlo: el QR no reemplaza esa autorización, solo
+   *  evita escribir el ID a mano. */
+  async agregarPaciente(mascotaIdPrellenado?: string): Promise<void> {
     const alert = await this.alertCtrl.create({
       header: 'Agregar paciente',
       message: 'Ingresa el ID de la mascota y el PIN que te compartió su dueño.',
       inputs: [
-        { name: 'mascotaId', type: 'text', placeholder: 'ID de la mascota' },
+        { name: 'mascotaId', type: 'text', placeholder: 'ID de la mascota', value: mascotaIdPrellenado ?? '' },
         { name: 'pin', type: 'text', placeholder: 'PIN (6 dígitos)' },
       ],
       buttons: [
@@ -271,6 +282,39 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       ],
     });
     await alert.present();
+  }
+
+  /** Escanea el QR "para veterinario" (mascota-qr.component) para no tener
+   *  que tipear el ID a mano — el PIN se sigue pidiendo aparte, ver
+   *  agregarPaciente(). */
+  async escanearQrPaciente(input: HTMLInputElement): Promise<void> {
+    if (!this.preferencias.camaraHabilitada) {
+      await this.mostrarToast('Activá la cámara en Configuración → Permisos para escanear un QR.', 'danger');
+      return;
+    }
+    input.click();
+  }
+
+  async onQrPacienteSeleccionado(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    this.escaneandoQrPaciente = true;
+    try {
+      const texto = await this.qrDecodeSvc.decodificarArchivo(file);
+      if (!texto?.startsWith(VeterinarioPanelComponent.PREFIJO_QR_MASCOTA)) {
+        await this.mostrarToast('Ese código QR no es un QR de mascota para veterinario.', 'danger');
+        return;
+      }
+      const mascotaId = texto.slice(VeterinarioPanelComponent.PREFIJO_QR_MASCOTA.length);
+      await this.agregarPaciente(mascotaId);
+    } catch {
+      await this.mostrarToast('No se pudo leer el código QR. Intenta de nuevo.', 'danger');
+    } finally {
+      this.escaneandoQrPaciente = false;
+    }
   }
 
   // ── Edición del perfil profesional ────────────────────────────────────────

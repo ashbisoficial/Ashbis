@@ -11,13 +11,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { addIcons } from 'ionicons';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
-import jsQR from 'jsqr';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { SecurityService } from 'src/app/services/security.service';
 import { PreferenciasService } from 'src/app/services/preferencias.service';
 import { PublicQrService } from 'src/app/services/public-qr.service';
+import { QrDecodeService } from 'src/app/services/qr-decode.service';
 import { Models } from '../models/models';
 
 @Component({
@@ -43,6 +43,7 @@ export class MascotaPerfilComponent implements OnDestroy {
   private security = inject(SecurityService);
   private preferencias = inject(PreferenciasService);
   private publicQrSvc = inject(PublicQrService);
+  private qrDecodeSvc = inject(QrDecodeService);
 
   veterinariasFavoritas: VeterinariaFavorita[] = [];
   private auth = inject(AuthenticationService);
@@ -168,6 +169,14 @@ editarPerfil() {
     this.router.navigate(['/carnet', token]);
   }
   verQR() { this.router.navigate(['/tabs/mascota-qr',]) }
+
+  /** El PIN para compartir el historial con un veterinario se genera y
+   *  muestra en mascota-detalle (junto con la lista de accesos otorgados) —
+   *  este botón es solo para que se encuentre fácil desde el perfil. */
+  compartirConVeterinario(): void {
+    const id = this.mascota()?.id;
+    if (id) this.router.navigate(['/tabs/mascota-detalle', id]);
+  }
 
   get estaPerdida(): boolean {
     return this.mascota()?.estado === 'perdida';
@@ -412,7 +421,7 @@ editarPerfil() {
 
     this.escaneandoQr = true;
     try {
-      const token = await this.decodificarQr(file);
+      const token = await this.qrDecodeSvc.decodificarArchivo(file);
       if (!token) {
         await this.presentToast('No se detectó ningún código QR en la foto. Probá con más luz y de más cerca.', 'danger');
         return;
@@ -445,31 +454,6 @@ editarPerfil() {
       ],
     });
     await alert.present();
-  }
-
-  private decodificarQr(file: File): Promise<string | null> {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) { resolve(null); return; }
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const resultado = jsQR(imageData.data, imageData.width, imageData.height);
-          resolve(resultado?.data ?? null);
-        } catch (e) {
-          reject(e);
-        }
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo cargar la imagen.')); };
-      img.src = url;
-    });
   }
 
   private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
