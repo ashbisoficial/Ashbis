@@ -18,7 +18,8 @@ import {
   addCircleOutline,
   pawOutline,
   personOutline,
-  medkitOutline
+  medkitOutline,
+  storefrontOutline
 } from 'ionicons/icons';
 import { take } from 'rxjs';
 import { RefugioContextService } from '../services/refugio-context.service';
@@ -58,6 +59,8 @@ export class TabsComponent {
 
   /** Solo cuentas rol 'veterinario' ven este tab (panel propio, sin parámetro). */
   esVeterinario = false;
+  /** Solo cuentas rol 'servicio' (peluquería/guardería/funeraria). */
+  esServicio = false;
 
   constructor() {
     addIcons({
@@ -66,7 +69,8 @@ export class TabsComponent {
       addCircleOutline,
       pawOutline,
       personOutline,
-      medkitOutline
+      medkitOutline,
+      storefrontOutline
     });
 
     this.refugioCtx.contexto$()
@@ -79,6 +83,7 @@ export class TabsComponent {
     if (uid) {
       this.fs.getDocument(`usuarios/${uid}`).then(perfil => {
         this.esVeterinario = perfil?.rol === 'veterinario';
+        this.esServicio = perfil?.rol === 'servicio';
       });
     }
 

@@ -10,20 +10,27 @@ export namespace Models {
      * solo acceso a datos sensibles de otras personas: el refugio solo
      * puede operar mascotas que le pertenecen, y el veterinario necesita
      * además el PIN de cada mascota para tocar su historial médico.
+     * 'servicio' agrupa negocios que no requieren título profesional
+     * (peluquería/estética, guardería/pensión, funeraria) — ver TipoServicio.
      */
-    export type Rol = 'usuario' | 'refugio' | 'veterinario';
+    export type Rol = 'usuario' | 'refugio' | 'veterinario' | 'servicio';
 
     /**
-     * Sub-tipo de negocio dentro del rol 'veterinario'. Define qué datos de
-     * verificación tienen sentido pedir: un independiente o una clínica
-     * necesitan acreditar título; una peluquería/estética no.
+     * Sub-tipo de negocio dentro del rol 'veterinario'. Los tres implican
+     * práctica médica y piden título/registro profesional para verificarse
+     * — lo que no la implica (peluquería/estética) vive en el rol 'servicio'.
      * - 'independiente': un solo veterinario, sin clínica detrás.
      * - 'clinica_pequena': menos de 10 personas.
      * - 'clinica_grande': 15 o más personas, puede declarar especialidades.
-     * - 'peluqueria': peluquería o servicios estéticos (no médico).
      */
     export type TipoNegocioVeterinario =
-      | 'independiente' | 'clinica_pequena' | 'clinica_grande' | 'peluqueria';
+      | 'independiente' | 'clinica_pequena' | 'clinica_grande';
+
+    /**
+     * Sub-tipo de negocio dentro del rol 'servicio'. Ninguno pide título
+     * profesional ni pasa por verificación — a diferencia de 'veterinario'.
+     */
+    export type TipoServicio = 'peluqueria' | 'guarderia' | 'funeraria';
 
     export type ModalidadAtencion = 'presencial' | 'a_domicilio' | 'ambas';
 
@@ -48,10 +55,14 @@ export namespace Models {
       rol?: Rol;
       /** Solo si rol === 'refugio'. Nombre del refugio/organización. */
       nombreRefugio?: string;
-      /** Solo si rol === 'veterinario'. Nombre de la clínica/veterinaria/peluquería (informativo, no verificado). */
+      /** Solo si rol === 'veterinario'. Nombre de la clínica/veterinaria (informativo, no verificado). */
       nombreClinica?: string;
       /** Solo si rol === 'veterinario'. Ver TipoNegocioVeterinario. */
       tipoNegocioVeterinario?: TipoNegocioVeterinario;
+      /** Solo si rol === 'servicio'. Nombre del negocio (peluquería, guardería, funeraria). */
+      nombreNegocio?: string;
+      /** Solo si rol === 'servicio'. Ver TipoServicio. */
+      tipoServicio?: TipoServicio;
       /** Solo si rol === 'veterinario' y es una clínica (no independiente ni
        *  peluquería): nombre del veterinario responsable/director técnico,
        *  distinto de quien crea la cuenta (que puede ser un/a administrativo/a). */

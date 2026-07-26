@@ -29,8 +29,9 @@ ion-card::part(native) {
 /* ====== SELECTOR "TIPO DE CUENTA" (tabs, no ion-item) ====== */
 .tipo-cuenta-selector {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 28px;
+  gap: 10px 20px;
   width: 90%;
   margin: 4px auto 22px;
   border-bottom: 1px solid var(--ashbis-surface-border);

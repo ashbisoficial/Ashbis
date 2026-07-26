@@ -58,7 +58,6 @@ const ETIQUETAS_TIPO_NEGOCIO: Record<Models.Auth.TipoNegocioVeterinario, string>
   independiente: 'Veterinario independiente',
   clinica_pequena: 'Clínica pequeña',
   clinica_grande: 'Clínica grande',
-  peluqueria: 'Peluquería / estética',
 };
 
 const ETIQUETAS_MODALIDAD: Record<Models.Auth.ModalidadAtencion, string> = {
@@ -179,7 +178,10 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       const tipo: Models.Auth.TipoNegocioVeterinario | undefined = perfil?.tipoNegocioVeterinario;
       this.tipoNegocioVeterinario.set(tipo ?? null);
       this.etiquetaTipoNegocio.set(tipo ? ETIQUETAS_TIPO_NEGOCIO[tipo] : null);
-      this.requiereVerificacion.set(!!tipo && tipo !== 'peluqueria');
+      // Los tres tipos que quedan en 'veterinario' implican práctica médica
+      // — peluquería/estética se movió al rol 'servicio', que no pasa por
+      // verificación.
+      this.requiereVerificacion.set(!!tipo);
 
       const modalidad: Models.Auth.ModalidadAtencion | undefined = perfil?.modalidadAtencion;
       this.modalidadAtencion.set(modalidad ?? null);
@@ -374,7 +376,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       if (f.tipoNegocioVeterinario) {
         this.tipoNegocioVeterinario.set(f.tipoNegocioVeterinario);
         this.etiquetaTipoNegocio.set(ETIQUETAS_TIPO_NEGOCIO[f.tipoNegocioVeterinario]);
-        this.requiereVerificacion.set(f.tipoNegocioVeterinario !== 'peluqueria');
+        this.requiereVerificacion.set(true);
       }
       if (f.modalidadAtencion) {
         this.modalidadAtencion.set(f.modalidadAtencion);

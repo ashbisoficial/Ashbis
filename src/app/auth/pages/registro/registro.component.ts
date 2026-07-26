@@ -124,6 +124,8 @@ export class RegistroComponent {
       numeroRegistroProfesional: [''],
       especialidadesInput: [''],
       modalidadAtencion: ['' as Models.Auth.ModalidadAtencion | ''],
+      nombreNegocio: [''],
+      tipoServicio: ['' as Models.Auth.TipoServicio | ''],
       consentimiento: [false, [Validators.requiredTrue]]
     },
     { validators: [this.passwordsIgualesValidator(), this.rolExtraValidator()] }
@@ -138,7 +140,12 @@ export class RegistroComponent {
     { value: 'independiente', label: 'Veterinario/a independiente' },
     { value: 'clinica_pequena', label: 'Veterinaria pequeña (menos de 10 personas)' },
     { value: 'clinica_grande', label: 'Veterinaria grande o clínica (15 o más personas)' },
+  ];
+
+  readonly tiposServicio: { value: Models.Auth.TipoServicio; label: string }[] = [
     { value: 'peluqueria', label: 'Peluquería o servicios estéticos' },
+    { value: 'guarderia', label: 'Guardería o pensión' },
+    { value: 'funeraria', label: 'Servicios funerarios' },
   ];
 
   constructor() {
@@ -225,12 +232,19 @@ export class RegistroComponent {
         if (esClinica && !form.get('nombreDoctor')?.value?.trim()) {
           return { nombreDoctorRequerido: true };
         }
-        const esMedico = tipo !== 'peluqueria';
-        if (esMedico && !form.get('numeroRegistroProfesional')?.value?.trim()) {
+        if (!form.get('numeroRegistroProfesional')?.value?.trim()) {
           return { numeroRegistroRequerido: true };
         }
         if (!form.get('modalidadAtencion')?.value) {
           return { modalidadRequerida: true };
+        }
+      }
+      if (rol === 'servicio') {
+        if (!form.get('tipoServicio')?.value) {
+          return { tipoServicioRequerido: true };
+        }
+        if (!form.get('nombreNegocio')?.value?.trim()) {
+          return { nombreNegocioRequerido: true };
         }
       }
       return null;
@@ -307,6 +321,10 @@ export class RegistroComponent {
             : {}),
           ...(this.esClinicaGrande && especialidades.length ? { especialidades } : {}),
           ...(tituloUrl ? { tituloUrl } : {}),
+        } : {}),
+        ...(rol === 'servicio' ? {
+          tipoServicio: data.tipoServicio as Models.Auth.TipoServicio,
+          ...(data.nombreNegocio?.trim() ? { nombreNegocio: this.security.sanitizeText(data.nombreNegocio) } : {}),
         } : {}),
         consentGiven: true,
         consentDate: new Date().toISOString(),

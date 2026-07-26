@@ -1,0 +1,81 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Panel de servicio</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="container">
+
+    <div *ngIf="cargando()" class="ion-text-center ion-padding">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+
+    <ion-card class="seccion-card" *ngIf="!cargando()">
+      <ion-card-header>
+        <div class="header-con-accion">
+          <ion-card-title>
+            <ion-icon name="storefront-outline"></ion-icon>
+            {{ nombreNegocio() || 'Tu negocio' }}
+          </ion-card-title>
+          <ion-button *ngIf="!modoEdicion()" fill="clear" size="small" (click)="iniciarEdicion()">
+            <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+        <p class="seccion-subtitulo">
+          Esta información aparece cuando alguien te encuentra desde el buscador de Ashbis.
+        </p>
+      </ion-card-header>
+
+      <!-- Vista de solo lectura -->
+      <ion-card-content *ngIf="!modoEdicion()">
+        <p class="dato-perfil" *ngIf="etiquetaTipoServicio()"><ion-icon name="business-outline"></ion-icon> {{ etiquetaTipoServicio() }}</p>
+        <p class="dato-perfil" *ngIf="direccion()">{{ direccion() }}</p>
+        <p class="dato-perfil" *ngIf="telefono()">{{ telefono() }}</p>
+        <p class="descripcion" *ngIf="descripcion()">{{ descripcion() }}</p>
+        <p class="vacio" *ngIf="!nombreNegocio() && !etiquetaTipoServicio()">
+          Todavía no completaste los datos de tu negocio — tocá el lápiz para agregarlos.
+        </p>
+      </ion-card-content>
+
+      <!-- Edición -->
+      <ion-card-content *ngIf="modoEdicion()" class="form-edicion">
+        <ion-item lines="full">
+          <ion-label position="stacked">Tipo de servicio</ion-label>
+          <ion-select [(ngModel)]="form.tipoServicio" interface="popover" placeholder="Elegí una opción">
+            <ion-select-option *ngFor="let opt of tiposServicio" [value]="opt[0]">{{ opt[1] }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Nombre del negocio</ion-label>
+          <ion-input [(ngModel)]="form.nombreNegocio"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Dirección</ion-label>
+          <ion-input [(ngModel)]="form.direccion"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Teléfono</ion-label>
+          <ion-input type="tel" [(ngModel)]="form.telefono"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Descripción</ion-label>
+          <ion-textarea [(ngModel)]="form.descripcion" autoGrow="true" placeholder="Contá de qué se trata tu negocio"></ion-textarea>
+        </ion-item>
+
+        <div class="acciones-form">
+          <ion-button [disabled]="guardando" (click)="guardar()">
+            {{ guardando ? 'Guardando...' : 'Guardar' }}
+          </ion-button>
+          <ion-button fill="outline" color="medium" [disabled]="guardando" (click)="cancelarEdicion()">
+            Cancelar
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+</ion-content>
