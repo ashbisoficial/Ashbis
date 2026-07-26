@@ -70,6 +70,49 @@ ion-item {
   white-space: pre-wrap;
 }
 
+.logo-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0 0 10px;
+  border: 1px solid var(--ashbis-surface-border);
+  background: var(--ion-color-light);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.logo-edicion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.enlaces-negocio {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ashbis-red, #8b0808);
+    text-decoration: none;
+
+    ion-icon { font-size: 16px; }
+  }
+}
+
 .header-con-accion {
   display: flex;
   align-items: center;

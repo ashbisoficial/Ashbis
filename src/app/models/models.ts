@@ -85,11 +85,19 @@ export namespace Models {
       /** Solo veterinario: notas prediseñadas para completar más rápido el
        *  historial médico de un paciente. */
       notasPredisenadas?: string[];
-      /** Solo veterinario: logo/timbre/firma para personalizar la atención
-       *  (por ejemplo, al imprimir o compartir una ficha). */
+      /** Veterinario: logo/timbre/firma para personalizar la atención (por
+       *  ejemplo, al imprimir o compartir una ficha). Servicio: solo logoUrl,
+       *  para mostrarse en el buscador de Ashbis. */
       logoUrl?: string;
       timbreUrl?: string;
       firmaUrl?: string;
+      /** Veterinario o servicio: sitio web y redes del negocio, mostrados en
+       *  el buscador de Ashbis — Ashbis conecta al dueño con el negocio, el
+       *  contacto/agenda se maneja fuera de la app. */
+      sitioWeb?: string;
+      instagram?: string;
+      facebook?: string;
+      whatsappNegocio?: string;
       /** Revisión manual del título/registro profesional (veterinario) o del
        *  documento legal (refugio); false hasta que el equipo de Ashbis lo
        *  confirme a mano en Firebase Console. El cliente nunca puede ponerlo
