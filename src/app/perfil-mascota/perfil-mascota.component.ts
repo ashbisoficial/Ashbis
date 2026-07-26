@@ -10,7 +10,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { addIcons } from 'ionicons';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline, keyOutline, chevronForwardOutline } from 'ionicons/icons';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -72,7 +72,7 @@ export class MascotaPerfilComponent implements OnDestroy {
   private miRolEsRefugio = false;
 
   constructor() {
-    addIcons({ alertCircleOutline, checkmarkCircleOutline });
+    addIcons({ alertCircleOutline, checkmarkCircleOutline, keyOutline, chevronForwardOutline });
 
     // 1) intenta tomar desde router state (rápido)
     const st = this.router.getCurrentNavigation()?.extras?.state as { mascota?: Mascota } | undefined;
@@ -175,7 +175,7 @@ editarPerfil() {
    *  este botón es solo para que se encuentre fácil desde el perfil. */
   compartirConVeterinario(): void {
     const id = this.mascota()?.id;
-    if (id) this.router.navigate(['/tabs/mascota-detalle', id]);
+    if (id) this.router.navigate(['/tabs/mascota-detalle', id], { queryParams: { segmento: 'historial' } });
   }
 
   get estaPerdida(): boolean {
