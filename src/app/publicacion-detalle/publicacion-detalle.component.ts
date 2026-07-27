@@ -111,6 +111,14 @@ export class PublicacionDetalleComponent implements OnDestroy {
     return this.publicacion?.fotoUrl || 'assets/img/9.jpg';
   }
 
+  /** Comuna/región de quien publica, para dar una referencia de ubicación
+   *  sin exponer la dirección exacta. */
+  get ubicacionPublicacion(): string | null {
+    const pub = this.publicacion;
+    if (!pub) return null;
+    return [pub.comuna, pub.region].filter(Boolean).join(', ') || null;
+  }
+
   private cargarInfoRefugio(uidAutor: string): void {
     this.firestoreService.getInfoPublicaRefugio(uidAutor)
       .pipe(takeUntil(this.destroy$))

@@ -419,6 +419,10 @@ export namespace Models {
       id?: string;
       uidAutor: string;
       nombreAutor: string;
+      /** Región/comuna de quien publica (tomadas de su perfil), para dar una
+       *  referencia de ubicación sin exponer la dirección exacta. */
+      region?: string;
+      comuna?: string;
       tipo: TipoPublicacion;
       titulo: string;
       descripcion: string;

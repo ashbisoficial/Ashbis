@@ -253,12 +253,17 @@ editarPerfil() {
             try {
               const uid = this.auth.getCurrentUser()?.uid;
               const perfil = uid ? await this.fs.getDocument(`usuarios/${uid}`) : null;
+              // Solo el primer nombre (o el nombre del refugio): nunca el
+              // apellido completo ni la dirección, para no exponer datos
+              // personales en un feed público.
               const nombreAutor = perfil?.nombreRefugio?.trim()
-                || `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
+                || perfil?.nombre?.trim()
                 || 'Alguien de Ashbis';
               await this.fs.crearPublicacion({
                 uidAutor: m.uidUsuario,
                 nombreAutor,
+                ...(perfil?.region ? { region: perfil.region } : {}),
+                ...(perfil?.comuna ? { comuna: perfil.comuna } : {}),
                 tipo: 'adopcion',
                 titulo: m.nombre,
                 descripcion,
