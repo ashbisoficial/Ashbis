@@ -48,6 +48,8 @@ interface FormPerfilVeterinario {
   lugarEstudios: string;
   especialidadesTexto: string;
   especiesAtendidas: string[];
+  direccionNegocio: string;
+  telefonoNegocio: string;
 }
 
 const ESPECIES_DISPONIBLES = [
@@ -111,6 +113,8 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
   especialidades = signal<string[]>([]);
   lugarEstudios = signal<string | null>(null);
   especiesAtendidas = signal<string[]>([]);
+  direccionNegocio = signal<string | null>(null);
+  telefonoNegocio = signal<string | null>(null);
   /** false para peluquería/estética: no requiere título ni verificación. */
   requiereVerificacion = signal(false);
   verificado = signal(false);
@@ -155,6 +159,8 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       lugarEstudios: '',
       especialidadesTexto: '',
       especiesAtendidas: [],
+      direccionNegocio: '',
+      telefonoNegocio: '',
     };
   }
 
@@ -170,6 +176,8 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       this.especialidades.set(perfil?.especialidades ?? []);
       this.lugarEstudios.set(perfil?.lugarEstudios?.trim() || null);
       this.especiesAtendidas.set(perfil?.especiesAtendidas ?? []);
+      this.direccionNegocio.set(perfil?.direccionNegocio?.trim() || null);
+      this.telefonoNegocio.set(perfil?.telefonoNegocio?.trim() || null);
       this.notasPredisenadas.set(perfil?.notasPredisenadas ?? []);
       this.logoUrl.set(perfil?.logoUrl ?? null);
       this.timbreUrl.set(perfil?.timbreUrl ?? null);
@@ -219,6 +227,17 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       return;
     }
     input.click();
+  }
+
+  /** Antes de dejar pedir la verificación, exige que ya haya un teléfono de
+   *  la clínica/consulta cargado — evita cuentas fantasma que suben un
+   *  título cualquiera sin ningún dato de contacto real detrás. */
+  abrirSelectorTitulo(input: HTMLInputElement): void {
+    if (!this.telefonoNegocio()) {
+      this.mostrarToast('Agregá el teléfono de tu clínica/consulta antes de pedir la verificación (tocá el lápiz para editarlo).', 'danger');
+      return;
+    }
+    this.abrirSelectorArchivo(input);
   }
 
   async subirTitulo(event: Event): Promise<void> {
@@ -331,6 +350,8 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       lugarEstudios: this.lugarEstudios() ?? '',
       especialidadesTexto: this.especialidades().join(', '),
       especiesAtendidas: [...this.especiesAtendidas()],
+      direccionNegocio: this.direccionNegocio() ?? '',
+      telefonoNegocio: this.telefonoNegocio() ?? '',
     };
     this.modoEdicionPerfil.set(true);
   }
@@ -364,6 +385,8 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
         lugarEstudios: this.security.sanitizeText(f.lugarEstudios, 200),
         especialidades,
         especiesAtendidas: f.especiesAtendidas,
+        ...(f.direccionNegocio.trim() ? { direccionNegocio: this.security.sanitizeText(f.direccionNegocio, 200) } : {}),
+        ...(f.telefonoNegocio.trim() ? { telefonoNegocio: this.security.sanitizeText(f.telefonoNegocio, 30) } : {}),
       };
       await this.fs.updateDocument(`usuarios/${this.miUid}`, payload);
 
@@ -373,6 +396,8 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       this.lugarEstudios.set(payload.lugarEstudios || null);
       this.especialidades.set(especialidades);
       this.especiesAtendidas.set(f.especiesAtendidas);
+      if ('direccionNegocio' in payload) this.direccionNegocio.set(payload.direccionNegocio || null);
+      if ('telefonoNegocio' in payload) this.telefonoNegocio.set(payload.telefonoNegocio || null);
       if (f.tipoNegocioVeterinario) {
         this.tipoNegocioVeterinario.set(f.tipoNegocioVeterinario);
         this.etiquetaTipoNegocio.set(ETIQUETAS_TIPO_NEGOCIO[f.tipoNegocioVeterinario]);

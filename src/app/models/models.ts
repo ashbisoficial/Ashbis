@@ -39,6 +39,10 @@ export namespace Models {
       nombre: string;
       apellido: string;
       email: string;
+      /** Teléfono/dirección PERSONAL de quien es dueño de la cuenta (pedidos
+       *  al registrarse). Para veterinario/servicio, distintos de
+       *  telefonoNegocio/direccionNegocio: quien crea la cuenta a veces no es
+       *  quien atiende en el local. */
       telefono?: string;
       fechaNacimiento?: string;
       region?: string;
@@ -63,6 +67,13 @@ export namespace Models {
       nombreNegocio?: string;
       /** Solo si rol === 'servicio'. Ver TipoServicio. */
       tipoServicio?: TipoServicio;
+      /** Veterinario o servicio: teléfono/dirección DEL NEGOCIO, mostrados
+       *  públicamente en el buscador de Ashbis — separados del
+       *  teléfono/dirección personal de arriba a propósito (ver ese campo).
+       *  Se exige teléfono acá antes de poder pedir la verificación de la
+       *  cuenta, para frenar cuentas falsas/spam. */
+      telefonoNegocio?: string;
+      direccionNegocio?: string;
       /** Solo si rol === 'veterinario' y es una clínica (no independiente ni
        *  peluquería): nombre del veterinario responsable/director técnico,
        *  distinto de quien crea la cuenta (que puede ser un/a administrativo/a). */

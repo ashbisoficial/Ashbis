@@ -36,8 +36,8 @@
           <img [src]="logoUrl()" alt="Logo del negocio" />
         </div>
         <p class="dato-perfil" *ngIf="etiquetaTipoServicio()"><ion-icon name="business-outline"></ion-icon> {{ etiquetaTipoServicio() }}</p>
-        <p class="dato-perfil" *ngIf="direccion()">{{ direccion() }}</p>
-        <p class="dato-perfil" *ngIf="telefono()">{{ telefono() }}</p>
+        <p class="dato-perfil" *ngIf="direccionNegocio()">{{ direccionNegocio() }}</p>
+        <p class="dato-perfil" *ngIf="telefonoNegocio()">{{ telefonoNegocio() }}</p>
         <p class="descripcion" *ngIf="descripcion()">{{ descripcion() }}</p>
         <div class="enlaces-negocio" *ngIf="sitioWeb() || instagram() || facebook() || whatsappNegocio()">
           <a *ngIf="sitioWeb()" [href]="sitioWeb()" target="_blank" rel="noopener"><ion-icon name="globe-outline"></ion-icon> Sitio web</a>
@@ -74,13 +74,14 @@
           <ion-input [(ngModel)]="form.nombreNegocio"></ion-input>
         </ion-item>
         <ion-item lines="full">
-          <ion-label position="stacked">Dirección</ion-label>
-          <ion-input [(ngModel)]="form.direccion"></ion-input>
+          <ion-label position="stacked">Dirección del negocio</ion-label>
+          <ion-input [(ngModel)]="form.direccionNegocio"></ion-input>
         </ion-item>
         <ion-item lines="full">
-          <ion-label position="stacked">Teléfono</ion-label>
-          <ion-input type="tel" [(ngModel)]="form.telefono"></ion-input>
+          <ion-label position="stacked">Teléfono del negocio</ion-label>
+          <ion-input type="tel" [(ngModel)]="form.telefonoNegocio"></ion-input>
         </ion-item>
+        <p class="nota-campo">Estos datos son del negocio, distintos de tu teléfono/dirección personal de la cuenta.</p>
         <ion-item lines="full">
           <ion-label position="stacked">Descripción</ion-label>
           <ion-textarea [(ngModel)]="form.descripcion" autoGrow="true" placeholder="Contá de qué se trata tu negocio"></ion-textarea>

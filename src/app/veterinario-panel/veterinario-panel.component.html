@@ -28,6 +28,8 @@
       <ion-card-content *ngIf="!modoEdicionPerfil()">
         <p class="dato-perfil" *ngIf="nombreClinica()"><ion-icon name="medkit-outline"></ion-icon> {{ nombreClinica() }}</p>
         <p class="dato-perfil" *ngIf="etiquetaTipoNegocio()">{{ etiquetaTipoNegocio() }}</p>
+        <p class="dato-perfil" *ngIf="direccionNegocio()">{{ direccionNegocio() }}</p>
+        <p class="dato-perfil" *ngIf="telefonoNegocio()">{{ telefonoNegocio() }}</p>
         <p class="dato-perfil" *ngIf="nombreDoctor()">Director/a técnico: {{ nombreDoctor() }}</p>
         <p class="dato-perfil" *ngIf="numeroRegistroProfesional()">Registro profesional: {{ numeroRegistroProfesional() }}</p>
         <p class="dato-perfil" *ngIf="lugarEstudios()"><ion-icon name="ribbon-outline"></ion-icon> {{ lugarEstudios() }}</p>
@@ -62,6 +64,15 @@
             <ion-select-option *ngFor="let opt of opcionesModalidad" [value]="opt[0]">{{ opt[1] }}</ion-select-option>
           </ion-select>
         </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Dirección de la clínica/consulta</ion-label>
+          <ion-input [(ngModel)]="formPerfil.direccionNegocio"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Teléfono de la clínica/consulta</ion-label>
+          <ion-input type="tel" [(ngModel)]="formPerfil.telefonoNegocio"></ion-input>
+        </ion-item>
+        <p class="nota-campo">Estos datos son de la clínica/consulta, distintos de tu teléfono/dirección personal de la cuenta — y hace falta el teléfono para poder pedir la verificación.</p>
         <ion-item lines="full">
           <ion-label position="stacked">Director/a técnico (si es clínica)</ion-label>
           <ion-input [(ngModel)]="formPerfil.nombreDoctor"></ion-input>
@@ -114,14 +125,17 @@
             <p *ngIf="!verificado() && !tituloUrl()">
               Subí tu título o certificado profesional para que Ashbis pueda verificar tu cuenta.
             </p>
+            <p *ngIf="!verificado() && !telefonoNegocio()" class="aviso-telefono-requerido">
+              Primero agregá el teléfono de tu clínica/consulta (arriba, con el lápiz) — lo pedimos para evitar cuentas falsas.
+            </p>
           </div>
         </div>
 
         <ng-container *ngIf="!verificado()">
           <input #tituloInput type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden
             (change)="subirTitulo($event)" />
-          <ion-button expand="block" fill="outline" color="medium" [disabled]="subiendoTitulo()"
-            (click)="abrirSelectorArchivo(tituloInput)">
+          <ion-button expand="block" fill="outline" color="medium" [disabled]="subiendoTitulo() || !telefonoNegocio()"
+            (click)="abrirSelectorTitulo(tituloInput)">
             <ion-icon name="document-text-outline" slot="start"></ion-icon>
             {{ subiendoTitulo() ? 'Subiendo...' : (tituloUrl() ? 'Volver a subir título' : 'Subir título') }}
           </ion-button>

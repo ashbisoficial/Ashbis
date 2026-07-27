@@ -122,6 +122,18 @@ ion-item {
   color: #22c55e;
 }
 
+.aviso-telefono-requerido {
+  margin-top: 6px !important;
+  color: var(--ashbis-red, #8b0808) !important;
+  font-weight: 600;
+}
+
+.nota-campo {
+  margin: -2px 0 8px;
+  font-size: 11px;
+  color: var(--ion-color-medium);
+}
+
 .header-con-accion {
   display: flex;
   align-items: center;

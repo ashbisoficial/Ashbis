@@ -44,8 +44,8 @@ const ETIQUETAS_TIPO_SERVICIO: Record<Models.Auth.TipoServicio, string> = {
 interface FormPerfilServicio {
   nombreNegocio: string;
   tipoServicio: Models.Auth.TipoServicio | '';
-  direccion: string;
-  telefono: string;
+  direccionNegocio: string;
+  telefonoNegocio: string;
   descripcion: string;
   sitioWeb: string;
   instagram: string;
@@ -82,8 +82,8 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
   nombreNegocio = signal<string | null>(null);
   tipoServicio = signal<Models.Auth.TipoServicio | null>(null);
   etiquetaTipoServicio = signal<string | null>(null);
-  direccion = signal<string | null>(null);
-  telefono = signal<string | null>(null);
+  direccionNegocio = signal<string | null>(null);
+  telefonoNegocio = signal<string | null>(null);
   descripcion = signal<string | null>(null);
   logoUrl = signal<string | null>(null);
   sitioWeb = signal<string | null>(null);
@@ -114,8 +114,8 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
         this.nombreNegocio.set(perfil?.nombreNegocio ?? null);
         this.tipoServicio.set(perfil?.tipoServicio ?? null);
         this.etiquetaTipoServicio.set(perfil?.tipoServicio ? ETIQUETAS_TIPO_SERVICIO[perfil.tipoServicio] : null);
-        this.direccion.set(perfil?.direccion ?? null);
-        this.telefono.set(perfil?.telefono ?? null);
+        this.direccionNegocio.set(perfil?.direccionNegocio ?? null);
+        this.telefonoNegocio.set(perfil?.telefonoNegocio ?? null);
         this.descripcion.set(perfil?.descripcion ?? null);
         this.logoUrl.set(perfil?.logoUrl ?? null);
         this.sitioWeb.set(perfil?.sitioWeb ?? null);
@@ -133,7 +133,7 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
 
   private formVacio(): FormPerfilServicio {
     return {
-      nombreNegocio: '', tipoServicio: '', direccion: '', telefono: '', descripcion: '',
+      nombreNegocio: '', tipoServicio: '', direccionNegocio: '', telefonoNegocio: '', descripcion: '',
       sitioWeb: '', instagram: '', facebook: '', whatsappNegocio: '',
     };
   }
@@ -142,8 +142,8 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
     this.form = {
       nombreNegocio: this.nombreNegocio() ?? '',
       tipoServicio: this.tipoServicio() ?? '',
-      direccion: this.direccion() ?? '',
-      telefono: this.telefono() ?? '',
+      direccionNegocio: this.direccionNegocio() ?? '',
+      telefonoNegocio: this.telefonoNegocio() ?? '',
       descripcion: this.descripcion() ?? '',
       sitioWeb: this.sitioWeb() ?? '',
       instagram: this.instagram() ?? '',
@@ -176,8 +176,8 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
       await this.fs.updateDocument(`usuarios/${this.miUid}`, {
         nombreNegocio: this.security.sanitizeText(this.form.nombreNegocio, 120),
         tipoServicio: this.form.tipoServicio,
-        ...(this.form.direccion.trim() ? { direccion: this.security.sanitizeText(this.form.direccion, 200) } : {}),
-        ...(this.form.telefono.trim() ? { telefono: this.security.sanitizeText(this.form.telefono, 30) } : {}),
+        ...(this.form.direccionNegocio.trim() ? { direccionNegocio: this.security.sanitizeText(this.form.direccionNegocio, 200) } : {}),
+        ...(this.form.telefonoNegocio.trim() ? { telefonoNegocio: this.security.sanitizeText(this.form.telefonoNegocio, 30) } : {}),
         ...(this.form.descripcion.trim() ? { descripcion: this.security.sanitizeText(this.form.descripcion, 500) } : {}),
         ...(sitioWeb ? { sitioWeb } : {}),
         ...(instagram ? { instagram } : {}),
