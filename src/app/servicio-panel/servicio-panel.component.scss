@@ -1,0 +1,146 @@
+ion-content {
+  --background: var(--ion-background-color);
+  color: var(--ion-text-color);
+}
+
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 16px 32px;
+}
+
+.seccion-card {
+  --background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border);
+  border-radius: 14px;
+  box-shadow: none;
+
+  ion-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+
+    ion-icon {
+      font-size: 17px;
+      color: var(--ashbis-red, #8b0808);
+    }
+  }
+}
+
+.seccion-subtitulo {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ion-color-medium);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.vacio {
+  margin: 4px 0 12px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.nota-campo {
+  margin: -2px 0 8px;
+  font-size: 11px;
+  color: var(--ion-color-medium);
+}
+
+ion-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.dato-perfil {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--ion-text-color);
+
+  ion-icon { color: var(--ashbis-red, #8b0808); font-size: 15px; }
+}
+
+.descripcion {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ion-text-color);
+  white-space: pre-wrap;
+}
+
+.logo-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0 0 10px;
+  border: 1px solid var(--ashbis-surface-border);
+  background: var(--ion-color-light);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.logo-edicion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.enlaces-negocio {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ashbis-red, #8b0808);
+    text-decoration: none;
+
+    ion-icon { font-size: 16px; }
+  }
+}
+
+.header-con-accion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  ion-card-title { margin: 0; }
+  ion-button { margin: 0; --padding-start: 6px; --padding-end: 6px; }
+}
+
+.form-edicion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  ion-item { --border-color: var(--ashbis-surface-border); }
+}
+
+.acciones-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+
+  ion-button { margin: 0; }
+}

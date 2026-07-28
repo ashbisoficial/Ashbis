@@ -79,6 +79,8 @@ export class MisPublicacionesComponent implements OnDestroy {
 
   private uid: string | null = null;
   private nombreRefugio = 'Refugio';
+  private miRegion?: string;
+  private miComuna?: string;
 
   cargando = true;
   errorCarga = false;
@@ -127,9 +129,14 @@ export class MisPublicacionesComponent implements OnDestroy {
           this.uid = user?.uid ?? null;
           if (!user) return [];
           this.firestoreService.getDocument(`usuarios/${user.uid}`).then(perfil => {
+            // Solo el primer nombre (o el nombre del refugio): nunca el
+            // apellido completo ni la dirección, para no exponer datos
+            // personales en un feed público.
             this.nombreRefugio = perfil?.nombreRefugio?.trim()
-              || `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
+              || perfil?.nombre?.trim()
               || 'Refugio';
+            this.miRegion = perfil?.region;
+            this.miComuna = perfil?.comuna;
           });
           this.firestoreService.getUserPets(user.uid)
             .pipe(takeUntil(this.destroy$))
@@ -218,6 +225,8 @@ export class MisPublicacionesComponent implements OnDestroy {
       await this.firestoreService.crearPublicacion({
         uidAutor: this.uid,
         nombreAutor: this.nombreRefugio,
+        ...(this.miRegion ? { region: this.miRegion } : {}),
+        ...(this.miComuna ? { comuna: this.miComuna } : {}),
         tipo: data.tipo!,
         titulo: this.security.sanitizeText(data.titulo!, 120),
         descripcion: this.security.sanitizeText(data.descripcion!, 1000),

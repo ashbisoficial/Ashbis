@@ -37,6 +37,14 @@
                     [attr.aria-checked]="f.rol.value === 'veterinario'"
                     (click)="elegirTipoCuenta('veterinario')"
                   >Veterinario</button>
+                  <button
+                    type="button"
+                    class="tipo-cuenta-tab"
+                    role="radio"
+                    [class.activo]="f.rol.value === 'servicio'"
+                    [attr.aria-checked]="f.rol.value === 'servicio'"
+                    (click)="elegirTipoCuenta('servicio')"
+                  >Servicio</button>
                 </div>
 
                 <ion-item *ngIf="f.rol.value === 'refugio'">
@@ -135,6 +143,35 @@
                     <p class="titulo-ayuda">Se usa para verificar tu cuenta — no se muestra públicamente.</p>
                   </ion-item>
                   <ion-note color="danger" *ngIf="errorTitulo">{{ errorTitulo }}</ion-note>
+                </ng-container>
+
+                <ng-container *ngIf="f.rol.value === 'servicio'">
+                  <ion-item>
+                    <ion-label position="stacked">
+                      Tipo de servicio <span class="required">*</span>
+                    </ion-label>
+                    <ion-select
+                      interface="popover"
+                      placeholder="Selecciona"
+                      formControlName="tipoServicio"
+                      (ionBlur)="datosForm.get('tipoServicio')?.markAsTouched()">
+                      <ion-select-option *ngFor="let t of tiposServicio" [value]="t.value">{{ t.label }}</ion-select-option>
+                    </ion-select>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="datosForm.touched && datosForm.hasError('tipoServicioRequerido')">
+                    Selecciona el tipo de servicio
+                  </ion-note>
+
+                  <ion-item>
+                    <ion-label position="stacked">
+                      Nombre del negocio <span class="required">*</span>
+                    </ion-label>
+                    <ion-input formControlName="nombreNegocio"
+                      (ionBlur)="datosForm.get('nombreNegocio')?.markAsTouched()"></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="datosForm.touched && datosForm.hasError('nombreNegocioRequerido')">
+                    Ingresa el nombre del negocio
+                  </ion-note>
                 </ng-container>
 
                 <ion-item>

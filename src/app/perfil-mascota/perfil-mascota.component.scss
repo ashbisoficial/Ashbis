@@ -36,6 +36,49 @@
   }
 }
 
+.tarjeta-pin-vet {
+  margin: 4px 0 16px;
+  text-align: left;
+  --background: var(--ashbis-surface, var(--ion-color-light));
+  border: 1px solid var(--ashbis-red, #8b0808);
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.tarjeta-pin-vet-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  ion-icon:first-child {
+    font-size: 26px;
+    flex-shrink: 0;
+    color: var(--ashbis-red, #8b0808);
+  }
+}
+
+.tarjeta-pin-vet-texto {
+  flex: 1;
+  min-width: 0;
+
+  strong {
+    display: block;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.tarjeta-pin-vet-flecha {
+  font-size: 18px;
+  flex-shrink: 0;
+  color: var(--ion-color-medium);
+}
+
 .estado-perdida-card {
   margin: 4px 0 16px;
   text-align: left;

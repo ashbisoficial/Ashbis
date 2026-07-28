@@ -162,6 +162,12 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     this.cargarVeterinariasFavoritas();
     this.cargarMiRol();
 
+    // Permite llegar directo a la pestaña "Historial" (donde vive el PIN
+    // para veterinario) desde un link externo, sin depender de que el
+    // usuario la seleccione a mano.
+    const segmento = this.route.snapshot.queryParamMap.get('segmento');
+    if (segmento === 'historial') this.segmentoActual = 'historial';
+
     this.route.paramMap.pipe(
       takeUntil(this.destroy$),
       switchMap(params => {

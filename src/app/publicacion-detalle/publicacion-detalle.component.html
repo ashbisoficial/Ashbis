@@ -33,6 +33,7 @@
         Publicado por {{ pub.nombreAutor }}
         <ion-icon *ngIf="infoRefugio?.verificado" name="shield-checkmark-outline" class="icono-verificado"
           title="Refugio verificado por Ashbis"></ion-icon>
+        <ng-container *ngIf="ubicacionPublicacion as ubicacion"> · {{ ubicacion }}</ng-container>
       </p>
 
       <!-- Info pública de la mascota: especie, raza, sexo, edad, color y si
