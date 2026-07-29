@@ -10,7 +10,10 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { addIcons } from 'ionicons';
-import { alertCircleOutline, checkmarkCircleOutline, keyOutline, chevronForwardOutline } from 'ionicons/icons';
+import {
+  alertCircleOutline, checkmarkCircleOutline, keyOutline, chevronForwardOutline,
+  createOutline, timeOutline, qrCodeOutline, pawOutline, homeOutline, megaphoneOutline
+} from 'ionicons/icons';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -72,7 +75,10 @@ export class MascotaPerfilComponent implements OnDestroy {
   private miRolEsRefugio = false;
 
   constructor() {
-    addIcons({ alertCircleOutline, checkmarkCircleOutline, keyOutline, chevronForwardOutline });
+    addIcons({
+      alertCircleOutline, checkmarkCircleOutline, keyOutline, chevronForwardOutline,
+      createOutline, timeOutline, qrCodeOutline, pawOutline, homeOutline, megaphoneOutline
+    });
 
     // 1) intenta tomar desde router state (rápido)
     const st = this.router.getCurrentNavigation()?.extras?.state as { mascota?: Mascota } | undefined;

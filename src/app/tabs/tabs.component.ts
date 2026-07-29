@@ -15,7 +15,6 @@ import { addIcons } from 'ionicons';
 import {
   homeOutline,
   listOutline,
-  addCircleOutline,
   pawOutline,
   personOutline,
   medkitOutline,
@@ -66,7 +65,6 @@ export class TabsComponent {
     addIcons({
       homeOutline,
       listOutline,
-      addCircleOutline,
       pawOutline,
       personOutline,
       medkitOutline,

@@ -19,6 +19,7 @@ const ALLOWED_ORIGINS = new Set([
   'http://localhost:4200',
   'http://localhost:3000',
   'capacitor://localhost',
+  'https://localhost',
   'http://localhost',
 ]);
 

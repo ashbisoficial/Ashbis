@@ -5,7 +5,7 @@ import {
   IonContent, IonGrid, IonRow, IonCol, IonList, IonItem, IonLabel,
   IonButton, IonAvatar, IonInput, IonSelect, IonSelectOption,
   IonNote, IonModal, IonDatetime, IonDatetimeButton, IonToast, IonIcon,
-  IonCard, IonCardContent, IonTextarea, IonSegment, IonSegmentButton, IonBadge
+  IonTextarea, IonSegment, IonSegmentButton, IonBadge
 } from '@ionic/angular/standalone';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FirestoreService, Mascota, Cita, Vacuna, Examen, Medicamento } from '../firebase/firestore';
@@ -20,7 +20,8 @@ import { addIcons } from 'ionicons';
 import {
   addOutline, closeCircleOutline, cloudUploadOutline, createOutline,
   eyeOutline, imagesOutline, trashOutline,
-  checkmarkDoneOutline, checkboxOutline, fingerPrintOutline
+  checkmarkDoneOutline, checkboxOutline, fingerPrintOutline,
+  starOutline, star, closeOutline
 } from 'ionicons/icons';
 
 type Section =
@@ -42,7 +43,7 @@ type Section =
     IonContent, IonGrid, IonRow, IonCol, IonList, IonItem, IonLabel,
     IonButton, IonAvatar, IonInput, IonSelect, IonSelectOption,
     IonNote, IonModal, IonDatetime, IonDatetimeButton, IonToast, IonIcon,
-    IonCard, IonCardContent, IonTextarea, IonSegment, IonSegmentButton, IonBadge, CurrencyPipe
+    IonTextarea, IonSegment, IonSegmentButton, IonBadge, CurrencyPipe
   ],
   templateUrl: './mascota-editar.component.html',
   styleUrls: ['./mascota-editar.component.scss'],
@@ -68,6 +69,8 @@ export class MascotaEditarComponent implements OnDestroy {
 
   mascota = signal<Mascota | null>(null);
   section = signal<Section>('info');
+  /** Foto de la galería abierta en grande (estilo Instagram); null = cerrada. */
+  fotoAmpliada = signal<string | null>(null);
 
   /** Vacunas típicas por especie; "Otra" siempre se agrega al final para
    *  poder escribir el nombre a mano si no está en la lista. */
@@ -151,7 +154,8 @@ export class MascotaEditarComponent implements OnDestroy {
     addIcons({
       addOutline, closeCircleOutline, cloudUploadOutline, createOutline,
       eyeOutline, imagesOutline, trashOutline,
-      checkmarkDoneOutline, checkboxOutline, fingerPrintOutline
+      checkmarkDoneOutline, checkboxOutline, fingerPrintOutline,
+      starOutline, star, closeOutline
     });
 
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -319,6 +323,7 @@ export class MascotaEditarComponent implements OnDestroy {
       await this.fs.removePhoto(petId, url);
       await this.fs.deletePhotoFromStorage(url);
       this.showToast('Foto eliminada');
+      this.cerrarFoto();
     } catch (e) {
       console.error(e);
       this.showToast('No se pudo eliminar la foto.');
@@ -330,10 +335,20 @@ export class MascotaEditarComponent implements OnDestroy {
     try {
       await this.fs.updatePet(this.mascota()!.id, { fotoUrl: url });
       this.showToast('Foto principal actualizada');
+      this.cerrarFoto();
     } catch (e) {
       console.error(e);
       this.showToast('No se pudo actualizar la foto principal.');
     }
+  }
+
+  /** Abre una foto de la galería en grande, con sus acciones (estilo galería del celular). */
+  abrirFoto(url: string): void {
+    this.fotoAmpliada.set(url);
+  }
+
+  cerrarFoto(): void {
+    this.fotoAmpliada.set(null);
   }
 
   // ---------- CALENDARIO / AGENDA ----------

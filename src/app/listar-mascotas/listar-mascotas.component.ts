@@ -8,7 +8,8 @@ import {
   IonButton, IonLabel, IonIcon,
   IonFab, IonFabButton,
   IonButtons, IonBackButton,
-  IonSegment, IonSegmentButton
+  IonSegment, IonSegmentButton,
+  IonSearchbar
 } from '@ionic/angular/standalone';
 
 import { RefresherCustomEvent } from '@ionic/angular';
@@ -33,7 +34,8 @@ type Vista = 'propias' | 'temporal';
   IonLabel, IonIcon,
   IonFab, IonFabButton,
   IonButtons, IonBackButton,
-  IonSegment, IonSegmentButton
+  IonSegment, IonSegmentButton,
+  IonSearchbar
   ],
   templateUrl: './listar-mascotas.component.html',
   styleUrls: ['./listar-mascotas.component.scss'],
@@ -52,10 +54,16 @@ export class ListarMascotasComponent implements OnDestroy {
   mascotasHogarTemporal = signal<Mascota[]>([]);
   usuarioUid = signal<string | null>(null);
   vista = signal<Vista>('propias');
+  busqueda = signal('');
 
-  mascotas = computed(() =>
-    this.vista() === 'propias' ? this.mascotasPropias() : this.mascotasHogarTemporal()
-  );
+  mascotas = computed(() => {
+    const base = this.vista() === 'propias' ? this.mascotasPropias() : this.mascotasHogarTemporal();
+    const texto = this.busqueda().trim().toLowerCase();
+    if (!texto) return base;
+    return base.filter(m =>
+      m.nombre?.toLowerCase().includes(texto) || m.raza?.toLowerCase().includes(texto)
+    );
+  });
 
   constructor() {
     // Registrar iconos
@@ -91,6 +99,10 @@ export class ListarMascotasComponent implements OnDestroy {
 
   cambiarVista(v: Vista): void {
     this.vista.set(v);
+  }
+
+  onBuscar(texto: string | null | undefined): void {
+    this.busqueda.set(texto ?? '');
   }
 
   // Refrescar listado

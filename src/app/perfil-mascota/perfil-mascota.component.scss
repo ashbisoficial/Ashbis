@@ -22,18 +22,70 @@
   font-weight: 600;
 }
 
+/* Toolbar de acciones compacta (icono redondo + etiqueta chica), estilo
+   perfil de Instagram/WhatsApp: ocupa mucha menos altura que botones
+   ion-button con texto completo, así la foto/galería queda visible. */
 .acciones {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px 6px;
   justify-content: center;
-  margin: 12px 0 16px;
+  margin: 14px 0 6px;
+}
 
-  ion-button {
-    flex: 0 1 auto;
-    margin: 0;
-    font-size: clamp(12px, 3.4vw, 14px);
+.accion-item {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 64px;
+  padding: 4px 0 2px;
+  font: inherit;
+  color: var(--ion-text-color);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
   }
+}
+
+.accion-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ashbis-surface, var(--ion-color-light));
+  border: 1px solid var(--ion-color-step-200, rgba(0, 0, 0, 0.1));
+
+  ion-icon {
+    font-size: 20px;
+  }
+}
+
+.accion-icono-danger {
+  background: var(--ashbis-red, #8b0808);
+  border-color: var(--ashbis-red, #8b0808);
+
+  ion-icon {
+    color: #fff;
+  }
+}
+
+.accion-txt {
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.acciones-qr-msg {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  margin: 0 0 12px;
 }
 
 .tarjeta-pin-vet {
