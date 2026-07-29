@@ -168,6 +168,7 @@
             </ion-list>
 
             <ion-button
+              *ngIf="form.dirty"
               type="submit"
               expand="block"
               color="danger"
@@ -180,7 +181,7 @@
               <ion-item lines="full">
                 <ion-label>
                   <h3>Galería</h3>
-                  <p class="ion-text-wrap">Añade o elimina fotos de tu mascota.</p>
+                  <p class="ion-text-wrap">Toca una foto para ampliarla, marcarla como principal o eliminarla.</p>
                 </ion-label>
                 <input
                   type="file"
@@ -198,19 +199,13 @@
               <ion-item lines="none" *ngIf="mascota()?.galeria?.length; else noGal">
                 <ion-grid>
                   <ion-row>
-                    <ion-col size="5" sizeMd="5" sizeLg="5" *ngFor="let url of mascota()?.galeria">
-                      <ion-card class="gal-thumb">
-                        <img [src]="url" alt="foto" />
-                        <ion-card-content>
-                          <ion-button size="small" fill="outline" color="medium" (click)="setAsPrincipal(url)">
-                            Principal
-                          </ion-button>
-                          <ion-button size="small" fill="solid" color="danger" (click)="onRemovePhoto(url)">
-                            <ion-icon name="trash-outline" slot="start"></ion-icon>
-                            Borrar
-                          </ion-button>
-                        </ion-card-content>
-                      </ion-card>
+                    <ion-col size="6" sizeMd="4" *ngFor="let url of mascota()?.galeria">
+                      <div class="foto-wrap gal-thumb-clean" (click)="abrirFoto(url)">
+                        <img [src]="url" alt="foto" class="foto" />
+                        <ion-badge *ngIf="url === mascota()?.fotoUrl" color="danger" class="badge-principal">
+                          Principal
+                        </ion-badge>
+                      </div>
                     </ion-col>
                   </ion-row>
                 </ion-grid>
@@ -223,6 +218,30 @@
               </ng-template>
             </ion-list>
           </form>
+
+          <!-- FOTO AMPLIADA (estilo galería del celular / Instagram) -->
+          <div class="foto-overlay" *ngIf="fotoAmpliada()" (click)="cerrarFoto()">
+            <div class="foto-overlay-inner" (click)="$event.stopPropagation()">
+              <ion-button fill="clear" color="light" class="foto-overlay-close" (click)="cerrarFoto()">
+                <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+              <img [src]="fotoAmpliada()" alt="foto ampliada" class="foto-overlay-img" />
+              <div class="foto-overlay-actions">
+                <ion-button
+                  fill="outline"
+                  color="light"
+                  [disabled]="fotoAmpliada() === mascota()?.fotoUrl"
+                  (click)="setAsPrincipal(fotoAmpliada()!)">
+                  <ion-icon [name]="fotoAmpliada() === mascota()?.fotoUrl ? 'star' : 'star-outline'" slot="start"></ion-icon>
+                  {{ fotoAmpliada() === mascota()?.fotoUrl ? 'Es la foto principal' : 'Marcar como principal' }}
+                </ion-button>
+                <ion-button fill="solid" color="danger" (click)="onRemovePhoto(fotoAmpliada()!)">
+                  <ion-icon name="trash-outline" slot="start"></ion-icon>
+                  Eliminar
+                </ion-button>
+              </div>
+            </div>
+          </div>
 
           <!-- PLACEHOLDERS -->
           <!-- CALENDARIO / AGENDA -->

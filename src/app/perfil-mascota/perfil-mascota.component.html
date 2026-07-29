@@ -50,24 +50,37 @@
           </ion-grid>
 
           <div class="acciones">
-            <ion-button fill="outline" color="medium" (click)="editarPerfil()">Editar perfil</ion-button>
-            <ion-button fill="outline" color="medium" (click)="verHistorial()">Historial</ion-button>
-            <ion-button color="danger" (click)="verQR()">QR</ion-button>
+            <button class="accion-item" type="button" (click)="editarPerfil()">
+              <span class="accion-icono"><ion-icon name="create-outline"></ion-icon></span>
+              <span class="accion-txt">Editar</span>
+            </button>
+            <button class="accion-item" type="button" (click)="verHistorial()">
+              <span class="accion-icono"><ion-icon name="time-outline"></ion-icon></span>
+              <span class="accion-txt">Historial</span>
+            </button>
+            <button class="accion-item" type="button" (click)="verQR()">
+              <span class="accion-icono accion-icono-danger"><ion-icon name="qr-code-outline"></ion-icon></span>
+              <span class="accion-txt">QR</span>
+            </button>
             <ng-container *ngIf="puedeTransferir()">
               <input #qrInput type="file" accept="image/*" capture="environment" hidden
                 (change)="onQrFileSelected($event)" />
-              <ion-button fill="outline" color="danger" [disabled]="escaneandoQr" (click)="darEnAdopcion()">
-                {{ escaneandoQr ? 'Leyendo QR...' : 'Dar en adopción' }}
-              </ion-button>
-              <ion-button fill="outline" color="danger" [disabled]="escaneandoQr" (click)="darHogarTemporal()">
-                {{ escaneandoQr ? 'Leyendo QR...' : 'Hogar temporal' }}
-              </ion-button>
+              <button class="accion-item" type="button" [disabled]="escaneandoQr" (click)="darEnAdopcion()">
+                <span class="accion-icono"><ion-icon name="paw-outline"></ion-icon></span>
+                <span class="accion-txt">Adopción</span>
+              </button>
+              <button class="accion-item" type="button" [disabled]="escaneandoQr" (click)="darHogarTemporal()">
+                <span class="accion-icono"><ion-icon name="home-outline"></ion-icon></span>
+                <span class="accion-txt">Hogar temp.</span>
+              </button>
             </ng-container>
-            <ion-button *ngIf="puedePublicarAdopcion()" fill="outline" color="danger"
+            <button *ngIf="puedePublicarAdopcion()" class="accion-item" type="button"
               [disabled]="publicandoAdopcion" (click)="publicarEnAdopcion()">
-              Publicar en adopción
-            </ion-button>
+              <span class="accion-icono"><ion-icon name="megaphone-outline"></ion-icon></span>
+              <span class="accion-txt">Publicar</span>
+            </button>
           </div>
+          <p class="acciones-qr-msg" *ngIf="escaneandoQr">Leyendo QR...</p>
 
           <ion-card *ngIf="puedePublicarAdopcion()" class="tarjeta-pin-vet" button
             (click)="compartirConVeterinario()">

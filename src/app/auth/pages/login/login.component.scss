@@ -4,8 +4,15 @@
 ion-content {
   --background: var(--ion-background-color);
   color: var(--ion-text-color);
+}
+
+/* El scroll real de ion-content vive en su shadow DOM (::part(scroll)):
+   ponerle flex-column ahí es lo que hace que el margin:auto de abajo
+   centre de verdad, en vez de quedar pegado arriba. */
+ion-content::part(scroll) {
   display: flex;
   flex-direction: column;
+  min-height: 100%;
 }
 
 /* Centrado vertical real en cualquier alto de pantalla: "margin: auto"
