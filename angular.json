@@ -54,7 +54,9 @@
               "localforage",
               "qrcode",
               "raf",
-              "rgbcolor"
+              "rgbcolor",
+              "leaflet",
+              "jsqr"
             ],
             "browser": "src/main.ts"
           },
@@ -68,8 +70,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "12kb",
+                  "maximumError": "14kb"
                 }
               ],
               "fileReplacements": [
