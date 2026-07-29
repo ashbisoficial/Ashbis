@@ -61,6 +61,25 @@ ion-segment-button {
   }
 }
 
+/* Reemplaza al segmento cuando lo abre un veterinario (una sola pestaña
+   posible: "Historial") — un ion-segment de un solo botón se estira a lo
+   ancho y queda como una franja enorme, así que en ese caso mostramos
+   directo este título. */
+.titulo-historial-vet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 14px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ion-text-color);
+
+  ion-icon {
+    color: var(--ashbis-red, #8b0808);
+    font-size: 20px;
+  }
+}
+
 /* ============================================
    TARJETAS DE ITEMS (mismo look que crear-mascotas: #141414, redondeado)
 ============================================ */
@@ -178,11 +197,13 @@ ion-card-content {
   ion-textarea {
     flex: 1;
     background: var(--ashbis-surface);
+    border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .12));
     border-radius: 12px;
     --padding-start: 12px;
     --padding-end: 12px;
-    --padding-top: 8px;
-    --padding-bottom: 8px;
+    --padding-top: 10px;
+    --padding-bottom: 10px;
+    font-size: 13px;
   }
 
   ion-button {

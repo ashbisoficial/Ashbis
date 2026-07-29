@@ -13,7 +13,7 @@
     <ion-card class="seccion-card">
       <ion-card-header>
         <div class="header-con-accion">
-          <ion-card-title>{{ nombre() }}</ion-card-title>
+          <ion-card-title class="titulo-nombre">{{ nombre() }}</ion-card-title>
           <ion-button *ngIf="!modoEdicionPerfil()" fill="clear" size="small" (click)="iniciarEdicionPerfil()">
             <ion-icon name="create-outline" slot="icon-only"></ion-icon>
           </ion-button>
@@ -180,29 +180,26 @@
         <ion-label class="label-especies label-imagenes">Logo, timbre y firma</ion-label>
         <div class="grid-imagenes">
 
-          <div class="item-imagen">
+          <button type="button" class="item-imagen" [disabled]="subiendoLogo()" (click)="abrirSelectorArchivo(logoInput)">
             <img *ngIf="logoUrl()" [src]="logoUrl()" alt="Logo" />
+            <ion-icon *ngIf="!logoUrl()" name="images-outline"></ion-icon>
             <input #logoInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="subirImagenPersonalizacion($event, 'logo')" />
-            <ion-button size="small" fill="outline" color="medium" [disabled]="subiendoLogo()" (click)="abrirSelectorArchivo(logoInput)">
-              {{ subiendoLogo() ? 'Subiendo...' : (logoUrl() ? 'Cambiar logo' : 'Subir logo') }}
-            </ion-button>
-          </div>
+            <span>{{ subiendoLogo() ? 'Subiendo...' : (logoUrl() ? 'Logo' : 'Subir logo') }}</span>
+          </button>
 
-          <div class="item-imagen">
+          <button type="button" class="item-imagen" [disabled]="subiendoTimbre()" (click)="abrirSelectorArchivo(timbreInput)">
             <img *ngIf="timbreUrl()" [src]="timbreUrl()" alt="Timbre" />
+            <ion-icon *ngIf="!timbreUrl()" name="images-outline"></ion-icon>
             <input #timbreInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="subirImagenPersonalizacion($event, 'timbre')" />
-            <ion-button size="small" fill="outline" color="medium" [disabled]="subiendoTimbre()" (click)="abrirSelectorArchivo(timbreInput)">
-              {{ subiendoTimbre() ? 'Subiendo...' : (timbreUrl() ? 'Cambiar timbre' : 'Subir timbre') }}
-            </ion-button>
-          </div>
+            <span>{{ subiendoTimbre() ? 'Subiendo...' : (timbreUrl() ? 'Timbre' : 'Subir timbre') }}</span>
+          </button>
 
-          <div class="item-imagen">
+          <button type="button" class="item-imagen" [disabled]="subiendoFirma()" (click)="abrirSelectorArchivo(firmaInput)">
             <img *ngIf="firmaUrl()" [src]="firmaUrl()" alt="Firma" />
+            <ion-icon *ngIf="!firmaUrl()" name="images-outline"></ion-icon>
             <input #firmaInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="subirImagenPersonalizacion($event, 'firma')" />
-            <ion-button size="small" fill="outline" color="medium" [disabled]="subiendoFirma()" (click)="abrirSelectorArchivo(firmaInput)">
-              {{ subiendoFirma() ? 'Subiendo...' : (firmaUrl() ? 'Cambiar firma' : 'Subir firma') }}
-            </ion-button>
-          </div>
+            <span>{{ subiendoFirma() ? 'Subiendo...' : (firmaUrl() ? 'Firma' : 'Subir firma') }}</span>
+          </button>
 
         </div>
       </ion-card-content>
@@ -236,9 +233,13 @@
         <p class="vacio" *ngIf="pacientes().length === 0">
           Aún no tienes pacientes. Agrega uno con su ID y PIN.
         </p>
-        <ion-list *ngIf="pacientes().length">
+        <ion-list *ngIf="pacientes().length" class="lista-pacientes">
           <ion-item *ngFor="let p of pacientes(); trackBy: trackById" button (click)="verPaciente(p)">
+            <span class="avatar-paciente" slot="start">
+              <ion-icon name="paw-outline"></ion-icon>
+            </span>
             <ion-label>{{ p.mascotaNombre }}</ion-label>
+            <ion-icon name="chevron-forward-outline" slot="end" color="medium"></ion-icon>
           </ion-item>
         </ion-list>
       </ion-card-content>

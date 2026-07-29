@@ -38,9 +38,17 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-segment [value]="segmentoActual" (ionChange)="segmentoCambiado($event)" scrollable="true">
+    <!-- Un veterinario solo tiene la pestaña "Historial": un ion-segment de
+         un solo botón se estira a lo ancho y queda como una franja enorme,
+         así que directo le mostramos un título simple en su lugar. -->
+    <h2 class="titulo-historial-vet" *ngIf="soyVeterinario">
+      <ion-icon name="document-text-outline"></ion-icon>
+      Historial médico
+    </h2>
 
-      <ion-segment-button value="veterinarias" layout="icon-top" *ngIf="!soyVeterinario">
+    <ion-segment [value]="segmentoActual" (ionChange)="segmentoCambiado($event)" scrollable="true" *ngIf="!soyVeterinario">
+
+      <ion-segment-button value="veterinarias" layout="icon-top">
         <ion-icon name="paw-outline"></ion-icon>
         <ion-label>Veterinarias</ion-label>
       </ion-segment-button>

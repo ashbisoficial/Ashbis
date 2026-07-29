@@ -29,7 +29,8 @@ import {
 import { addIcons } from 'ionicons';
 import {
   addOutline, closeCircleOutline, createOutline, documentTextOutline, medkitOutline,
-  pawOutline, qrCodeOutline, ribbonOutline, shieldCheckmarkOutline,
+  pawOutline, qrCodeOutline, ribbonOutline, shieldCheckmarkOutline, imagesOutline,
+  chevronForwardOutline,
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthenticationService } from '../firebase/authentication';
@@ -145,7 +146,8 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
   constructor() {
     addIcons({
       addOutline, pawOutline, documentTextOutline, shieldCheckmarkOutline, medkitOutline,
-      createOutline, closeCircleOutline, ribbonOutline, qrCodeOutline,
+      createOutline, closeCircleOutline, ribbonOutline, qrCodeOutline, imagesOutline,
+      chevronForwardOutline,
     });
   }
 

@@ -238,7 +238,17 @@ export class FirestoreService {
    *  mostrarlo y poder revocarlo desde el refugio). */
   getColaboradoresMascota(petId: string): Observable<Models.Mascotas.ColaboradorMascota[]> {
     const r = collection(this.firestore, `mascotas/${petId}/colaboradores`);
-    return collectionData(r) as Observable<Models.Mascotas.ColaboradorMascota[]>;
+    return (collectionData(r) as Observable<Models.Mascotas.ColaboradorMascota[]>).pipe(
+      // Un veterinario con acceso por PIN puede abrir esta misma pantalla
+      // (mascota-detalle) sin ser dueño/equipo del refugio — las reglas le
+      // niegan esta subcolección (es solo para gestionar hogar temporal), y
+      // sin este catchError el error sin manejar rompía la carga del resto
+      // de la pantalla, incluido el historial médico.
+      catchError(err => {
+        console.error('getColaboradoresMascota falló:', err);
+        return of<Models.Mascotas.ColaboradorMascota[]>([]);
+      })
+    );
   }
 
   /** El refugio (dueño/equipo) le quita a alguien el acceso de hogar
@@ -467,7 +477,18 @@ export class FirestoreService {
   getAccesosVeterinario(petId: string): Observable<Models.Mascotas.AccesoVeterinario[]> {
     const r = collection(this.firestore, `mascotas/${petId}/accesosVeterinario`);
     const q = query(r, orderBy('otorgadoEn', 'desc'));
-    return collectionData(q) as Observable<Models.Mascotas.AccesoVeterinario[]>;
+    return (collectionData(q) as Observable<Models.Mascotas.AccesoVeterinario[]>).pipe(
+      // Un veterinario que abre mascota-detalle solo puede leer su PROPIO
+      // acceso (regla: puedeAccederMascota || isUser(vetUid)), pero esta
+      // consulta trae la lista completa (la usa el dueño para poder
+      // revocarlos) — Firestore rechaza la consulta entera en ese caso.
+      // Sin este catchError, el error rompía la carga de mascota-detalle
+      // para el veterinario, incluido el historial médico.
+      catchError(err => {
+        console.error('getAccesosVeterinario falló:', err);
+        return of<Models.Mascotas.AccesoVeterinario[]>([]);
+      })
+    );
   }
 
   async revocarAccesoVeterinario(petId: string, vetUid: string): Promise<void> {
