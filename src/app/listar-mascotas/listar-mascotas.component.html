@@ -8,6 +8,11 @@
     <ion-title>Mis Mascotas</ion-title>
   </ion-toolbar>
 
+  <ion-toolbar>
+    <ion-searchbar placeholder="Buscar por nombre o raza" [debounce]="200"
+      (ionInput)="onBuscar($any($event.detail.value))"></ion-searchbar>
+  </ion-toolbar>
+
   <!-- Solo se muestra si hay al menos una mascota en hogar temporal -->
   <ion-toolbar *ngIf="!loading() && mascotasHogarTemporal().length > 0">
     <ion-segment [value]="vista()" (ionChange)="cambiarVista($any($event.detail.value))">
