@@ -213,7 +213,7 @@
         <ion-icon name="add-outline" slot="start"></ion-icon>
         Agregar paciente
       </ion-button>
-      <input #qrPacienteInput type="file" accept="image/*" hidden (change)="onQrPacienteSeleccionado($event)" />
+      <input #qrPacienteInput type="file" accept="image/*" capture="environment" hidden (change)="onQrPacienteSeleccionado($event)" />
       <ion-button expand="block" fill="outline" color="medium"
         [disabled]="escaneandoQrPaciente" (click)="escanearQrPaciente(qrPacienteInput)">
         <ion-icon name="qr-code-outline" slot="start"></ion-icon>

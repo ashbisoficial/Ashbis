@@ -54,7 +54,7 @@
             <ion-button fill="outline" color="medium" (click)="verHistorial()">Historial</ion-button>
             <ion-button color="danger" (click)="verQR()">QR</ion-button>
             <ng-container *ngIf="puedeTransferir()">
-              <input #qrInput type="file" accept="image/*" hidden
+              <input #qrInput type="file" accept="image/*" capture="environment" hidden
                 (change)="onQrFileSelected($event)" />
               <ion-button fill="outline" color="danger" [disabled]="escaneandoQr" (click)="darEnAdopcion()">
                 {{ escaneandoQr ? 'Leyendo QR...' : 'Dar en adopción' }}
