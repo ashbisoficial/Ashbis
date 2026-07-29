@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, NgIf, DatePipe } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { of, Subject, switchMap, takeUntil } from 'rxjs';
@@ -7,9 +7,6 @@ import { of, Subject, switchMap, takeUntil } from 'rxjs';
 import {
   FirestoreService,
   Mascota,
-  Vacuna,
-  Examen,
-  Medicamento,
   VeterinariaFavorita
 } from '../../app/firebase/firestore';
 
@@ -28,7 +25,6 @@ import {
   IonLabel,
   IonList,
   IonItem,
-  IonNote,
   IonCard,
   IonCardHeader,
   IonCardTitle,
@@ -42,9 +38,6 @@ import {
 
 import { addIcons } from 'ionicons';
 import {
-  medicalOutline,
-  clipboardOutline,
-  eyedropOutline,
   pawOutline,
   mapOutline,
   documentTextOutline,
@@ -66,7 +59,6 @@ import { take } from 'rxjs';
   imports: [
     CommonModule,
     NgIf,
-    DatePipe,
     FormsModule,
 
     IonHeader,
@@ -82,7 +74,6 @@ import { take } from 'rxjs';
     IonLabel,
     IonList,
     IonItem,
-    IonNote,
     IonCard,
     IonCardHeader,
     IonCardTitle,
@@ -93,7 +84,6 @@ import { take } from 'rxjs';
     IonIcon,
     IonTextarea
   ],
-  providers: [DatePipe],
   templateUrl: './mascota-detalle.component.html',
   styleUrls: ['./mascota-detalle.component.scss'],
 })
@@ -115,9 +105,6 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({
-      medicalOutline,
-      clipboardOutline,
-      eyedropOutline,
       pawOutline,
       mapOutline,
       documentTextOutline,
@@ -129,13 +116,10 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     });
   }
 
-  segmentoActual: 'vacunas' | 'examenes' | 'medicamentos' | 'veterinarias' | 'historial' = 'vacunas';
+  segmentoActual: 'veterinarias' | 'historial' = 'veterinarias';
 
   mascota: Mascota | null = null;
 
-  vacunas: Vacuna[] = [];
-  examenes: Examen[] = [];
-  medicamentos: Medicamento[] = [];
   veterinariasFavoritas: VeterinariaFavorita[] = [];
 
   /** true si soy el veterinario que está viendo la ficha (cuenta rol
@@ -210,20 +194,6 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   }
 
   cargarSubColecciones() {
-
-    const basePath = `${Models.Mascotas.PathMascotas}/${this.mascotaId}`;
-
-    this.firestoreService.getCollectionChanges<Vacuna>(`${basePath}/vacunas`)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(data => this.vacunas = data);
-
-    this.firestoreService.getCollectionChanges<Examen>(`${basePath}/examenes`)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(data => this.examenes = data);
-
-    this.firestoreService.getCollectionChanges<Medicamento>(`${basePath}/medicamentos`)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(data => this.medicamentos = data);
 
     this.firestoreService.getHistorialMedico(this.mascotaId)
       .pipe(takeUntil(this.destroy$))

@@ -40,21 +40,6 @@
 
     <ion-segment [value]="segmentoActual" (ionChange)="segmentoCambiado($event)" scrollable="true">
 
-      <ion-segment-button value="vacunas" layout="icon-top">
-        <ion-icon name="medical-outline"></ion-icon>
-        <ion-label>Vacunas</ion-label>
-      </ion-segment-button>
-
-      <ion-segment-button value="examenes" layout="icon-top">
-        <ion-icon name="clipboard-outline"></ion-icon>
-        <ion-label>Exámenes</ion-label>
-      </ion-segment-button>
-
-      <ion-segment-button value="medicamentos" layout="icon-top">
-        <ion-icon name="eyedrop-outline"></ion-icon>
-        <ion-label>Medicamentos</ion-label>
-      </ion-segment-button>
-
       <ion-segment-button value="veterinarias" layout="icon-top" *ngIf="!soyVeterinario">
         <ion-icon name="paw-outline"></ion-icon>
         <ion-label>Veterinarias</ion-label>
@@ -68,63 +53,6 @@
     </ion-segment>
 
     <div [ngSwitch]="segmentoActual" class="ion-padding-top">
-
-      <!-- VACUNAS -->
-      <ion-list *ngSwitchCase="'vacunas'">
-        <ion-item *ngFor="let vacuna of vacunas">
-          <ion-label>
-            <h2>{{ vacuna.tipo }}</h2>
-            <p>Aplicada: {{ vacuna.fechaAplicacion | date:'dd/MM/yyyy' }}</p>
-          </ion-label>
-          <ion-note slot="end" color="primary" *ngIf="vacuna.proximaFecha">
-            Próxima: {{ vacuna.proximaFecha | date:'dd/MM/yyyy' }}
-          </ion-note>
-        </ion-item>
-        <ion-card *ngIf="vacunas.length === 0">
-          <ion-card-content class="ion-text-center">
-            No hay vacunas registradas.
-          </ion-card-content>
-        </ion-card>
-      </ion-list>
-
-      <!-- EXAMENES -->
-      <ion-list *ngSwitchCase="'examenes'">
-        <ion-item *ngFor="let examen of examenes">
-          <ion-label>
-            <h2>{{ examen.tipo }}</h2>
-            <p>
-              {{ examen.realizado ? 'Realizado:' : 'Programado:' }}
-              {{ (examen.realizado ? examen.fechaRealizado : examen.fechaProgramada) | date:'dd/MM/yyyy' }}
-            </p>
-          </ion-label>
-          <ion-note slot="end" [color]="examen.realizado ? 'success' : 'warning'">
-            {{ examen.realizado ? 'Completado' : 'Pendiente' }}
-          </ion-note>
-        </ion-item>
-        <ion-card *ngIf="examenes.length === 0">
-          <ion-card-content class="ion-text-center">
-            No hay exámenes registrados.
-          </ion-card-content>
-        </ion-card>
-      </ion-list>
-
-      <!-- MEDICAMENTOS -->
-      <ion-list *ngSwitchCase="'medicamentos'">
-        <ion-item *ngFor="let med of medicamentos">
-          <ion-label>
-            <h2>{{ med.nombre }}</h2>
-            <p>Dosis: {{ med.mg }} mg</p>
-          </ion-label>
-          <ion-note slot="end" color="medium">
-            Inicia: {{ med.fechaInicio | date:'dd/MM/yyyy' }}
-          </ion-note>
-        </ion-item>
-        <ion-card *ngIf="medicamentos.length === 0">
-          <ion-card-content class="ion-text-center">
-            No hay medicamentos registrados.
-          </ion-card-content>
-        </ion-card>
-      </ion-list>
 
       <!-- VETERINARIAS -->
       <ion-list *ngSwitchCase="'veterinarias'">
