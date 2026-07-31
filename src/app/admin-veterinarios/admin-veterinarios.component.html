@@ -1,0 +1,66 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/perfil"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Verificar veterinarios</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <div *ngIf="cargando()" class="ion-text-center ion-padding">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ng-container *ngIf="!cargando()">
+    <p class="vacio" *ngIf="pendientes().length === 0">
+      No hay veterinarios esperando revisión.
+    </p>
+
+    <ion-card class="tarjeta-vet" *ngFor="let v of pendientes()">
+      <ion-card-content>
+        <div class="vet-header">
+          <div>
+            <h2>{{ nombreCompleto(v) }}</h2>
+            <p class="vet-email">{{ v.email }}</p>
+          </div>
+          <span class="badge-sin-titulo" *ngIf="!v.tituloUrl">Sin título subido</span>
+        </div>
+
+        <div class="vet-datos">
+          <p *ngIf="etiquetaTipo(v)"><strong>Tipo:</strong> {{ etiquetaTipo(v) }}</p>
+          <p *ngIf="v.nombreClinica"><strong>Clínica/consulta:</strong> {{ v.nombreClinica }}</p>
+          <p *ngIf="v.nombreDoctor"><strong>Director/a técnico:</strong> {{ v.nombreDoctor }}</p>
+          <p *ngIf="v.numeroRegistroProfesional"><strong>Registro profesional:</strong> {{ v.numeroRegistroProfesional }}</p>
+          <p *ngIf="v.telefonoNegocio"><strong>Teléfono:</strong> {{ v.telefonoNegocio }}</p>
+          <p *ngIf="v.direccionNegocio"><strong>Dirección:</strong> {{ v.direccionNegocio }}</p>
+        </div>
+
+        <ion-button *ngIf="v.tituloUrl" expand="block" fill="outline" color="medium" (click)="abrirTitulo(v.tituloUrl!)">
+          <ion-icon name="document-text-outline" slot="start"></ion-icon>
+          Ver título/certificado
+        </ion-button>
+
+        <div class="vet-acciones">
+          <ion-button
+            [disabled]="!v.tituloUrl || procesando() === v.uid"
+            color="success"
+            (click)="aprobar(v)">
+            <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+            Aprobar
+          </ion-button>
+          <ion-button
+            [disabled]="procesando() === v.uid"
+            fill="outline"
+            color="danger"
+            (click)="rechazar(v)">
+            <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+            Rechazar
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </ng-container>
+
+</ion-content>

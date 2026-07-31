@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, perfilCompletoGuard, publicGuard } from './guards/auth.guard';
+import { adminGuard, authGuard, perfilCompletoGuard, publicGuard } from './guards/auth.guard';
 import { TabsComponent } from './tabs/tabs.component';
 
 export const routes: Routes = [
@@ -206,6 +206,14 @@ export const routes: Routes = [
         path: 'chat-ia',
         loadComponent: () =>
           import('./chat-ia/chat-ia.component').then((m) => m.ChatIaComponent),
+      },
+      // Panel admin (solo cuenta de Ashbis): aprobar/rechazar veterinarios.
+      {
+        path: 'admin-veterinarios',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./admin-veterinarios/admin-veterinarios.component')
+            .then(m => m.AdminVeterinariosComponent),
       },
       {
         path: '',

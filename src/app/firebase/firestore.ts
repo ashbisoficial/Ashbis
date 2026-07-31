@@ -483,6 +483,10 @@ export class FirestoreService {
     const pin = String(100000 + (buf[0] % 900000));
     await updateDoc(doc(this.firestore, 'mascotas', petId), {
       pinHistorial: pin,
+      // Con fecha de generación, validarPinVeterinario puede vencerlo a los
+      // 90 días — un PIN que quedó dando vueltas en un chat viejo no sirve
+      // para siempre.
+      pinGeneradoEn: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
     return pin;
@@ -579,6 +583,35 @@ export class FirestoreService {
       throw new Error(body.error || 'No se pudo validar el PIN.');
     }
     return body.mascota;
+  }
+
+  // ── Verificación de veterinarios (solo cuenta admin de Ashbis) ────────────
+
+  /** Veterinarios sin verificar todavía — para el panel admin. Solo la
+   *  cuenta admin de Ashbis tiene permiso de Firestore para esta consulta
+   *  (ver esAdminAshbis() en firestore.rules). */
+  getVeterinariosPendientes(): Observable<Models.Auth.UserProfile[]> {
+    const r = collection(this.firestore, 'usuarios');
+    const q = query(r, where('rol', '==', 'veterinario'), where('verificado', '==', false));
+    return collectionData(q, { idField: 'uid' }) as Observable<Models.Auth.UserProfile[]>;
+  }
+
+  async revisarVerificacionVeterinario(uid: string, aprobar: boolean): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('Usuario no autenticado');
+    const token = await user.getIdToken();
+    const res = await fetch(
+      'https://us-central1-ashbis-ae5b2.cloudfunctions.net/revisarVerificacionVeterinario',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, aprobar }),
+      }
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.error || 'No se pudo guardar la revisión.');
+    }
   }
 
   // ── Veterinarias favoritas ─────────────────────────────────────────────────

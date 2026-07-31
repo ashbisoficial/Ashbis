@@ -136,6 +136,41 @@ ion-item {
   font-weight: 600;
 }
 
+.tarjeta-sin-verificar {
+  --background: rgba(255, 179, 0, .08);
+  border: 1px solid rgba(255, 179, 0, .4);
+  border-radius: 14px;
+  box-shadow: none;
+  margin-bottom: 16px;
+}
+
+.sin-verificar-fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  ion-icon {
+    font-size: 26px;
+    color: #ffb300;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ion-text-color);
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ion-color-medium);
+    line-height: 1.5;
+  }
+}
+
 .nota-campo {
   margin: -2px 0 8px;
   font-size: 11px;

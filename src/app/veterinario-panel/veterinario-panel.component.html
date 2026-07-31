@@ -205,7 +205,30 @@
       </ion-card-content>
     </ion-card>
 
-    <div class="acciones-agregar-paciente">
+    <!-- Sin verificar, no puede pedir acceso a ningún historial: antes
+         cualquier cuenta autodeclarada 'veterinario' podía intentarlo, sin
+         que nadie del equipo hubiera revisado el título. -->
+    <ion-card class="tarjeta-sin-verificar" *ngIf="!verificado()">
+      <ion-card-content>
+        <div class="sin-verificar-fila">
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+          <div>
+            <h2 *ngIf="tituloUrl()">Título en revisión</h2>
+            <h2 *ngIf="!tituloUrl()">Falta subir tu título</h2>
+            <p *ngIf="tituloUrl()">
+              El equipo de Ashbis todavía no revisó tu título profesional. Vas a poder agregar
+              pacientes apenas te verifiquemos — no hace falta que hagas nada más.
+            </p>
+            <p *ngIf="!tituloUrl()">
+              Subí tu título o certificado profesional (arriba) para que el equipo de Ashbis
+              pueda verificar tu cuenta y puedas empezar a atender pacientes.
+            </p>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <div class="acciones-agregar-paciente" *ngIf="verificado()">
       <ion-button expand="block" (click)="agregarPaciente()">
         <ion-icon name="add-outline" slot="start"></ion-icon>
         Agregar paciente

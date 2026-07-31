@@ -332,7 +332,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
       header: this.mascota?.pinHistorial ? 'Regenerar PIN' : 'Generar PIN',
       message: this.mascota?.pinHistorial
         ? 'El PIN anterior dejará de servir para nuevos veterinarios (los que ya tienen acceso lo conservan).'
-        : 'Compártelo junto con el ID de la mascota con tu veterinario para que pueda ver y agregar notas al historial médico.',
+        : 'Compártelo junto con el ID de la mascota con tu veterinario para que pueda ver el historial médico. Solo funciona con cuentas de veterinario ya verificadas por Ashbis, y vence a los 90 días (después hay que generar uno nuevo).',
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {

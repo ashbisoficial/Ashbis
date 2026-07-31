@@ -46,6 +46,31 @@ export const perfilCompletoGuard: CanActivateFn = () => {
   );
 };
 
+/** Cuenta admin de Ashbis, identificada por email — mismo criterio que
+ *  esAdminAshbis() en firestore.rules y ADMIN_EMAILS en functions/src/index.ts.
+ *  Si cambia acá, hay que cambiar los otros dos. */
+const ADMIN_EMAILS = ['ashbis.oficial@gmail.com'];
+
+/**
+ * Guard para la pantalla admin de revisión de veterinarios: redirige a
+ * /tabs/home si la cuenta autenticada no es la de Ashbis. Es solo una
+ * comodidad de UI (evita mostrar una pantalla que igual va a fallar) — el
+ * permiso real lo hacen valer las reglas de Firestore y la Cloud Function,
+ * no este guard.
+ */
+export const adminGuard: CanActivateFn = () => {
+  const auth = inject(Auth);
+  const router = inject(Router);
+
+  return authState(auth).pipe(
+    take(1),
+    map((user) => {
+      if (user?.email && ADMIN_EMAILS.includes(user.email)) return true;
+      return router.createUrlTree(['/tabs/home']);
+    })
+  );
+};
+
 /**
  * Guard inverso: redirige a /tabs/home si el usuario YA está autenticado.
  * Úsalo en las rutas de login y registro para evitar que vuelvan atrás.
