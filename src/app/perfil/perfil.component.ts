@@ -45,7 +45,7 @@ import {
   checkmarkOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
   documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline,
-  qrCodeOutline,
+  qrCodeOutline, shieldCheckmarkOutline,
 } from 'ionicons/icons';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { Subject, takeUntil } from 'rxjs';
@@ -205,7 +205,7 @@ export class PerfilComponent implements OnDestroy {
       checkmarkOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
       documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline,
-      settingsOutline, qrCodeOutline,
+      settingsOutline, qrCodeOutline, shieldCheckmarkOutline,
     });
 
     this.cargando = true;
@@ -430,22 +430,49 @@ export class PerfilComponent implements OnDestroy {
     };
 
     try {
-      await this.firestoreService.updateDocument(`${Models.Auth.PathUsers}/${this.user.uid}`, payload);
-      await this.firestoreService.setPublicContact(this.user.uid, {
-        nombre: payload.nombre,
-        apellido: payload.apellido,
-        telefono: payload.telefono,
-        contactosEmergencia: payload.contactosEmergencia
-      });
+      // Si la conexión con Firestore quedó colgada (por ejemplo, justo
+      // después de volver del segundo plano con mala señal), updateDoc
+      // puede no resolver NUNCA — sin este timeout, el botón de guardar se
+      // quedaba girando para siempre y no había forma de salir salvo
+      // cerrar la app. Con el timeout, al menos se recupera con un error
+      // claro para que la persona pueda reintentar.
+      await this.conTimeout(
+        Promise.all([
+          this.firestoreService.updateDocument(`${Models.Auth.PathUsers}/${this.user.uid}`, payload),
+          this.firestoreService.setPublicContact(this.user.uid, {
+            nombre: payload.nombre,
+            apellido: payload.apellido,
+            telefono: payload.telefono,
+            contactosEmergencia: payload.contactosEmergencia
+          }),
+        ]),
+        20_000
+      );
       this.editMode = false;
       this.showToast('Perfil actualizado correctamente.', 'success');
     } catch (err) {
       console.error('Error al actualizar perfil', err);
-      this.showToast('No se pudo actualizar el perfil. Intenta nuevamente.', 'danger');
+      const mensaje = err instanceof Error && err.message === 'TIMEOUT'
+        ? 'La conexión está tardando demasiado. Revisa tu conexión e intenta nuevamente.'
+        : 'No se pudo actualizar el perfil. Intenta nuevamente.';
+      this.showToast(mensaje, 'danger');
     } finally {
       this.guardando = false;
       loading.dismiss();
     }
+  }
+
+  /** Si la promesa no resuelve dentro de ms, rechaza con Error('TIMEOUT') en
+   *  vez de dejar a quien llama esperando para siempre. No cancela la
+   *  operación original (Firestore no lo permite), solo deja de esperarla. */
+  private conTimeout<T>(promesa: Promise<T>, ms: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const id = setTimeout(() => reject(new Error('TIMEOUT')), ms);
+      promesa.then(
+        (v) => { clearTimeout(id); resolve(v); },
+        (e) => { clearTimeout(id); reject(e); }
+      );
+    });
   }
 
   // ── Foto de perfil ───────────────────────────────────────────────────────
@@ -535,6 +562,16 @@ export class PerfilComponent implements OnDestroy {
 
   irAConfiguracion(): void {
     this.router.navigate(['/tabs/configuracion']);
+  }
+
+  /** Mismo criterio que adminGuard/esAdminAshbis/ADMIN_EMAILS — muestra el
+   *  acceso al panel de verificación solo a la cuenta de Ashbis. */
+  get esAdmin(): boolean {
+    return this.user?.email === 'ashbis.oficial@gmail.com';
+  }
+
+  irAAdminVeterinarios(): void {
+    this.router.navigate(['/tabs/admin-veterinarios']);
   }
 
   async abrirMiQr(): Promise<void> {

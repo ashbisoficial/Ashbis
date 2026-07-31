@@ -164,7 +164,7 @@ export class RegistroComponent {
     return tipo === 'independiente' || tipo === 'clinica_pequena' || tipo === 'clinica_grande';
   }
 
-  /** true si el tipo de negocio es una clínica con equipo (no un independiente ni una peluquería). */
+  /** true si el tipo de negocio es una clínica con equipo (no un independiente). */
   get esClinicaConEquipo(): boolean {
     const tipo = this.datosForm.get('tipoNegocioVeterinario')?.value;
     return tipo === 'clinica_pequena' || tipo === 'clinica_grande';

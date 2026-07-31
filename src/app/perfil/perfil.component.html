@@ -5,6 +5,9 @@
       <ion-button *ngIf="user" (click)="abrirMiQr()" aria-label="Mi QR">
         <ion-icon name="qr-code-outline" slot="icon-only"></ion-icon>
       </ion-button>
+      <ion-button *ngIf="esAdmin" (click)="irAAdminVeterinarios()" aria-label="Verificar veterinarios">
+        <ion-icon name="shield-checkmark-outline" slot="icon-only"></ion-icon>
+      </ion-button>
       <ion-button (click)="irAConfiguracion()" aria-label="Configuración">
         <ion-icon name="settings-outline" slot="icon-only"></ion-icon>
       </ion-button>
