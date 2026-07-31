@@ -31,7 +31,6 @@ import { ChatUnreadService } from '../services/chat-unread.service';
 import { firstValueFrom, of, Subject, takeUntil } from 'rxjs';
 import { User } from '@angular/fire/auth';
 import { environment } from 'src/environments/environment';
-import * as L from 'leaflet';
 register();
 
 // El script de Google Maps JavaScript API (cargado dinámicamente en
@@ -73,6 +72,21 @@ type VeterinariaFavoritaInput = {
   rating?: number;
   tipos?: string[];
 };
+
+/** Estilo oscuro del mapa (antes era el tile claro "Voyager" de Carto/
+ *  Leaflet) — coherente con el tema único oscuro del resto de la app. */
+const GOOGLE_MAP_DARK_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#1a1a1a' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1a1a' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#8a8a8a' }] },
+  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#3c3c3c' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c2c2c' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8a8a8a' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3d3d3d' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
+];
 
 addIcons({
   hourglassOutline, locateOutline, bagOutline, pawOutline, star,
@@ -126,11 +140,11 @@ export class HomePage implements OnInit, OnDestroy {
   currentSearchType: 'veterinary_care' | 'pet_store' | null = null;
   editForm: LugarUserInfo = {};
 
-  // Leaflet internals
+  // Google Maps internals (google.maps.Map / Marker — sin tipos oficiales
+  // livianos, se usan como `any` igual que el resto del archivo).
   private map: any;
-  private markersLayer: any;
   private userMarker: any;
-  private markerRefs = new Map<string, L.Marker>();
+  private markerRefs = new Map<string, any>();
   userPositionMarker: { lat: number; lng: number } | undefined;
 
   // El mapa arranca "bloqueado" (sin arrastre/zoom con rueda/pinch) para que
@@ -188,7 +202,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   // ── Lifecycle ────────────────────────────────────────
   ngOnInit() {
-    this.cargarLeaflet().then(() => this.initMap());
+    this.initMap();
     this.cargarVeterinariasFavoritas();
     this.cargarPublicacionesActivas();
     this.cargarContextoRefugio();
@@ -274,7 +288,11 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.map) { this.map.remove(); this.map = null; }
+    if (this.map) {
+      google.maps.event.clearInstanceListeners(this.map);
+      this.map = null;
+    }
+    this.markerRefs.forEach(m => m.setMap(null));
     this.markerRefs.clear();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     delete (window as any).ashbisSeleccionarMarcador;
@@ -307,38 +325,30 @@ export class HomePage implements OnInit, OnDestroy {
     return this.veterinariasFavoritas.find(v => v.placeId === placeId);
   }
 
-  // Leaflet is already loaded from angular.json styles and node_modules
-  private cargarLeaflet(): Promise<void> {
-    return Promise.resolve();
-  }
+  /** Inicializa el mapa visual con la misma API de Google que ya se usaba
+   *  para buscar veterinarias/tiendas (Places) — antes el buscador era de
+   *  Google pero el mapa que se veía era Leaflet/OpenStreetMap, dos fuentes
+   *  distintas mostrando la misma zona. */
+  private async initMap(): Promise<void> {
+    if (this.map) return;
+    await this.cargarGoogleMaps();
+    const { Map } = await google.maps.importLibrary('maps');
+    const contenedor = document.getElementById('google-map');
+    if (!contenedor) return;
 
-  private initMap() {
-    setTimeout(() => {
-      if (this.map) return;
-      this.map = L.map('leaflet-map', {
-        center: [-33.4378, -70.6504],
-        zoom: 13,
-        zoomControl: true,
-        dragging: false,
-        scrollWheelZoom: false,
-        touchZoom: false,
-        doubleClickZoom: false,
-      });
+    this.map = new Map(contenedor, {
+      center: { lat: -33.4378, lng: -70.6504 },
+      zoom: 13,
+      disableDefaultUI: true,
+      zoomControl: true,
+      gestureHandling: 'none', // bloqueado hasta expandir (ver toggleExpandirMapa)
+      // Estilo oscuro simple, coherente con el resto de la app (antes era
+      // el tile "Voyager" de Carto, más claro).
+      styles: GOOGLE_MAP_DARK_STYLE,
+    });
 
-      // ── Estilo del mapa: Carto Dark ──
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap © CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }).addTo(this.map);
-
-      this.markersLayer = L.layerGroup().addTo(this.map);
-
-      // Doble click/doble tap expande o colapsa el mapa (doubleClickZoom
-      // queda deshabilitado a propósito para que el doble click/tap sea
-      // siempre esto, nunca un zoom accidental).
-      this.map.on('dblclick', () => this.toggleExpandirMapa());
-    }, 300);
+    // Doble click/doble tap expande o colapsa el mapa.
+    this.map.addListener('dblclick', () => this.toggleExpandirMapa());
   }
 
   /** Expande el mapa a pantalla completa (y habilita arrastre/zoom) o lo
@@ -347,21 +357,25 @@ export class HomePage implements OnInit, OnDestroy {
     this.mapaExpandido = !this.mapaExpandido;
     if (!this.map) return;
 
-    const metodo: 'enable' | 'disable' = this.mapaExpandido ? 'enable' : 'disable';
-    this.map.dragging[metodo]();
-    this.map.scrollWheelZoom[metodo]();
-    this.map.touchZoom[metodo]();
+    this.map.setOptions({ gestureHandling: this.mapaExpandido ? 'greedy' : 'none' });
 
     // El contenedor cambia de tamaño con la clase .expandido (ver scss);
-    // Leaflet necesita recalcular sus dimensiones después de la transición.
-    setTimeout(() => this.map?.invalidateSize(), 320);
+    // Google Maps necesita que se le avise para recalcular sus dimensiones
+    // después de la transición.
+    setTimeout(() => {
+      if (!this.map) return;
+      google.maps.event.trigger(this.map, 'resize');
+      const centro = this.userPositionMarker ?? { lat: -33.4378, lng: -70.6504 };
+      this.map.setCenter(centro);
+    }, 320);
   }
 
   /** Centra el mapa en la ubicación del usuario. Si todavía no la tenemos
    *  (no se buscó nada aún), la pide igual que "Veterinaria"/"Tienda". */
   centrarEnUsuario(): void {
     if (this.userPositionMarker && this.map) {
-      this.map.setView([this.userPositionMarker.lat, this.userPositionMarker.lng], 14);
+      this.map.setCenter(this.userPositionMarker);
+      this.map.setZoom(14);
     } else {
       this.getCurrentLocation();
     }
@@ -375,13 +389,20 @@ export class HomePage implements OnInit, OnDestroy {
     await toast.present();
   }
 
+  /** Saca todos los marcadores de veterinarias/tiendas del mapa (no toca
+   *  userMarker, que es aparte). */
+  private limpiarMarcadores(): void {
+    this.markerRefs.forEach(m => m.setMap(null));
+    this.markerRefs.clear();
+  }
+
   // ── Búsqueda ─────────────────────────────────────────
   findPlacesAction(tipo: 'veterinary_care' | 'pet_store') {
     this.currentSearchType = tipo;
     this.marcadoresEnMapa  = [];
     this.marcadorSeleccionado = undefined;
     this.mostrarPanel = false;
-    this.markersLayer?.clearLayers();
+    this.limpiarMarcadores();
 
     if (this.userPositionMarker) {
       this.searchNearbyPlaces(this.userPositionMarker);
@@ -404,11 +425,22 @@ export class HomePage implements OnInit, OnDestroy {
       pos => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         this.userPositionMarker = coords;
-        this.map.setView([coords.lat, coords.lng], 14);
-        if (this.userMarker) this.userMarker.remove();
-        this.userMarker = L.circleMarker([coords.lat, coords.lng], {
-          radius: 10, fillColor: '#2563eb', color: '#fff', weight: 2, fillOpacity: 0.9,
-        }).addTo(this.map).bindPopup('Tu ubicación').openPopup();
+        this.map.setCenter(coords);
+        this.map.setZoom(14);
+        if (this.userMarker) this.userMarker.setMap(null);
+        this.userMarker = new google.maps.Marker({
+          position: coords,
+          map: this.map,
+          title: 'Tu ubicación',
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#2563eb',
+            fillOpacity: 0.9,
+            strokeColor: '#fff',
+            strokeWeight: 2,
+          },
+        });
         if (this.currentSearchType) {
           this.searchNearbyPlaces(coords);
         } else {
@@ -443,8 +475,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   async searchNearbyPlaces(coords: { lat: number; lng: number }) {
     this.estaCargando = true;
-    this.markersLayer?.clearLayers();
-    this.markerRefs.clear();
+    this.limpiarMarcadores();
 
     try {
       const places = await this.buscarPlacesConCache(coords, this.currentSearchType!);
@@ -529,9 +560,12 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.markerRefs.clear();
     this.marcadoresEnMapa.forEach(m => {
-      const marker = L.marker([m.lat, m.lng], { icon: this.crearIcono(m.tipo, m.isOpen) })
-        .addTo(this.markersLayer);
-      marker.on('click', () => this.seleccionarMarcador(m));
+      const marker = new google.maps.Marker({
+        position: { lat: m.lat, lng: m.lng },
+        map: this.map,
+        icon: this.crearIcono(m.tipo, m.isOpen),
+      });
+      marker.addListener('click', () => this.seleccionarMarcador(m));
       if (m.placeId) this.markerRefs.set(m.placeId, marker);
     });
 
@@ -552,7 +586,8 @@ export class HomePage implements OnInit, OnDestroy {
     this.resaltarMarcadorEnMapa(m.placeId);
 
     if (centrarMapa && this.map) {
-      this.map.flyTo([m.lat, m.lng], Math.max(this.map.getZoom(), 15), { duration: 0.5 });
+      this.map.panTo({ lat: m.lat, lng: m.lng });
+      this.map.setZoom(Math.max(this.map.getZoom(), 15));
     }
 
     setTimeout(() => {
@@ -579,10 +614,16 @@ export class HomePage implements OnInit, OnDestroy {
     this.seleccionarMarcador(this.marcadoresEnMapa[siguiente], true);
   }
 
+  /** google.maps.Marker (a diferencia de los divIcon de Leaflet) no expone
+   *  el nodo DOM del pin para alternarle una clase CSS — se resuelve
+   *  regenerando el ícono de cada marcador, más grande y con anillo blanco
+   *  el que está seleccionado. Son pocos marcadores (máx. 20 por búsqueda),
+   *  así que no es costoso. */
   private resaltarMarcadorEnMapa(placeId?: string) {
     this.markerRefs.forEach((marker, id) => {
-      const pin = marker.getElement()?.querySelector('.marker-badge');
-      pin?.classList.toggle('marker-badge--selected', id === placeId);
+      const m = this.marcadoresEnMapa.find(x => x.placeId === id);
+      if (!m) return;
+      marker.setIcon(this.crearIcono(m.tipo, m.isOpen, id === placeId));
     });
   }
 
@@ -602,22 +643,27 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   // ── Icono personalizado del marcador ──────────────────
-  private crearIcono(tipo: 'veterinary_care' | 'pet_store', isOpen: boolean | null | undefined): L.DivIcon {
+  private crearIcono(tipo: 'veterinary_care' | 'pet_store', isOpen: boolean | null | undefined, seleccionado = false): any {
     const colorAbierto     = tipo === 'veterinary_care' ? '#dc2626' : '#16a34a';
     const colorCerrado     = '#6b7280';
     const colorDesconocido = tipo === 'veterinary_care' ? '#fca5a5' : '#86efac';
     const color  = isOpen === true ? colorAbierto : isOpen === false ? colorCerrado : colorDesconocido;
-    const tamano = isOpen === true ? 38 : 32;
-    const nombreIcono = tipo === 'veterinary_care' ? 'paw' : 'bag';
+    const glifo  = tipo === 'veterinary_care' ? '🐾' : '🛍️';
+    const base   = isOpen === true ? 38 : 32;
+    const tamano = seleccionado ? base + 8 : base;
+    const anillo = seleccionado ? `<circle cx="24" cy="24" r="21" fill="none" stroke="#fff" stroke-width="3"/>` : '';
 
-    return L.divIcon({
-      className: 'marker-divicon-wrapper',
-      html: `<div class="marker-badge" style="width:${tamano}px;height:${tamano}px;background:${color};">
-               <ion-icon name="${nombreIcono}"></ion-icon>
-             </div>`,
-      iconSize: [tamano, tamano],
-      iconAnchor: [tamano / 2, tamano / 2],
-    });
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">`
+      + `<circle cx="24" cy="24" r="19" fill="${color}" stroke="#fff" stroke-width="2"/>`
+      + anillo
+      + `<text x="24" y="31" font-size="19" text-anchor="middle">${glifo}</text>`
+      + `</svg>`;
+
+    return {
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+      scaledSize: new google.maps.Size(tamano, tamano),
+      anchor: new google.maps.Point(tamano / 2, tamano / 2),
+    };
   }
 
   cerrarPanel() {
