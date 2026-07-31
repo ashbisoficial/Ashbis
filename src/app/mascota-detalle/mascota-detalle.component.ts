@@ -7,8 +7,12 @@ import { of, Subject, switchMap, takeUntil } from 'rxjs';
 import {
   FirestoreService,
   Mascota,
-  VeterinariaFavorita
+  VeterinariaFavorita,
+  Vacuna,
+  Examen,
+  Medicamento
 } from '../../app/firebase/firestore';
+import { Subscription } from 'rxjs';
 
 import { Models } from '../../app/models/models';
 
@@ -33,6 +37,8 @@ import {
   IonButton,
   IonIcon,
   IonTextarea,
+  IonAvatar,
+  IonNote,
   ToastController
 } from '@ionic/angular/standalone';
 
@@ -45,7 +51,8 @@ import {
   copyOutline,
   personRemoveOutline,
   sendOutline,
-  timeOutline
+  timeOutline,
+  alertCircleOutline
 } from 'ionicons/icons';
 
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -82,7 +89,9 @@ import { take } from 'rxjs';
 
     IonButton,
     IonIcon,
-    IonTextarea
+    IonTextarea,
+    IonAvatar,
+    IonNote
   ],
   templateUrl: './mascota-detalle.component.html',
   styleUrls: ['./mascota-detalle.component.scss'],
@@ -112,11 +121,12 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
       copyOutline,
       personRemoveOutline,
       sendOutline,
-      timeOutline
+      timeOutline,
+      alertCircleOutline
     });
   }
 
-  segmentoActual: 'veterinarias' | 'historial' = 'veterinarias';
+  segmentoActual: 'veterinarias' | 'historial' | 'resumen' = 'veterinarias';
 
   mascota: Mascota | null = null;
 
@@ -124,8 +134,20 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
 
   /** true si soy el veterinario que está viendo la ficha (cuenta rol
    *  'veterinario'): oculta el segmento "Veterinarias" (irrelevante para
-   *  él) y abre directo en "Historial médico". */
+   *  él), muestra "Resumen" (datos clínicos, solo lectura) y abre directo
+   *  en "Historial médico". */
   soyVeterinario = false;
+  /** true recién cuando ya se supo si soyVeterinario o no — antes de eso no
+   *  se muestra el segmento, para no mostrar un instante "Veterinarias"
+   *  (segmento por defecto) y que salte a "Historial" apenas resuelve. */
+  rolListo = false;
+
+  vacunas: Vacuna[] = [];
+  medicamentos: Medicamento[] = [];
+  examenes: Examen[] = [];
+  private subVacunas?: Subscription;
+  private subMedicamentos?: Subscription;
+  private subExamenes?: Subscription;
   /** true si soy dueño/equipo de esta mascota: solo esa cuenta puede generar
    *  el PIN y ver/revocar accesos otorgados a veterinarios. */
   puedoCompartirConVeterinario = false;
@@ -172,6 +194,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
       this.puedoCompartirConVeterinario = !!mascota && mascota.uidUsuario === this.miUid;
       this.cargando = false;
       this.cargarSubColecciones();
+      this.cargarDatosClinicosSiVet();
       this.calcularPuedoGestionarHogarTemporal(mascota);
     });
   }
@@ -191,6 +214,9 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    this.subVacunas?.unsubscribe();
+    this.subMedicamentos?.unsubscribe();
+    this.subExamenes?.unsubscribe();
   }
 
   cargarSubColecciones() {
@@ -227,11 +253,38 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   private cargarMiRol() {
     const uid = this.auth.getCurrentUser()?.uid;
     this.miUid = uid ?? '';
-    if (!uid) return;
+    if (!uid) { this.rolListo = true; return; }
     this.firestoreService.getDocument(`usuarios/${uid}`).then(perfil => {
       this.soyVeterinario = perfil?.rol === 'veterinario';
       if (this.soyVeterinario) this.segmentoActual = 'historial';
+      this.rolListo = true;
+      this.cargarDatosClinicosSiVet();
     });
+  }
+
+  /** Vacunas/medicamentos/exámenes registrados por el dueño (mascota-editar):
+   *  antes un veterinario con acceso por PIN solo veía el historial de
+   *  notas de texto libre, sin poder ver nada de esto pese a que las
+   *  reglas de Firestore ya se lo permiten (puedeVerHistorialMedico). Solo
+   *  se cargan para el veterinario — el dueño ya las administra desde
+   *  "Editar mascota", cargarlas de nuevo acá sería una lectura de más. */
+  private cargarDatosClinicosSiVet(): void {
+    if (!this.soyVeterinario || !this.mascotaId) return;
+
+    this.subVacunas?.unsubscribe();
+    this.subVacunas = this.firestoreService.getVacunasByMascota(this.mascotaId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => this.vacunas = data);
+
+    this.subMedicamentos?.unsubscribe();
+    this.subMedicamentos = this.firestoreService.getMedicamentosByMascota(this.mascotaId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => this.medicamentos = data);
+
+    this.subExamenes?.unsubscribe();
+    this.subExamenes = this.firestoreService.getExamenesByMascota(this.mascotaId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => this.examenes = data);
   }
 
   abrirEnMapa(vet: VeterinariaFavorita) {
