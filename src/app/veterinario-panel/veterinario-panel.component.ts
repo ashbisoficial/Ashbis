@@ -220,6 +220,34 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
     this.router.navigate(['/tabs/mascota-detalle', p.mascotaId]);
   }
 
+  /** El veterinario puede sacarse a sí mismo de la lista de pacientes sin
+   *  necesitar que el dueño lo revoque (las reglas ya lo permitían, solo
+   *  faltaba el botón). No borra nada del historial médico: solo su propio
+   *  acceso — si necesita volver a entrar, el dueño le pasa el PIN de nuevo. */
+  async quitarPaciente(p: Models.Mascotas.AccesoVeterinario): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Quitar paciente',
+      message: `Vas a dejar de ver a ${p.mascotaNombre} en tu lista de pacientes. Si lo necesitás de nuevo, el dueño te va a tener que compartir el PIN otra vez.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Quitar',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              await this.fs.revocarAccesoVeterinario(p.mascotaId, this.miUid);
+              this.pacientes.update(actuales => actuales.filter(x => x.mascotaId !== p.mascotaId));
+              await this.mostrarToast(`Quitaste a ${p.mascotaNombre} de tu lista.`, 'success');
+            } catch {
+              await this.mostrarToast('No se pudo quitar el paciente. Intenta nuevamente.', 'danger');
+            }
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
   /** Abre el selector de archivo solo si la cámara/galería está habilitada
    *  en Configuración → Permisos (preferencia propia de Ashbis, no el
    *  permiso real del navegador). */

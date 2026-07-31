@@ -1267,6 +1267,57 @@ export const onMensajeChatEquipoCreado = onDocumentCreated(
   }
 );
 
+// Un veterinario valida el PIN y obtiene acceso al historial médico de una
+// mascota (ver validarPinVeterinario) sin que el dueño se entere en el
+// momento — solo lo vería si entra a revisar el historial. Este trigger le
+// avisa apenas ocurre, para que sepa quién puede ver la ficha de su mascota.
+export const onAccesoVeterinarioCreado = onDocumentCreated(
+  { document: 'mascotas/{petId}/accesosVeterinario/{vetUid}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    const petId = event.params.petId;
+    try {
+      const mascotaSnap = await admin.firestore().doc(`mascotas/${petId}`).get();
+      const dueñoUid = mascotaSnap.data()?.['uidUsuario'];
+      if (!dueñoUid) return;
+      await enviarPushAUid(dueñoUid, {
+        title: 'Nuevo acceso al historial médico',
+        body: `${data['vetNombre'] || 'Un veterinario'} ahora puede ver el historial de ${data['mascotaNombre'] || 'tu mascota'}.`,
+        ruta: '/tabs/mascota-detalle/' + petId,
+      });
+    } catch (error) {
+      functions.logger.error('onAccesoVeterinarioCreado: error enviando push', error);
+    }
+  }
+);
+
+// Nota nueva de un veterinario en el historial médico (append-only, ver
+// agregarEntradaHistorial): el dueño no tiene forma de enterarse salvo que
+// entre a mirar. Solo se avisa cuando la escribe un veterinario — si la
+// escribe el propio dueño/equipo no hace falta notificarlo a sí mismo.
+export const onHistorialMedicoCreado = onDocumentCreated(
+  { document: 'mascotas/{petId}/historialMedico/{entradaId}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data || data['autorRol'] !== 'veterinario') return;
+    const petId = event.params.petId;
+    try {
+      const mascotaSnap = await admin.firestore().doc(`mascotas/${petId}`).get();
+      const mascota = mascotaSnap.data();
+      const dueñoUid = mascota?.['uidUsuario'];
+      if (!dueñoUid || dueñoUid === data['autorUid']) return;
+      await enviarPushAUid(dueñoUid, {
+        title: 'Nueva nota en el historial médico',
+        body: `${data['autorNombre'] || 'Un veterinario'} agregó una nota al historial de ${mascota?.['nombre'] || 'tu mascota'}.`,
+        ruta: '/tabs/mascota-detalle/' + petId,
+      });
+    } catch (error) {
+      functions.logger.error('onHistorialMedicoCreado: error enviando push', error);
+    }
+  }
+);
+
 // ─── Sincronizar info pública de mascota en sus publicaciones de adopción ──────
 // mascotas/{id} NO es legible por cualquiera (tiene datos privados: contacto
 // de emergencia, PIN del historial, etc.), así que la publicación de
