@@ -8,10 +8,10 @@ import {
   IonTextarea, IonSegment, IonSegmentButton, IonBadge
 } from '@ionic/angular/standalone';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FirestoreService, Mascota, Cita, Vacuna, Examen, Medicamento } from '../firebase/firestore';
+import { FirestoreService, Mascota, Cita, Vacuna, Examen, Medicamento, TramoMedicamento } from '../firebase/firestore';
 import { NotificationService } from '../services/notification.service';
 import { PreferenciasService } from '../services/preferencias.service';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { Auth } from '@angular/fire/auth';
 import { LOCALE_ID } from '@angular/core';
@@ -206,7 +206,8 @@ export class MascotaEditarComponent implements OnDestroy {
             new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime()
           );
           this.medicamentos.set(ordenadas);
-        });        
+          this.refrescarRecordatoriosVencidos(ordenadas);
+        });
       }
       this.loading.set(false);
     });
@@ -827,13 +828,43 @@ async onUploadResultado(ev: Event, e: Examen) {
     window.open(url, '_blank');
   }
   
+  /** Tope de dosis individuales que se programan por medicamento — cubre
+   *  tratamientos largos sin arriesgarse a saturar el límite de alarmas
+   *  pendientes del sistema operativo. Para el último tramo indefinido, se
+   *  programa una ventana de este tamaño y se vuelve a rellenar sola cada
+   *  vez que se abre esta pantalla (ver cargarSubColecciones). */
+  private static readonly MAX_DOSIS_PROGRAMADAS = 90;
+
+  crearTramoGroup(frecuenciaHoras: number | null = 24, duracionDias: number | null = null): FormGroup {
+    return this.fb.group({
+      frecuenciaHoras: [frecuenciaHoras, [Validators.required, Validators.min(1)]],
+      duracionDias: [duracionDias], // vacío = indefinido, solo válido en el último tramo
+    });
+  }
+
+  get tramosFormArray(): FormArray {
+    return this.medicamentoForm.get('tramos') as FormArray;
+  }
+
+  agregarTramo(): void {
+    this.tramosFormArray.push(this.crearTramoGroup(24, null));
+  }
+
+  quitarTramo(i: number): void {
+    if (this.tramosFormArray.length <= 1) return;
+    this.tramosFormArray.removeAt(i);
+  }
+
   abrirNuevoMedicamento() {
     this.editandoMedicamentoId.set(null);
+    const hoy = new Date();
+    const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
     this.medicamentoForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(80)]],
       mg: [null, [Validators.required, Validators.min(0.1)]],
-      fechaInicio: [new Date().toISOString(), Validators.required],
-      fechaFin: [''],     // opcional
+      fechaInicio: [fechaHoy, Validators.required],
+      horaInicio: ['08:00', Validators.required],
+      tramos: this.fb.array([this.crearTramoGroup(24, null)]),
       costo: [null],      // opcional
       notas: ['']         // opcional
     });
@@ -842,15 +873,29 @@ async onUploadResultado(ev: Event, e: Examen) {
 
   abrirEditarMedicamento(m: Medicamento) {
     this.editandoMedicamentoId.set(m.id || null);
+    // Medicamentos creados antes de los tramos: se sintetiza uno solo
+    // (diario, indefinido si no tenían fechaFin) para no romper el form.
+    const tramos = m.tramos?.length
+      ? m.tramos
+      : [this.tramoLegacyDesde(m)];
     this.medicamentoForm = this.fb.group({
       nombre: [m.nombre, [Validators.required, Validators.maxLength(80)]],
       mg: [m.mg, [Validators.required, Validators.min(0.1)]],
-      fechaInicio: [m.fechaInicio, Validators.required],
-      fechaFin: [m.fechaFin || ''],
+      fechaInicio: [String(m.fechaInicio).substring(0, 10), Validators.required],
+      horaInicio: [m.horaInicio || '08:00', Validators.required],
+      tramos: this.fb.array(tramos.map(t => this.crearTramoGroup(t.frecuenciaHoras, t.duracionDias))),
       costo: [m.costo ?? null],
       notas: [m.notas || '']
     });
     this.medicamentoModalOpen.set(true);
+  }
+
+  private tramoLegacyDesde(m: Medicamento): TramoMedicamento {
+    if (!m.fechaFin) return { frecuenciaHoras: 24, duracionDias: null };
+    const dias = Math.round(
+      (new Date(m.fechaFin).getTime() - new Date(m.fechaInicio).getTime()) / 86_400_000
+    ) + 1;
+    return { frecuenciaHoras: 24, duracionDias: Math.max(1, dias) };
   }
 
   async guardarMedicamento() {
@@ -861,25 +906,32 @@ async onUploadResultado(ev: Event, e: Examen) {
 
     const petId = this.mascota()!.id;
     const uid = this.auth.currentUser.uid;
-    const v = this.medicamentoForm.value as any;
+    const v = this.medicamentoForm.value as { nombre: string; mg: number; fechaInicio: string; horaInicio: string; tramos: TramoMedicamento[]; costo: number | null; notas: string };
 
-    // Validación: fechaFin >= fechaInicio (si hay fechaFin)
-    if (v.fechaFin) {
-      const ini = new Date(v.fechaInicio).getTime();
-      const fin = new Date(v.fechaFin).getTime();
-      if (isFinite(ini) && isFinite(fin) && fin < ini) {
-        return this.showToast('La fecha de fin no puede ser menor que la de inicio.');
-      }
+    // Solo el último tramo puede quedar sin duración (indefinido).
+    const tramos = v.tramos.map(t => ({
+      frecuenciaHoras: Number(t.frecuenciaHoras),
+      duracionDias: t.duracionDias != null && t.duracionDias !== ('' as any) ? Number(t.duracionDias) : null,
+    }));
+    const incompletos = tramos.slice(0, -1).some(t => !t.duracionDias || t.duracionDias < 1);
+    if (!tramos.length || incompletos) {
+      return this.showToast('Todas las fases, menos la última, necesitan una duración en días.');
+    }
+    if (tramos.some(t => !t.frecuenciaHoras || t.frecuenciaHoras < 1)) {
+      return this.showToast('La frecuencia de cada fase tiene que ser mayor a 0 horas.');
     }
 
     const payload: any = {
       nombre: v.nombre,
       mg: Number(v.mg),
       fechaInicio: v.fechaInicio,
+      horaInicio: v.horaInicio,
+      tramos,
       creadoPor: uid,
     };
 
-    if (v.fechaFin) payload.fechaFin = v.fechaFin;
+    const fechaFin = this.calcularFechaFin(v.fechaInicio, tramos);
+    if (fechaFin) payload.fechaFin = fechaFin; else payload.fechaFin = deleteField();
     if (v.costo != null) payload.costo = Number(v.costo);
     if (v.notas) payload.notas = v.notas;
 
@@ -892,12 +944,15 @@ async onUploadResultado(ev: Event, e: Examen) {
         medicamentoId = editId;
         this.showToast('Medicamento actualizado.');
       } else {
-        const ref = await this.fs.addMedicamento(petId, payload);
+        // deleteField() solo tiene sentido en un update, nunca al crear.
+        const { fechaFin: _omit, ...crear } = payload;
+        if (fechaFin) crear.fechaFin = fechaFin;
+        const ref = await this.fs.addMedicamento(petId, crear);
         medicamentoId = ref.id;
         this.showToast('Medicamento registrado.');
       }
 
-      await this.programarRecordatorioMedicamento(medicamentoId, payload);
+      await this.programarRecordatoriosMedicamento(medicamentoId, { ...payload, fechaFin });
       this.medicamentoModalOpen.set(false);
     } catch (e) {
       console.error(e);
@@ -905,27 +960,81 @@ async onUploadResultado(ev: Event, e: Examen) {
     }
   }
 
-  /**
-   * Programa un recordatorio el día en que termina el tratamiento
-   * (fechaFin, a las 9:00 AM), si fue especificada.
-   */
-  private async programarRecordatorioMedicamento(medicamentoId: string, medicamento: any): Promise<void> {
-    const numId = this.notificationService.hashIdToNumber(`medicamento-${medicamentoId}`);
-    await this.notificationService.cancel(numId);
+  /** Fecha (yyyy-MM-dd) en la que termina el tratamiento, o null si el
+   *  último tramo es indefinido. */
+  private calcularFechaFin(fechaInicio: string, tramos: TramoMedicamento[]): string | null {
+    if (tramos.some(t => t.duracionDias == null)) return null;
+    const totalDias = tramos.reduce((acc, t) => acc + (t.duracionDias ?? 0), 0);
+    const [yyyy, mm, dd] = fechaInicio.substring(0, 10).split('-').map(n => parseInt(n, 10));
+    const fin = new Date(yyyy, mm - 1, dd);
+    fin.setDate(fin.getDate() + totalDias - 1);
+    return `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
+  }
 
-    if (!medicamento.fechaFin) return;
+  /** Calcula, en orden, las fechas/hora exactas de cada dosis: recorre los
+   *  tramos secuencialmente (cada uno arranca justo donde termina el
+   *  anterior) aplicando su frecuencia en horas. El último tramo, si es
+   *  indefinido, se corta en MAX_DOSIS_PROGRAMADAS dosis totales — no se
+   *  puede programar "para siempre" de una sola vez. */
+  private calcularFechasDosis(fechaInicio: string, horaInicio: string, tramos: TramoMedicamento[]): Date[] {
+    const [yyyy, mm, dd] = fechaInicio.substring(0, 10).split('-').map(n => parseInt(n, 10));
+    const [hh, min] = horaInicio.split(':').map(n => parseInt(n, 10));
+    let cursor = new Date(yyyy, mm - 1, dd, hh || 0, min || 0, 0);
+
+    const dosis: Date[] = [];
+    for (const tramo of tramos) {
+      const pasoMs = tramo.frecuenciaHoras * 60 * 60 * 1000;
+      const finTramo = tramo.duracionDias != null
+        ? cursor.getTime() + tramo.duracionDias * 24 * 60 * 60 * 1000
+        : Infinity;
+
+      while (cursor.getTime() < finTramo && dosis.length < MascotaEditarComponent.MAX_DOSIS_PROGRAMADAS) {
+        dosis.push(new Date(cursor));
+        cursor = new Date(cursor.getTime() + pasoMs);
+      }
+      if (dosis.length >= MascotaEditarComponent.MAX_DOSIS_PROGRAMADAS) break;
+    }
+    return dosis;
+  }
+
+  /** Cancela y vuelve a programar todas las dosis de un medicamento, más el
+   *  aviso de fin de tratamiento (si tiene fecha de fin conocida). */
+  private async programarRecordatoriosMedicamento(medicamentoId: string, medicamento: any): Promise<void> {
+    // Cancela lo que hubiera programado antes (rango fijo, idempotente:
+    // cancelar un id que no existe no da error).
+    for (let i = 0; i < MascotaEditarComponent.MAX_DOSIS_PROGRAMADAS; i++) {
+      await this.notificationService.cancel(this.notificationService.hashIdToNumber(`medicamento-${medicamentoId}-dosis-${i}`));
+    }
+    const finId = this.notificationService.hashIdToNumber(`medicamento-${medicamentoId}`);
+    await this.notificationService.cancel(finId);
 
     const tienePermiso = await this.notificationService.hasPermission()
       || await this.notificationService.requestPermission();
     if (!tienePermiso) return;
 
+    const nombreMascota = this.mascota()?.nombre || 'tu mascota';
+
+    if (medicamento.tramos?.length) {
+      const dosis = this.calcularFechasDosis(medicamento.fechaInicio, medicamento.horaInicio, medicamento.tramos);
+      for (let i = 0; i < dosis.length; i++) {
+        await this.notificationService.schedule({
+          id: this.notificationService.hashIdToNumber(`medicamento-${medicamentoId}-dosis-${i}`),
+          title: `Hora de dar ${medicamento.nombre} a ${nombreMascota}`,
+          body: `${medicamento.mg} mg`,
+          at: dosis[i],
+        });
+      }
+    }
+
+    if (!medicamento.fechaFin) return;
+
     const [yyyy, mm, dd] = String(medicamento.fechaFin).substring(0, 10).split('-').map((n: string) => parseInt(n, 10));
     const recordatorio = new Date(yyyy, mm - 1, dd, 9, 0, 0);
 
     await this.notificationService.schedule({
-      id: numId,
+      id: finId,
       title: `Fin de tratamiento: ${medicamento.nombre}`,
-      body: `Hoy termina el tratamiento con ${medicamento.nombre} para ${this.mascota()?.nombre || 'tu mascota'}.`,
+      body: `Hoy termina el tratamiento con ${medicamento.nombre} para ${nombreMascota}.`,
       at: recordatorio
     });
   }
@@ -934,11 +1043,74 @@ async onUploadResultado(ev: Event, e: Examen) {
     if (!this.mascota()?.id || !m.id) return;
     try {
       await this.fs.deleteMedicamento(this.mascota()!.id, m.id);
+      for (let i = 0; i < MascotaEditarComponent.MAX_DOSIS_PROGRAMADAS; i++) {
+        await this.notificationService.cancel(this.notificationService.hashIdToNumber(`medicamento-${m.id}-dosis-${i}`));
+      }
       await this.notificationService.cancel(this.notificationService.hashIdToNumber(`medicamento-${m.id}`));
       this.showToast('Medicamento eliminado.');
     } catch (e) {
       console.error(e);
       this.showToast('No se pudo eliminar el medicamento.');
+    }
+  }
+
+  /** Texto legible de la pauta de dosificación para el listado. */
+  resumenTramos(m: Medicamento): string {
+    if (!m.tramos?.length) {
+      return `Inicio: ${this.formatearFecha(m.fechaInicio)}${m.fechaFin ? ` • Fin: ${this.formatearFecha(m.fechaFin)}` : ''}`;
+    }
+    const hora = m.horaInicio ? ` desde las ${m.horaInicio}` : '';
+    const partes = m.tramos.map((t, i) => {
+      const frecuencia = t.frecuenciaHoras === 24 ? 'cada 24 h (una vez al día)' : `cada ${t.frecuenciaHoras} h`;
+      const duracion = t.duracionDias != null ? `por ${t.duracionDias} día${t.duracionDias === 1 ? '' : 's'}` : 'de forma indefinida';
+      return i === 0 ? `${frecuencia}${hora}, ${duracion}` : `luego ${frecuencia}, ${duracion}`;
+    });
+    return partes.join(' → ');
+  }
+
+  /** Igual que resumenTramos, pero leyendo el formulario en vivo (mientras
+   *  se está editando, antes de guardar) para mostrar una vista previa. */
+  resumenTramosForm(): string {
+    if (!this.medicamentoForm) return '';
+    const v = this.medicamentoForm.value as { fechaInicio: string; horaInicio: string; tramos: TramoMedicamento[] };
+    if (!v.fechaInicio || !v.tramos?.length) return '';
+    const fin = this.calcularFechaFin(v.fechaInicio, v.tramos.map(t => ({
+      frecuenciaHoras: Number(t.frecuenciaHoras) || 0,
+      duracionDias: t.duracionDias != null && t.duracionDias !== ('' as any) ? Number(t.duracionDias) : null,
+    })));
+    return this.resumenTramos({ ...v, fechaFin: fin ?? undefined } as Medicamento);
+  }
+
+  private formatearFecha(iso: string): string {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  /** Al abrir la ficha, si un medicamento con último tramo indefinido se
+   *  quedó sin dosis programadas por delante (se acabó la ventana de
+   *  MAX_DOSIS_PROGRAMADAS), se rellena en silencio con la próxima tanda —
+   *  así los tratamientos "para siempre" no dejan de avisar con el tiempo. */
+  private async refrescarRecordatoriosVencidos(lista: Medicamento[]): Promise<void> {
+    const ahora = Date.now();
+    for (const m of lista) {
+      if (!m.id || m.fechaFin || !m.tramos?.length || !m.horaInicio) continue;
+      const dosis = this.calcularFechasDosis(m.fechaInicio, m.horaInicio, m.tramos);
+      const ultima = dosis[dosis.length - 1];
+      // Si la última dosis calculada ya pasó, la ventana programada se
+      // agotó — se vuelve a calcular desde hoy en vez de desde el inicio
+      // original, para no reprogramar miles de dosis pasadas.
+      if (ultima && ultima.getTime() < ahora) {
+        const hoy = new Date();
+        const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+        const horaHoy = `${String(hoy.getHours()).padStart(2, '0')}:${String(hoy.getMinutes()).padStart(2, '0')}`;
+        await this.programarRecordatoriosMedicamento(m.id, {
+          ...m,
+          fechaInicio: fechaHoy,
+          horaInicio: horaHoy,
+          tramos: [m.tramos[m.tramos.length - 1]],
+        });
+      }
     }
   }
 

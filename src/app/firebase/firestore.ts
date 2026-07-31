@@ -50,11 +50,25 @@ export type Examen = {
   creadoPor: string;
 };
 
+// Una fase de dosificación: cada cuántas horas se da, y por cuántos días
+// dura esa frecuencia. duracionDias null = indefinida — solo válido en el
+// último tramo de un medicamento (ej: "cada 24h los primeros 7 días, luego
+// cada 48h de forma indefinida" son dos tramos).
+export type TramoMedicamento = {
+  frecuenciaHoras: number;
+  duracionDias: number | null;
+};
+
 export type Medicamento = {
   id?: string;
   nombre: string;
   mg: number;
   fechaInicio: string;
+  /** Hora de la primera dosis, "HH:mm" — ancla el resto de las dosis calculadas a partir de los tramos. */
+  horaInicio?: string;
+  /** Fases de frecuencia; si falta (medicamentos creados antes de este campo), se asume una sola fase diaria e indefinida. */
+  tramos?: TramoMedicamento[];
+  /** Calculado a partir de los tramos (suma de duracionDias) — ausente si el último tramo es indefinido. */
   fechaFin?: string;
   costo?: number;
   notas?: string;

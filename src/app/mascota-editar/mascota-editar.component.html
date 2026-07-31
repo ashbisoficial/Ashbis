@@ -732,10 +732,7 @@
                 <ion-label>
                   <h3>{{ m.nombre }} <ion-note color="medium">• {{ m.mg }} mg</ion-note></h3>
 
-                  <p>
-                    Inicio: {{ m.fechaInicio | date:'dd-MM-yyyy' }}
-                    <ng-container *ngIf="m.fechaFin"> • Fin: {{ m.fechaFin | date:'dd-MM-yyyy' }}</ng-container>
-                  </p>
+                  <p class="ion-text-wrap">{{ resumenTramos(m) }}</p>
 
                   <p *ngIf="m.costo !== undefined">Costo: {{ m.costo | currency:'CLP':'symbol-narrow':'1.0-0' }}</p>
                   <p *ngIf="m.notas" class="ion-text-wrap">Notas: {{ m.notas }}</p>
@@ -797,13 +794,60 @@
                     </ion-item>
 
                     <ion-item class="input-fecha">
-                      <ion-label position="stacked">Fin del tratamiento (opcional)</ion-label>
+                      <ion-label position="stacked">Hora de la primera dosis</ion-label>
                       <input
-                        type="date"
-                        formControlName="fechaFin"
+                        type="time"
+                        formControlName="horaInicio"
                         class="date-input-custom">
                     </ion-item>
+                  </ion-list>
 
+                  <!-- FASES DE DOSIFICACIÓN: cada cuántas horas y por cuántos días —
+                       permite pautas que cambian con el tiempo (ej: cada 24h los
+                       primeros 7 días, después cada 48h de forma indefinida). -->
+                  <ion-list inset="true" formArrayName="tramos">
+                    <ion-item lines="full">
+                      <ion-label>
+                        <h3>Frecuencia de las dosis</h3>
+                        <p class="ion-text-wrap">Solo la última fase puede quedar sin duración (indefinida).</p>
+                      </ion-label>
+                    </ion-item>
+
+                    <div *ngFor="let tramo of tramosFormArray.controls; let i = index" [formGroupName]="i" class="tramo-medicamento">
+                      <p class="tramo-titulo" *ngIf="tramosFormArray.length > 1">
+                        Fase {{ i + 1 }}
+                        <ion-button fill="clear" size="small" color="danger" *ngIf="tramosFormArray.length > 1" (click)="quitarTramo(i)">
+                          <ion-icon name="close-circle-outline" slot="icon-only"></ion-icon>
+                        </ion-button>
+                      </p>
+                      <ion-item>
+                        <ion-label position="stacked">Cada cuántas horas</ion-label>
+                        <ion-input type="number" inputmode="numeric" formControlName="frecuenciaHoras" placeholder="Ej: 24"></ion-input>
+                      </ion-item>
+                      <ion-item>
+                        <ion-label position="stacked">
+                          Duración (días){{ i === tramosFormArray.length - 1 ? ' — opcional' : '' }}
+                        </ion-label>
+                        <ion-input type="number" inputmode="numeric" formControlName="duracionDias"
+                          [placeholder]="i === tramosFormArray.length - 1 ? 'Vacío = indefinido' : 'Ej: 7'"></ion-input>
+                      </ion-item>
+                    </div>
+
+                    <ion-item lines="none">
+                      <ion-button slot="end" fill="outline" color="medium" (click)="agregarTramo()">
+                        <ion-icon name="add-outline" slot="start"></ion-icon>
+                        Agregar otra fase
+                      </ion-button>
+                    </ion-item>
+
+                    <ion-item lines="none" *ngIf="medicamentoForm.get('fechaInicio')?.value">
+                      <ion-label class="ion-text-wrap" color="medium">
+                        {{ resumenTramosForm() }}
+                      </ion-label>
+                    </ion-item>
+                  </ion-list>
+
+                  <ion-list inset="true">
                     <ion-item>
                       <ion-label position="stacked">Costo (opcional)</ion-label>
                       <ion-input type="number" inputmode="decimal" formControlName="costo"></ion-input>
