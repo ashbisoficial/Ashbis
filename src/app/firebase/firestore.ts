@@ -50,11 +50,25 @@ export type Examen = {
   creadoPor: string;
 };
 
+// Una fase de dosificación: cada cuántas horas se da, y por cuántos días
+// dura esa frecuencia. duracionDias null = indefinida — solo válido en el
+// último tramo de un medicamento (ej: "cada 24h los primeros 7 días, luego
+// cada 48h de forma indefinida" son dos tramos).
+export type TramoMedicamento = {
+  frecuenciaHoras: number;
+  duracionDias: number | null;
+};
+
 export type Medicamento = {
   id?: string;
   nombre: string;
   mg: number;
   fechaInicio: string;
+  /** Hora de la primera dosis, "HH:mm" — ancla el resto de las dosis calculadas a partir de los tramos. */
+  horaInicio?: string;
+  /** Fases de frecuencia; si falta (medicamentos creados antes de este campo), se asume una sola fase diaria e indefinida. */
+  tramos?: TramoMedicamento[];
+  /** Calculado a partir de los tramos (suma de duracionDias) — ausente si el último tramo es indefinido. */
   fechaFin?: string;
   costo?: number;
   notas?: string;
@@ -238,7 +252,17 @@ export class FirestoreService {
    *  mostrarlo y poder revocarlo desde el refugio). */
   getColaboradoresMascota(petId: string): Observable<Models.Mascotas.ColaboradorMascota[]> {
     const r = collection(this.firestore, `mascotas/${petId}/colaboradores`);
-    return collectionData(r) as Observable<Models.Mascotas.ColaboradorMascota[]>;
+    return (collectionData(r) as Observable<Models.Mascotas.ColaboradorMascota[]>).pipe(
+      // Un veterinario con acceso por PIN puede abrir esta misma pantalla
+      // (mascota-detalle) sin ser dueño/equipo del refugio — las reglas le
+      // niegan esta subcolección (es solo para gestionar hogar temporal), y
+      // sin este catchError el error sin manejar rompía la carga del resto
+      // de la pantalla, incluido el historial médico.
+      catchError(err => {
+        console.error('getColaboradoresMascota falló:', err);
+        return of<Models.Mascotas.ColaboradorMascota[]>([]);
+      })
+    );
   }
 
   /** El refugio (dueño/equipo) le quita a alguien el acceso de hogar
@@ -459,6 +483,10 @@ export class FirestoreService {
     const pin = String(100000 + (buf[0] % 900000));
     await updateDoc(doc(this.firestore, 'mascotas', petId), {
       pinHistorial: pin,
+      // Con fecha de generación, validarPinVeterinario puede vencerlo a los
+      // 90 días — un PIN que quedó dando vueltas en un chat viejo no sirve
+      // para siempre.
+      pinGeneradoEn: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
     return pin;
@@ -467,7 +495,18 @@ export class FirestoreService {
   getAccesosVeterinario(petId: string): Observable<Models.Mascotas.AccesoVeterinario[]> {
     const r = collection(this.firestore, `mascotas/${petId}/accesosVeterinario`);
     const q = query(r, orderBy('otorgadoEn', 'desc'));
-    return collectionData(q) as Observable<Models.Mascotas.AccesoVeterinario[]>;
+    return (collectionData(q) as Observable<Models.Mascotas.AccesoVeterinario[]>).pipe(
+      // Un veterinario que abre mascota-detalle solo puede leer su PROPIO
+      // acceso (regla: puedeAccederMascota || isUser(vetUid)), pero esta
+      // consulta trae la lista completa (la usa el dueño para poder
+      // revocarlos) — Firestore rechaza la consulta entera en ese caso.
+      // Sin este catchError, el error rompía la carga de mascota-detalle
+      // para el veterinario, incluido el historial médico.
+      catchError(err => {
+        console.error('getAccesosVeterinario falló:', err);
+        return of<Models.Mascotas.AccesoVeterinario[]>([]);
+      })
+    );
   }
 
   async revocarAccesoVeterinario(petId: string, vetUid: string): Promise<void> {
@@ -544,6 +583,35 @@ export class FirestoreService {
       throw new Error(body.error || 'No se pudo validar el PIN.');
     }
     return body.mascota;
+  }
+
+  // ── Verificación de veterinarios (solo cuenta admin de Ashbis) ────────────
+
+  /** Veterinarios sin verificar todavía — para el panel admin. Solo la
+   *  cuenta admin de Ashbis tiene permiso de Firestore para esta consulta
+   *  (ver esAdminAshbis() en firestore.rules). */
+  getVeterinariosPendientes(): Observable<Models.Auth.UserProfile[]> {
+    const r = collection(this.firestore, 'usuarios');
+    const q = query(r, where('rol', '==', 'veterinario'), where('verificado', '==', false));
+    return collectionData(q, { idField: 'uid' }) as Observable<Models.Auth.UserProfile[]>;
+  }
+
+  async revisarVerificacionVeterinario(uid: string, aprobar: boolean): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('Usuario no autenticado');
+    const token = await user.getIdToken();
+    const res = await fetch(
+      'https://us-central1-ashbis-ae5b2.cloudfunctions.net/revisarVerificacionVeterinario',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, aprobar }),
+      }
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.error || 'No se pudo guardar la revisión.');
+    }
   }
 
   // ── Veterinarias favoritas ─────────────────────────────────────────────────

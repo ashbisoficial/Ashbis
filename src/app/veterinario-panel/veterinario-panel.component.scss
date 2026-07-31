@@ -33,6 +33,14 @@ ion-content {
       color: var(--ashbis-red, #8b0808);
     }
   }
+
+  // El nombre del veterinario es un dato personal, no un rótulo de sección
+  // — en mayúsculas con letter-spacing se leía pesado/institucional.
+  .titulo-nombre {
+    font-size: 18px;
+    letter-spacing: normal;
+    text-transform: none;
+  }
 }
 
 .seccion-subtitulo {
@@ -128,6 +136,41 @@ ion-item {
   font-weight: 600;
 }
 
+.tarjeta-sin-verificar {
+  --background: rgba(255, 179, 0, .08);
+  border: 1px solid rgba(255, 179, 0, .4);
+  border-radius: 14px;
+  box-shadow: none;
+  margin-bottom: 16px;
+}
+
+.sin-verificar-fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  ion-icon {
+    font-size: 26px;
+    color: #ffb300;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ion-text-color);
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ion-color-medium);
+    line-height: 1.5;
+  }
+}
+
 .nota-campo {
   margin: -2px 0 8px;
   font-size: 11px;
@@ -217,27 +260,45 @@ ion-item {
 
 .grid-imagenes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
+// Tiles cuadrados y compactos (mismo lenguaje que las miniaturas de foto en
+// mascota-editar/perfil-mascota) en vez de 3 botones apilados a todo el
+// ancho — esos ocupaban demasiado espacio para algo secundario.
 .item-imagen {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
+  justify-content: center;
+  gap: 6px;
+  aspect-ratio: 1/1;
+  padding: 8px;
   background: var(--ion-background-color);
   border: 1px dashed var(--ashbis-surface-border);
   border-radius: 12px;
+  font: inherit;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+
+  &:disabled { opacity: 0.5; }
 
   img {
     max-width: 100%;
-    max-height: 80px;
+    max-height: 60%;
     object-fit: contain;
   }
 
-  ion-button { margin: 0; width: 100%; }
+  ion-icon {
+    font-size: 22px;
+  }
+
+  span {
+    font-size: 10px;
+    text-align: center;
+    line-height: 1.2;
+  }
 }
 
 .acciones-agregar-paciente {
@@ -247,4 +308,25 @@ ion-item {
   margin-bottom: 16px;
 
   ion-button { margin: 0; }
+}
+
+.lista-pacientes {
+  background: transparent;
+}
+
+.avatar-paciente {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ion-background-color);
+  margin-right: 12px;
+  flex-shrink: 0;
+
+  ion-icon {
+    font-size: 18px;
+    color: var(--ashbis-red, #8b0808);
+  }
 }

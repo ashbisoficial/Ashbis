@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, publicGuard } from './guards/auth.guard';
+import { adminGuard, authGuard, perfilCompletoGuard, publicGuard } from './guards/auth.guard';
 import { TabsComponent } from './tabs/tabs.component';
 
 export const routes: Routes = [
@@ -22,6 +22,16 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./auth/pages/forgot-password/forgot-password.component').then(
         (m) => m.ForgotPasswordComponent
+      ),
+  },
+  // Paso extra tras el primer login con Google (elegir tipo de cuenta) — ya
+  // está autenticado, por eso usa authGuard y no publicGuard.
+  {
+    path: 'completar-perfil',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./auth/pages/completar-perfil/completar-perfil.component').then(
+        (m) => m.CompletarPerfilComponent
       ),
   },
 
@@ -55,7 +65,7 @@ export const routes: Routes = [
   {
     path: 'tabs',
     component: TabsComponent,
-    canActivate: [authGuard],
+    canActivate: [authGuard, perfilCompletoGuard],
     children: [
       {
         path: 'home',
@@ -196,6 +206,14 @@ export const routes: Routes = [
         path: 'chat-ia',
         loadComponent: () =>
           import('./chat-ia/chat-ia.component').then((m) => m.ChatIaComponent),
+      },
+      // Panel admin (solo cuenta de Ashbis): aprobar/rechazar veterinarios.
+      {
+        path: 'admin-veterinarios',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./admin-veterinarios/admin-veterinarios.component')
+            .then(m => m.AdminVeterinariosComponent),
       },
       {
         path: '',

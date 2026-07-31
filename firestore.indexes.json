@@ -47,6 +47,14 @@
         { "fieldPath": "refugioUid", "order": "ASCENDING" },
         { "fieldPath": "estado", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "usuarios",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "rol", "order": "ASCENDING" },
+        { "fieldPath": "verificado", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

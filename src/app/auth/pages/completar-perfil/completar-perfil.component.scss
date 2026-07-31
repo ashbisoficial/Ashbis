@@ -1,0 +1,197 @@
+/* ====== FONDO GENERAL ====== */
+ion-content {
+  --background: var(--ion-background-color) !important;
+  color: var(--ion-text-color) !important;
+}
+
+ion-content::part(scroll),
+ion-content .inner-scroll,
+ion-content .scroll-y,
+ion-content .ion-content-scroll-host {
+  background: var(--ion-background-color) !important;
+}
+
+.list {
+  background: var(--ion-background-color) !important;
+}
+
+ion-card,
+ion-card::part(native) {
+  background: var(--ashbis-surface) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .5) !important;
+  border: 1px solid var(--ashbis-surface-border);
+  border-radius: 18px !important;
+}
+
+.subtitulo {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  line-height: 1.4;
+}
+
+/* ====== SELECTOR "TIPO DE CUENTA" (tabs, no ion-item) ====== */
+.tipo-cuenta-selector {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 20px;
+  width: 90%;
+  margin: 4px auto 22px;
+  border-bottom: 1px solid var(--ashbis-surface-border);
+}
+
+.tipo-cuenta-tab {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 6px 2px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tipo-cuenta-tab:hover {
+  color: var(--ion-text-color);
+}
+
+.tipo-cuenta-tab.activo {
+  color: #ff3b3b;
+}
+
+.tipo-cuenta-tab.activo::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: #ff3b3b;
+  border-radius: 2px;
+}
+
+.tipo-cuenta-tab:focus-visible {
+  outline: 2px solid #ff3b3b;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ====== INPUTS Y LABELS ====== */
+ion-item {
+  --background: transparent !important;
+  --color: var(--ion-text-color) !important;
+  --highlight-color-focused: #d30000 !important;
+  --highlight-color-valid: #d30000 !important;
+  --highlight-color-invalid: #d30000 !important;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+ion-item::part(native) {
+  border-bottom: 2px solid #d30000 !important;
+  width: 90%;
+  margin: 16px auto 6px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+ion-item.item-consentimiento::part(native) {
+  border-bottom: none !important;
+  width: 100%;
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+ion-item.titulo-picker::part(native) {
+  border-bottom: none !important;
+  width: 90%;
+  margin: 16px auto 6px;
+  padding-left: 8px;
+  padding-right: 8px;
+  flex-wrap: wrap;
+}
+
+.titulo-archivo {
+  width: 100%;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ion-text-color);
+
+  a {
+    color: #d30000;
+    text-decoration: underline;
+    margin-left: 8px;
+    cursor: pointer;
+  }
+}
+
+.titulo-ayuda {
+  width: 100%;
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--ion-color-medium);
+}
+
+ion-label {
+  background: var(--ion-background-color) !important;
+  color: var(--ion-text-color) !important;
+  font-size: 14px;
+}
+
+ion-input,
+ion-select {
+  background: transparent !important;
+  color: var(--ion-text-color) !important;
+}
+
+ion-input::part(input),
+ion-select::part(text) {
+  color: var(--ion-color-medium) !important;
+}
+
+.required {
+  color: #ff0000;
+}
+
+/* ====== MENSAJES DE ERROR ====== */
+ion-note[color="danger"] {
+  background: var(--ion-background-color) !important;
+  color: #ff5b5b !important;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  width: 90%;
+  margin: 0 auto 10px auto;
+  padding-left: 8px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.4;
+
+  &::before {
+    content: '⚠';
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+}
+
+/* ====== BOTONES ====== */
+ion-button[color="danger"] {
+  --background: #8b0808;
+  --background-hover: #b91c1c;
+  --border-radius: 24px !important;
+  height: 46px;
+  font-weight: bold;
+  width: 90%;
+  max-width: 360px;
+  margin: 20px auto 0 auto;
+}
+
+.legal-content {
+  --background: var(--ion-background-color);
+}

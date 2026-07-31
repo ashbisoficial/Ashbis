@@ -92,6 +92,25 @@
   color: var(--ion-color-medium);
 }
 
+/* Fases de dosificación de un medicamento (frecuencia + duración) */
+.tramo-medicamento {
+  padding: 0 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .08));
+}
+
+.tramo-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
 /* Encabezado de día en el listado de citas por mes. Antes usaba
    color="light" de Ionic (nunca tematizado en esta app), que en modo
    oscuro salía como una franja blanca fuera de la paleta de la marca. */

@@ -74,8 +74,8 @@ export namespace Models {
        *  cuenta, para frenar cuentas falsas/spam. */
       telefonoNegocio?: string;
       direccionNegocio?: string;
-      /** Solo si rol === 'veterinario' y es una clínica (no independiente ni
-       *  peluquería): nombre del veterinario responsable/director técnico,
+      /** Solo si rol === 'veterinario' y es una clínica (no independiente):
+       *  nombre del veterinario responsable/director técnico,
        *  distinto de quien crea la cuenta (que puede ser un/a administrativo/a). */
       nombreDoctor?: string;
       /** Número de registro/colegio profesional. No aplica a peluquerías. */
@@ -209,6 +209,9 @@ export namespace Models {
        *  otorgar accesos NUEVOS, pero no revoca los accesos ya otorgados —
        *  eso se hace aparte, quitando el documento en accesosVeterinario. */
       pinHistorial?: string;
+      /** Cuándo se generó/regeneró pinHistorial — la Cloud Function
+       *  validarPinVeterinario lo usa para vencer PINs de más de 90 días. */
+      pinGeneradoEn?: any;
     }
 
     // Subcoleción: vacunas

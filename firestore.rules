@@ -10,6 +10,14 @@ service cloud.firestore {
       return isAuth() && request.auth.uid == uid;
     }
 
+    // Cuenta admin de Ashbis (revisión manual de veterinarios): identificada
+    // por el email verificado en el token, nunca por algo que mande el
+    // cliente. Mismo criterio que ADMIN_EMAILS en functions/src/index.ts —
+    // si cambia una lista, hay que cambiar la otra.
+    function esAdminAshbis() {
+      return isAuth() && request.auth.token.email == 'ashbis.oficial@gmail.com';
+    }
+
     // El rol es autodeclarado (ver reglas de /usuarios más abajo): no es una
     // verificación de identidad real, solo evita que cuentas 'usuario'
     // normales usen las funciones de refugio.
@@ -92,10 +100,12 @@ service cloud.firestore {
     }
 
     match /usuarios/{uid} {
-      // El dueño lee su propio perfil, y también cualquier miembro del
-      // equipo de un refugio necesita leer el perfil del refugio (por
-      // ejemplo nombreRefugio) para mostrarlo en el panel del refugio.
-      allow read:   if isUser(uid) || esMiembroDelRefugio(uid);
+      // El dueño lee su propio perfil, cualquier miembro del equipo de un
+      // refugio necesita leer el perfil del refugio (por ejemplo
+      // nombreRefugio) para mostrarlo en el panel del refugio, y la cuenta
+      // admin de Ashbis necesita leer perfiles de veterinario para revisar
+      // verificaciones pendientes.
+      allow read:   if isUser(uid) || esMiembroDelRefugio(uid) || esAdminAshbis();
       allow create: if isUser(uid) && noLongStrings(request.resource.data)
                     && request.resource.data.get('rol', 'usuario')
                        in ['usuario', 'refugio', 'veterinario', 'servicio']

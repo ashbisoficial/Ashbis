@@ -7,7 +7,7 @@ import { RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules } 
 
 import { provideIonicAngular, IonicRouteStrategy } from '@ionic/angular/standalone';
 
-import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
+import { provideFirebaseApp, initializeApp, getApp } from '@angular/fire/app';
 import {
   provideAuth,
   getAuth
@@ -19,7 +19,7 @@ import {
 //   ReCaptchaV3Provider
 // } from '@angular/fire/app-check';
 
-import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+import { provideFirestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager } from '@angular/fire/firestore';
 import { provideStorage, getStorage } from '@angular/fire/storage';
 
 import { AppComponent } from './app/app.component';
@@ -69,7 +69,14 @@ bootstrapApplication(AppComponent, {
     //   })
     // ),
 
-    provideFirestore(() => getFirestore()),
+    // Caché local persistente (IndexedDB): sin esto, cada vez que se abre
+    // una pantalla la app espera la respuesta de red antes de mostrar algo
+    // — con la caché, lo último que se vio se pinta al toque mientras
+    // Firestore sincroniza en segundo plano. También ayuda a que la app no
+    // se quede "pegada" al volver de segundo plano con mala señal.
+    provideFirestore(() => initializeFirestore(getApp(), {
+      localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) }),
+    })),
 
     provideStorage(() => getStorage())
   ]

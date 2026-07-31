@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { Router, NavigationStart } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
+import { Firestore, disableNetwork, enableNetwork } from '@angular/fire/firestore';
 import { PreferenciasService } from './services/preferencias.service';
 
 @Component({
@@ -10,6 +12,7 @@ import { PreferenciasService } from './services/preferencias.service';
 })
 export class AppComponent {
   private readonly router = inject(Router);
+  private readonly firestore = inject(Firestore);
   // Solo se inyecta para que el constructor de PreferenciasService corra ya
   // (aplica tema/tamaño de texto guardados) apenas arranca la app.
   private readonly preferencias = inject(PreferenciasService);
@@ -27,6 +30,27 @@ export class AppComponent {
           activo.blur();
         }
       }
+    });
+
+    if (Capacitor.isNativePlatform()) {
+      this.reconectarFirestoreAlVolver();
+    }
+  }
+
+  /** Al volver del segundo plano, los listeners en tiempo real de Firestore
+   *  a veces quedan "colgados" (el canal WebChannel se corta con el celular
+   *  bloqueado/sin red y no siempre se reconecta solo) — la app se ve lenta
+   *  para cargar o pantallas que dependen de esos datos no arrancan.
+   *  Forzar un apagado/prendido de la red de Firestore reinicia esos
+   *  streams; es el mecanismo que recomienda Firebase para este caso. */
+  private reconectarFirestoreAlVolver(): void {
+    import('@capacitor/app').then(({ App }) => {
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (!isActive) return;
+        disableNetwork(this.firestore)
+          .then(() => enableNetwork(this.firestore))
+          .catch(() => { /* si falla, los listeners igual reintentan solos */ });
+      });
     });
   }
 }

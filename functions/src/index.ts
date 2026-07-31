@@ -72,6 +72,54 @@ function hitRateLimit(uid: string): boolean {
   return cur.count > RATE_LIMIT_MAX;
 }
 
+// ─── Bloqueo por mascota en validarPinVeterinario ─────────────────────────────
+// hitRateLimit (arriba) limita por CUENTA de veterinario que llama — no
+// evita que muchas cuentas distintas (reales o falsas, ver ADMIN_EMAILS más
+// abajo sobre la verificación) intenten adivinar el PIN de UNA mascota
+// puntual. Este segundo contador es por mascotaId y solo cuenta intentos
+// FALLIDOS: unas pocas cuentas probando la mascota equivocada por error no
+// deberían bloquear a nadie, pero muchos fallos seguidos sobre la misma
+// mascota sí.
+const pinFailuresPorMascota = new Map<string, RateState>();
+const PIN_FAIL_MAX = 8;
+const PIN_FAIL_WINDOW_MS = 15 * 60_000; // 15 minutos
+
+function pinBloqueadoPorMascota(mascotaId: string): boolean {
+  const s = pinFailuresPorMascota.get(mascotaId);
+  if (!s) return false;
+  if (Date.now() - s.startMs > PIN_FAIL_WINDOW_MS) {
+    pinFailuresPorMascota.delete(mascotaId);
+    return false;
+  }
+  return s.count >= PIN_FAIL_MAX;
+}
+
+function registrarFalloPin(mascotaId: string): void {
+  const now = Date.now();
+  const cur = pinFailuresPorMascota.get(mascotaId);
+  if (!cur || now - cur.startMs > PIN_FAIL_WINDOW_MS) {
+    pinFailuresPorMascota.set(mascotaId, { count: 1, startMs: now });
+  } else {
+    cur.count += 1;
+  }
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, state] of pinFailuresPorMascota) {
+    if (now - state.startMs > PIN_FAIL_WINDOW_MS * 2) {
+      pinFailuresPorMascota.delete(key);
+    }
+  }
+}, 5 * 60_000);
+
+// ─── Admin de Ashbis (revisión manual de veterinarios) ────────────────────────
+// Sin backoffice todavía: la única cuenta admin es la del equipo de Ashbis,
+// identificada por email verificado en el token (nunca por lo que mande el
+// cliente). Si más adelante hay más de una persona revisando, esto pasa a
+// ser una lista o un custom claim — por ahora un array alcanza.
+const ADMIN_EMAILS = ['ashbis.oficial@gmail.com'];
+
 // ─── Error HTTP con status propio, para usar dentro de transacciones ──────────
 class HttpError extends Error {
   constructor(public status: number, message: string) {
@@ -876,6 +924,20 @@ export const validarPinVeterinario = onRequest(
         res.status(403).json({ error: 'Solo una cuenta de veterinario puede pedir acceso al historial médico.' });
         return;
       }
+      // Antes CUALQUIER cuenta autodeclarada 'veterinario' (sin revisión de
+      // título) podía intentar PINs — ahora hace falta que el equipo de
+      // Ashbis la haya aprobado (ver revisarVerificacionVeterinario).
+      if (vetData['verificado'] !== true) {
+        res.status(403).json({
+          error: 'Tu cuenta todavía no fue verificada por el equipo de Ashbis. Te avisamos apenas esté aprobada.',
+        });
+        return;
+      }
+
+      if (pinBloqueadoPorMascota(mascotaId)) {
+        res.status(429).json({ error: 'Demasiados intentos fallidos con esta mascota. Probá de nuevo más tarde.' });
+        return;
+      }
 
       const mascotaRef = db.doc(`mascotas/${mascotaId}`);
       const mascotaSnap = await mascotaRef.get();
@@ -884,7 +946,19 @@ export const validarPinVeterinario = onRequest(
       // hay que darle a quien intenta adivinar una pista de cuál de las dos
       // cosas falló.
       if (!mascota || !mascota['pinHistorial'] || mascota['pinHistorial'] !== pin) {
+        registrarFalloPin(mascotaId);
         res.status(403).json({ error: 'Mascota no encontrada o PIN incorrecto.' });
+        return;
+      }
+
+      // PIN vencido: si tiene fecha de generación registrada (pines
+      // creados antes de este campo quedan sin fecha — no los rompemos
+      // retroactivamente) y pasaron más de 90 días, hay que regenerarlo.
+      // Reduce el riesgo de un PIN viejo dando vueltas en un chat/foto.
+      const pinGeneradoEn = mascota['pinGeneradoEn'] as admin.firestore.Timestamp | undefined;
+      const PIN_MAX_EDAD_MS = 90 * 24 * 60 * 60 * 1000;
+      if (pinGeneradoEn && Date.now() - pinGeneradoEn.toMillis() > PIN_MAX_EDAD_MS) {
+        res.status(403).json({ error: 'Este PIN venció. Pedile al dueño que genere uno nuevo desde el perfil de la mascota.' });
         return;
       }
 
@@ -896,6 +970,7 @@ export const validarPinVeterinario = onRequest(
         vetNombre,
         vetEmail: decoded.email || '',
         nombreClinica: vetData['nombreClinica'] || '',
+        vetVerificado: true,
         otorgadoEn: admin.firestore.FieldValue.serverTimestamp(),
         mascotaId,
         mascotaNombre: mascota['nombre'] || '',
@@ -1192,6 +1267,57 @@ export const onMensajeChatEquipoCreado = onDocumentCreated(
   }
 );
 
+// Un veterinario valida el PIN y obtiene acceso al historial médico de una
+// mascota (ver validarPinVeterinario) sin que el dueño se entere en el
+// momento — solo lo vería si entra a revisar el historial. Este trigger le
+// avisa apenas ocurre, para que sepa quién puede ver la ficha de su mascota.
+export const onAccesoVeterinarioCreado = onDocumentCreated(
+  { document: 'mascotas/{petId}/accesosVeterinario/{vetUid}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    const petId = event.params.petId;
+    try {
+      const mascotaSnap = await admin.firestore().doc(`mascotas/${petId}`).get();
+      const dueñoUid = mascotaSnap.data()?.['uidUsuario'];
+      if (!dueñoUid) return;
+      await enviarPushAUid(dueñoUid, {
+        title: 'Nuevo acceso al historial médico',
+        body: `${data['vetNombre'] || 'Un veterinario'} ahora puede ver el historial de ${data['mascotaNombre'] || 'tu mascota'}.`,
+        ruta: '/tabs/mascota-detalle/' + petId,
+      });
+    } catch (error) {
+      functions.logger.error('onAccesoVeterinarioCreado: error enviando push', error);
+    }
+  }
+);
+
+// Nota nueva de un veterinario en el historial médico (append-only, ver
+// agregarEntradaHistorial): el dueño no tiene forma de enterarse salvo que
+// entre a mirar. Solo se avisa cuando la escribe un veterinario — si la
+// escribe el propio dueño/equipo no hace falta notificarlo a sí mismo.
+export const onHistorialMedicoCreado = onDocumentCreated(
+  { document: 'mascotas/{petId}/historialMedico/{entradaId}', region: 'us-central1' },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data || data['autorRol'] !== 'veterinario') return;
+    const petId = event.params.petId;
+    try {
+      const mascotaSnap = await admin.firestore().doc(`mascotas/${petId}`).get();
+      const mascota = mascotaSnap.data();
+      const dueñoUid = mascota?.['uidUsuario'];
+      if (!dueñoUid || dueñoUid === data['autorUid']) return;
+      await enviarPushAUid(dueñoUid, {
+        title: 'Nueva nota en el historial médico',
+        body: `${data['autorNombre'] || 'Un veterinario'} agregó una nota al historial de ${mascota?.['nombre'] || 'tu mascota'}.`,
+        ruta: '/tabs/mascota-detalle/' + petId,
+      });
+    } catch (error) {
+      functions.logger.error('onHistorialMedicoCreado: error enviando push', error);
+    }
+  }
+);
+
 // ─── Sincronizar info pública de mascota en sus publicaciones de adopción ──────
 // mascotas/{id} NO es legible por cualquiera (tiene datos privados: contacto
 // de emergencia, PIN del historial, etc.), así que la publicación de
@@ -1241,19 +1367,138 @@ export const onMascotaActualizada = onDocumentWritten(
 // resto del perfil (email, teléfono, dirección). Lo escribe únicamente el
 // Admin SDK acá; firestore.rules le niega la escritura al cliente.
 
+/** Avisa por Discord que hay un veterinario esperando revisión de título —
+ *  antes nadie del equipo se enteraba salvo entrando a mano a la consola de
+ *  Firebase a mirar si había algo pendiente. */
+async function avisarDiscordVeterinarioPendiente(
+  uid: string,
+  data: FirebaseFirestore.DocumentData
+): Promise<void> {
+  const webhook = DISCORD_WEBHOOK.value();
+  if (!webhook) {
+    functions.logger.error('Discord webhook no configurado (secret DISCORD_WEBHOOK)');
+    return;
+  }
+  const nombre = `${data['nombre'] ?? ''} ${data['apellido'] ?? ''}`.trim() || 'Sin nombre';
+  const fields: { name: string; value: string; inline?: boolean }[] = [
+    { name: '👤 Nombre', value: nombre, inline: true },
+    { name: '📧 Email', value: data['email'] || '—', inline: true },
+  ];
+  if (data['nombreClinica']) fields.push({ name: '🏥 Clínica/consulta', value: data['nombreClinica'], inline: true });
+  if (data['numeroRegistroProfesional']) fields.push({ name: '🪪 Registro profesional', value: data['numeroRegistroProfesional'], inline: true });
+  if (data['tituloUrl']) fields.push({ name: '📎 Título', value: data['tituloUrl'], inline: false });
+
+  const discordRes = await fetch(webhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: 'Ashbis Web',
+      avatar_url: 'https://ashbis-web.web.app/img/logo4.png',
+      allowed_mentions: { parse: [] },
+      embeds: [{
+        title: '🩺 Veterinario esperando verificación',
+        description: `UID: \`${uid}\``,
+        color: 0xC10000,
+        fields,
+        footer: { text: 'Ashbis · revisá y aprobá desde el panel admin' },
+        timestamp: new Date().toISOString(),
+      }],
+    }),
+  });
+  if (!discordRes.ok) {
+    functions.logger.error('avisarDiscordVeterinarioPendiente: Discord respondió con error', await discordRes.text());
+  }
+}
+
 export const onUsuarioActualizado = onDocumentWritten(
-  { document: 'usuarios/{uid}', region: 'us-central1' },
+  { document: 'usuarios/{uid}', region: 'us-central1', secrets: [DISCORD_WEBHOOK] },
   async (event) => {
     const after = event.data?.after?.data();
-    if (!after || after['rol'] !== 'refugio') return;
+    if (!after) return;
+    const before = event.data?.before?.data();
     const uid = event.params.uid;
+
+    if (after['rol'] === 'refugio') {
+      try {
+        await admin.firestore().doc(`refugiosPublico/${uid}`).set({
+          nombreRefugio: (after['nombreRefugio'] || 'Refugio').toString().trim() || 'Refugio',
+          verificado: after['verificado'] === true,
+        }, { merge: true });
+      } catch (error) {
+        functions.logger.error('onUsuarioActualizado: error sincronizando refugiosPublico', error);
+      }
+    }
+
+    // Solo avisa cuando el título CAMBIA (se sube por primera vez, o se
+    // vuelve a subir uno nuevo) y todavía no está verificado — no en cada
+    // guardado del perfil.
+    if (
+      after['rol'] === 'veterinario' &&
+      after['verificado'] !== true &&
+      after['tituloUrl'] &&
+      after['tituloUrl'] !== before?.['tituloUrl']
+    ) {
+      try {
+        await avisarDiscordVeterinarioPendiente(uid, after);
+      } catch (error) {
+        functions.logger.error('onUsuarioActualizado: error avisando por Discord', error);
+      }
+    }
+  }
+);
+
+// ─── Cloud Function: revisarVerificacionVeterinario ───────────────────────────
+// Aprueba o rechaza el título de un veterinario. Solo la cuenta admin de
+// Ashbis puede llamarla (ver ADMIN_EMAILS) — nunca el cliente directo: las
+// reglas de Firestore bloquean escribir "verificado" en cualquier sentido,
+// a propósito (ver comentario en firestore.rules).
+export const revisarVerificacionVeterinario = onRequest(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB', maxInstances: 10 },
+  async (req, res) => {
+    const origin = req.headers.origin;
+    const headers = corsHeaders(origin);
+    Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const authHeader = req.headers.authorization || '';
+    const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/);
+    if (!tokenMatch) { res.status(401).json({ error: 'Token de autenticación requerido.' }); return; }
+
+    let decoded: admin.auth.DecodedIdToken;
     try {
-      await admin.firestore().doc(`refugiosPublico/${uid}`).set({
-        nombreRefugio: (after['nombreRefugio'] || 'Refugio').toString().trim() || 'Refugio',
-        verificado: after['verificado'] === true,
-      }, { merge: true });
+      decoded = await admin.auth().verifyIdToken(tokenMatch[1]);
+    } catch {
+      res.status(401).json({ error: 'Token inválido o expirado.' });
+      return;
+    }
+
+    if (!ADMIN_EMAILS.includes(decoded.email || '')) {
+      res.status(403).json({ error: 'No tenés permiso para hacer esto.' });
+      return;
+    }
+
+    const uid = sanitizeInput(req.body?.uid, 128);
+    const aprobar = req.body?.aprobar === true;
+    if (!uid) { res.status(400).json({ error: 'Falta el uid del veterinario.' }); return; }
+
+    try {
+      const ref = admin.firestore().doc(`usuarios/${uid}`);
+      const snap = await ref.get();
+      if (!snap.exists || snap.data()?.['rol'] !== 'veterinario') {
+        res.status(404).json({ error: 'No se encontró esa cuenta de veterinario.' });
+        return;
+      }
+      await ref.update({
+        verificado: aprobar,
+        revisadoEn: admin.firestore.FieldValue.serverTimestamp(),
+        revisadoPor: decoded.email || decoded.uid,
+      });
+      res.status(200).json({ success: true });
     } catch (error) {
-      functions.logger.error('onUsuarioActualizado: error sincronizando refugiosPublico', error);
+      functions.logger.error('revisarVerificacionVeterinario error', error);
+      res.status(500).json({ error: 'Error interno del servidor.' });
     }
   }
 );

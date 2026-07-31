@@ -14,7 +14,20 @@
     <p>Cargando datos...</p>
   </div>
 
-  <div *ngIf="!cargando && mascota">
+  <div *ngIf="!cargando && mascota && rolListo">
+
+    <!-- Identidad de la mascota: siempre visible para el veterinario, para
+         que pueda confirmar que está en el paciente correcto antes de
+         escribir nada — antes solo veía el nombre en el título. -->
+    <div class="tarjeta-identidad" *ngIf="soyVeterinario">
+      <ion-avatar>
+        <img [src]="mascota.fotoUrl || 'assets/img/logo_ashbis.jpeg'" alt="foto" />
+      </ion-avatar>
+      <div class="identidad-datos">
+        <h2>{{ mascota.nombre }}</h2>
+        <p>{{ mascota.especie }} • {{ mascota.raza || '—' }} • {{ mascota.sexo || '—' }}{{ mascota.edad != null ? ' • ' + mascota.edad + ' años' : '' }}</p>
+      </div>
+    </div>
 
     <!-- Hogar temporal activo: visible para cualquiera con acceso a la
          mascota, pero solo dueño/equipo puede revocarlo. -->
@@ -43,6 +56,11 @@
       <ion-segment-button value="veterinarias" layout="icon-top" *ngIf="!soyVeterinario">
         <ion-icon name="paw-outline"></ion-icon>
         <ion-label>Veterinarias</ion-label>
+      </ion-segment-button>
+
+      <ion-segment-button value="resumen" layout="icon-top" *ngIf="soyVeterinario">
+        <ion-icon name="paw-outline"></ion-icon>
+        <ion-label>Resumen</ion-label>
       </ion-segment-button>
 
       <ion-segment-button value="historial" layout="icon-top">
@@ -78,6 +96,104 @@
 
       </ion-list>
 
+      <!-- RESUMEN (solo veterinario): datos clínicos de solo lectura que ya
+           cargó el dueño desde "Editar mascota" — antes de esto el
+           veterinario no veía nada más que las notas de texto libre. -->
+      <div *ngSwitchCase="'resumen'">
+
+        <ion-card *ngIf="mascota.alergias?.length || mascota.enfermedadesCronicas?.length || mascota.medicamentosPermanentes?.length || mascota.esAgresivo || mascota.senasParticulares"
+          class="tarjeta-alertas">
+          <ion-card-content>
+            <p class="alerta-fila" *ngIf="mascota.esAgresivo">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              <span><strong>Puede ser agresivo/a.</strong></span>
+            </p>
+            <p class="alerta-fila" *ngIf="mascota.alergias?.length">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              <span><strong>Alergias:</strong> {{ mascota.alergias?.join(', ') }}</span>
+            </p>
+            <p class="alerta-fila" *ngIf="mascota.enfermedadesCronicas?.length">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              <span><strong>Enfermedades crónicas:</strong> {{ mascota.enfermedadesCronicas?.join(', ') }}</span>
+            </p>
+            <p class="alerta-fila" *ngIf="mascota.medicamentosPermanentes?.length">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              <span><strong>Medicamentos permanentes:</strong> {{ mascota.medicamentosPermanentes?.join(', ') }}</span>
+            </p>
+            <p class="alerta-fila" *ngIf="mascota.senasParticulares">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              <span><strong>Señas particulares:</strong> {{ mascota.senasParticulares }}</span>
+            </p>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="tarjeta-datos-basicos">
+          <ion-card-content>
+            <div class="dato-basico" *ngIf="mascota.peso != null">
+              <span class="etiqueta">Peso</span>
+              <span class="valor">{{ mascota.peso }} kg</span>
+            </div>
+            <div class="dato-basico" *ngIf="mascota.color">
+              <span class="etiqueta">Color</span>
+              <span class="valor">{{ mascota.color }}</span>
+            </div>
+            <div class="dato-basico" *ngIf="mascota.castrado">
+              <span class="etiqueta">Castrado/a</span>
+              <span class="valor">{{ mascota.castrado }}</span>
+            </div>
+            <div class="dato-basico" *ngIf="mascota.numeroChip">
+              <span class="etiqueta">N° de chip</span>
+              <span class="valor">{{ mascota.numeroChip }}</span>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <h3 class="subtitulo-resumen">Vacunas</h3>
+        <ion-list *ngIf="vacunas.length; else sinVacunas">
+          <ion-item *ngFor="let v of vacunas" lines="full">
+            <ion-label class="ion-text-wrap">
+              <h2>{{ v.tipo }}</h2>
+              <p>Aplicada: {{ v.fechaAplicacion | date:'dd-MM-yyyy' }}</p>
+              <p *ngIf="v.proximaFecha">Próxima dosis: {{ v.proximaFecha | date:'dd-MM-yyyy' }}</p>
+              <p *ngIf="v.notas" class="nota-texto">{{ v.notas }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <ng-template #sinVacunas>
+          <ion-card><ion-card-content class="ion-text-center">Sin vacunas registradas.</ion-card-content></ion-card>
+        </ng-template>
+
+        <h3 class="subtitulo-resumen">Medicamentos</h3>
+        <ion-list *ngIf="medicamentos.length; else sinMedicamentos">
+          <ion-item *ngFor="let m of medicamentos" lines="full">
+            <ion-label class="ion-text-wrap">
+              <h2>{{ m.nombre }} <ion-note color="medium">• {{ m.mg }} mg</ion-note></h2>
+              <p>Inicio: {{ m.fechaInicio | date:'dd-MM-yyyy' }}<ng-container *ngIf="m.fechaFin"> • Fin: {{ m.fechaFin | date:'dd-MM-yyyy' }}</ng-container></p>
+              <p *ngIf="m.notas" class="nota-texto">{{ m.notas }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <ng-template #sinMedicamentos>
+          <ion-card><ion-card-content class="ion-text-center">Sin medicamentos registrados.</ion-card-content></ion-card>
+        </ng-template>
+
+        <h3 class="subtitulo-resumen">Exámenes</h3>
+        <ion-list *ngIf="examenes.length; else sinExamenes">
+          <ion-item *ngFor="let e of examenes" lines="full">
+            <ion-label class="ion-text-wrap">
+              <h2>{{ e.tipo }}</h2>
+              <p *ngIf="e.fechaRealizado">Realizado: {{ e.fechaRealizado | date:'dd-MM-yyyy' }}</p>
+              <p *ngIf="!e.fechaRealizado && e.fechaProgramada">Programado: {{ e.fechaProgramada | date:'dd-MM-yyyy' }}</p>
+              <p *ngIf="e.notas" class="nota-texto">{{ e.notas }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <ng-template #sinExamenes>
+          <ion-card><ion-card-content class="ion-text-center">Sin exámenes registrados.</ion-card-content></ion-card>
+        </ng-template>
+
+      </div>
+
       <!-- HISTORIAL MÉDICO (notas de consulta, append-only) -->
       <div *ngSwitchCase="'historial'">
 
@@ -87,7 +203,7 @@
             <ion-card-title>Compartir con veterinario</ion-card-title>
           </ion-card-header>
           <ion-card-content>
-            <p>Dale a tu veterinario el ID de la mascota y el PIN para que pueda ver y agregar notas al historial médico.</p>
+            <p>Dale a tu veterinario el ID de la mascota y el PIN para que pueda ver el historial médico. Solo funciona con veterinarios ya verificados por Ashbis, y vence a los 90 días.</p>
 
             <div class="dato-copiable" (click)="copiarId()">
               <span class="etiqueta">ID de la mascota</span>

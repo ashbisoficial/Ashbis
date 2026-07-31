@@ -184,8 +184,15 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private async finalizarLoginGoogle(cred: UserCredential): Promise<void> {
-    await this.sincronizarPerfilGoogle(cred.user);
-    this.router.navigate(['tabs/home'], { replaceUrl: true });
+    const esNuevo = await this.sincronizarPerfilGoogle(cred.user);
+    // Quien entra por primera vez con Google todavía no eligió tipo de
+    // cuenta (Dueño/Refugio/Veterinario/Servicio) — antes quedaba fijo como
+    // 'usuario' para siempre, sin poder ser veterinario ni refugio nunca.
+    if (esNuevo) {
+      this.router.navigate(['/completar-perfil'], { replaceUrl: true });
+    } else {
+      this.router.navigate(['tabs/home'], { replaceUrl: true });
+    }
   }
 
   private manejarErrorGoogle(error: any, origen: 'GIS' | 'NATIVO'): void {
@@ -205,47 +212,31 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
-  // Crea o actualiza el documento de perfil en Firestore tras un login con Google.
-  private async sincronizarPerfilGoogle(user: User): Promise<void> {
+  // Actualiza el perfil en Firestore tras un login con Google. Si es la
+  // primera vez (todavía no existe usuarios/{uid}), NO lo crea acá — eso
+  // ahora pasa en completar-perfil.component, donde recién se elige el tipo
+  // de cuenta. Devuelve true si es un usuario nuevo (para que el caller lo
+  // mande a completar su perfil en vez de a home).
+  private async sincronizarPerfilGoogle(user: User): Promise<boolean> {
+    const userExistente = await this.firestoreService.getDocument(`usuarios/${user.uid}`);
+    if (!userExistente) return true;
+
     const fullName = user.displayName || '';
     const parts = fullName.split(' ');
     const nombre = this.security.sanitizeText(parts[0] || '');
     const apellido = this.security.sanitizeText(parts.slice(1).join(' ') || '');
 
-    const datosUser = {
-      uid: user.uid,
-      nombre,
-      apellido,
-      email: this.security.sanitizeText(user.email || ''),
-      telefono: this.security.sanitizeText(user.phoneNumber || ''),
-      foto: this.security.sanitizeText(user.photoURL || ''),
-      fotoOrigen: 'google' as const,
-      provider: 'google',
-      fechaRegistro: new Date().toISOString(),
-      // El registro con Google no tiene paso para elegir refugio/veterinario;
-      // esos roles solo se autodeclaran en el formulario de registro con
-      // email/contraseña. Quien entra por primera vez con Google queda
-      // como 'usuario' (las reglas de Firestore bloquean cambiarlo después).
-      rol: 'usuario' as const
-    };
-
-    const userExistente = await this.firestoreService.getDocument(`usuarios/${user.uid}`);
-    if (!userExistente) {
-      await this.firestoreService.createDocument('usuarios', datosUser, user.uid);
-    } else {
-      const actualizacion: any = { nombre, apellido };
-      // Si el usuario ya eligió una foto propia, no la pisamos con la de Google en cada login.
-      if ((userExistente as any)?.fotoOrigen !== 'custom') {
-        actualizacion.foto = this.security.sanitizeText(user.photoURL || '');
-        actualizacion.fotoOrigen = 'google';
-      }
-      await this.firestoreService.updateDocument(`usuarios/${user.uid}`, actualizacion);
+    const actualizacion: any = { nombre, apellido };
+    // Si el usuario ya eligió una foto propia, no la pisamos con la de Google en cada login.
+    if ((userExistente as any)?.fotoOrigen !== 'custom') {
+      actualizacion.foto = this.security.sanitizeText(user.photoURL || '');
+      actualizacion.fotoOrigen = 'google';
     }
+    await this.firestoreService.updateDocument(`usuarios/${user.uid}`, actualizacion);
 
-    // El teléfono de Google Auth casi siempre viene vacío; si el usuario ya
-    // tenía uno guardado en su perfil, lo conservamos en la copia pública.
-    const telefonoActual = userExistente ? ((userExistente as any)?.telefono ?? '') : datosUser.telefono;
+    const telefonoActual = (userExistente as any)?.telefono ?? '';
     await this.firestoreService.setPublicContact(user.uid, { nombre, apellido, telefono: telefonoActual });
+    return false;
   }
 
   ngOnDestroy(): void {

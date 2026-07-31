@@ -45,7 +45,7 @@
                 "output": ""
               }
             ],
-            "styles": ["src/global.scss", "src/theme/variables.scss", "node_modules/leaflet/dist/leaflet.css"],
+            "styles": ["src/global.scss", "src/theme/variables.scss"],
             "scripts": [],
             "allowedCommonJsDependencies": [
               "html2canvas",
@@ -55,7 +55,6 @@
               "qrcode",
               "raf",
               "rgbcolor",
-              "leaflet",
               "jsqr"
             ],
             "browser": "src/main.ts"
