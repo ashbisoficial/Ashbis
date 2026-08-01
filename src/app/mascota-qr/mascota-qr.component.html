@@ -44,9 +44,15 @@
 
       <!-- Selector tipo QR -->
       <ion-segment [(ngModel)]="tipoQR" class=" qr-switch ion-margin-vertical">
-        <ion-segment-button value="medico">🏥 Ficha Médica</ion-segment-button>
-        <ion-segment-button value="emergencia">🚨 Emergencia</ion-segment-button>
-        <ion-segment-button value="veterinario">🩺 Veterinario</ion-segment-button>
+        <ion-segment-button value="medico">
+          <ion-label>🏥 Ficha Médica</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="emergencia">
+          <ion-label>🚨 Emergencia</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="veterinario">
+          <ion-label>🩺 Veterinario</ion-label>
+        </ion-segment-button>
       </ion-segment>
 
       <!-- Tarjeta QR Médico -->

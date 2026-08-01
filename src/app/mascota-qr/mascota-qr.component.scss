@@ -170,7 +170,10 @@ ion-popover .popover-content {
   background: var(--ion-background-color) !important;
 }
 
-/* SWITCH QR */
+/* SWITCH QR
+   Las 3 etiquetas (con emoji) no entraban en una sola línea en pantallas
+   angostas — se cortaban y se superponían entre sí. Se bajan de tamaño y
+   se les permite pasar a 2 líneas dentro de un botón más alto. */
 .qr-switch {
   ion-segment-button {
     --background: var(--ashbis-surface);
@@ -179,5 +182,13 @@ ion-popover .popover-content {
     --indicator-color: #8b0808 !important;
     font-weight: 600;
     border-radius: 12px;
+    min-height: 52px;
+
+    ion-label {
+      font-size: 11px;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.25;
+    }
   }
 }

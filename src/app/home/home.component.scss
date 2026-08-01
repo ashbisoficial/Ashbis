@@ -286,6 +286,7 @@ swiper-slide {
 
 .button-row {
   display: flex !important;
+  flex-wrap: wrap !important;
   justify-content: center !important;
   align-items: center !important;
   gap: 12px !important;
@@ -305,14 +306,25 @@ swiper-slide {
      45px en vez de los 12px definidos arriba. */
   margin: 0 !important;
   flex: 0 0 auto !important;
-  width: 140px !important;
-  max-width: 140px !important;
+  /* .btn-ashbis (global.scss) también fija width: 90% — sin esta línea el
+     botón Veterinaria hereda ese 90% del ancho de la fila entera (~320px)
+     en vez de su tamaño real, empujando a Tienda a una segunda línea. */
+  width: auto !important;
+  /* min-width (no width fijo): "Veterinaria" + ícono no entraban en 140px
+     con un tamaño de letra más grande (zoom del navegador, accesibilidad
+     del dispositivo, o el propio ajuste de Configuración → Apariencia →
+     Tamaño de letra de Ashbis) — el texto quedaba cortado por el borde
+     del botón. Con min-width el botón crece si hace falta en vez de recortar. */
+  min-width: 140px !important;
   height: 45px;
+  --padding-start: 16px;
+  --padding-end: 16px;
   font-weight: 600;
   border-radius: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
+  white-space: nowrap;
 }
 
 .btn-outline {
