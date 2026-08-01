@@ -95,7 +95,8 @@ service cloud.firestore {
           (!('tipo'      in data) || data.tipo.size()      <= 200) &&
           (!('direccion' in data) || data.direccion.size() <= 500) &&
           (!('descripcion' in data) || data.descripcion.size() <= 1000) &&
-          (!('texto' in data) || data.texto.size() <= 2000)
+          (!('texto' in data) || data.texto.size() <= 2000) &&
+          (!('diagnostico' in data) || data.diagnostico.size() <= 2000)
         );
     }
 
@@ -253,24 +254,31 @@ service cloud.firestore {
 
       // Lectura extendida a puedeVerHistorialMedico (incluye veterinarios
       // con acceso por PIN): son parte del historial médico de la mascota.
-      // Crear/editar/borrar sigue reservado a puedeAccederMascota — un
-      // veterinario nunca modifica estos registros estructurados, solo
-      // agrega notas nuevas en historialMedico.
+      // Crear/editar/borrar sigue reservado a puedeAccederMascota (el
+      // dueño/equipo del refugio).
       match /vacunas/{vacunaId} {
         allow read: if puedeVerHistorialMedico(petId);
         allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
+      // Medicamentos y exámenes: a diferencia de vacunas/citas/documentos,
+      // acá SÍ puede crear un veterinario con acceso otorgado por PIN — es
+      // lo que receta/solicita en la consulta (ver formulario de "Nueva
+      // consulta" en mascota-detalle). Igual que el resto, no puede editar
+      // ni borrar después de creado: si hay que corregir algo, se agrega
+      // una nota nueva en historialMedico, mismo criterio append-only.
       match /medicamentos/{medId} {
         allow read: if puedeVerHistorialMedico(petId);
-        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId))
+                      && noLongStrings(request.resource.data);
         allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       match /examenes/{examenId} {
         allow read: if puedeVerHistorialMedico(petId);
-        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId))
+                      && noLongStrings(request.resource.data);
         allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }

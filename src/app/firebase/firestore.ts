@@ -536,7 +536,18 @@ export class FirestoreService {
     return collectionData(q, { idField: 'id' }) as Observable<Models.HistorialMedico.Entrada[]>;
   }
 
-  async agregarEntradaHistorial(petId: string, texto: string): Promise<void> {
+  async agregarEntradaHistorial(
+    petId: string,
+    texto: string,
+    extra?: {
+      diagnostico?: string;
+      membrete?: Models.HistorialMedico.MembreteVeterinario;
+      medicamentosIds?: string[];
+      examenesIds?: string[];
+      medicamentosResumen?: string[];
+      examenesResumen?: string[];
+    }
+  ): Promise<void> {
     const uid = this.assertAuthenticated();
     const perfil = await this.getDocument(`usuarios/${uid}`);
     const autorNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || perfil?.email || 'Alguien';
@@ -545,6 +556,12 @@ export class FirestoreService {
       autorUid: uid,
       autorNombre,
       autorRol: (perfil?.rol as Models.Auth.Rol) ?? 'usuario',
+      ...(extra?.diagnostico ? { diagnostico: extra.diagnostico } : {}),
+      ...(extra?.membrete ? { membrete: extra.membrete } : {}),
+      ...(extra?.medicamentosIds?.length ? { medicamentosIds: extra.medicamentosIds } : {}),
+      ...(extra?.examenesIds?.length ? { examenesIds: extra.examenesIds } : {}),
+      ...(extra?.medicamentosResumen?.length ? { medicamentosResumen: extra.medicamentosResumen } : {}),
+      ...(extra?.examenesResumen?.length ? { examenesResumen: extra.examenesResumen } : {}),
     };
     await addDoc(
       collection(this.firestore, `mascotas/${petId}/${Models.HistorialMedico.PathEntradas}`),

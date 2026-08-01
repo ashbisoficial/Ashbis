@@ -314,6 +314,24 @@ export namespace Models {
     export const PathEntradas = 'historialMedico'; // subcolección de mascotas/{id}
 
     /**
+     * Snapshot de los datos profesionales del veterinario al momento de
+     * escribir la consulta (membrete tipo receta/orden médica). Se copia acá
+     * en vez de leerse en vivo desde usuarios/{uid} porque si el veterinario
+     * después cambia de clínica, teléfono o sube una firma nueva, esta nota
+     * ya escrita debe seguir mostrando los datos que eran ciertos en el
+     * momento de la consulta.
+     */
+    export interface MembreteVeterinario {
+      nombreDoctor?: string;
+      nombreClinica?: string;
+      telefonoNegocio?: string;
+      direccionNegocio?: string;
+      logoUrl?: string;
+      firmaUrl?: string;
+      timbreUrl?: string;
+    }
+
+    /**
      * Nota de consulta agregada por el dueño/equipo o por un veterinario con
      * acceso otorgado por PIN (ver Mascotas.AccesoVeterinario). Append-only:
      * no se puede editar ni borrar, mismo criterio que ChatEquipo — así ni
@@ -323,6 +341,24 @@ export namespace Models {
     export interface Entrada {
       id?: string;
       texto: string;
+      /** Diagnóstico de esta consulta, separado de "texto" (notas/
+       *  observaciones libres) para que se pueda destacar aparte al
+       *  mostrar la nota. Solo lo completa un veterinario. */
+      diagnostico?: string;
+      /** IDs de medicamentos/examenes creados junto con esta consulta (ver
+       *  formulario "Nueva consulta"), para poder listarlos agrupados bajo
+       *  la nota en vez de solo en las pestañas de Medicamentos/Exámenes. */
+      medicamentosIds?: string[];
+      examenesIds?: string[];
+      /** Copia de solo-texto de esos mismos medicamentos/exámenes (ej.
+       *  "Amoxicilina 250mg — cada 12h por 7 días"), para poder mostrarlos
+       *  en la nota sin depender de leer sus subcolecciones — el dueño ve el
+       *  historial sin que se le carguen medicamentos/examenes de más (esas
+       *  colecciones hoy solo se cargan para el veterinario, ver
+       *  cargarDatosClinicosSiVet en mascota-detalle.component.ts). */
+      medicamentosResumen?: string[];
+      examenesResumen?: string[];
+      membrete?: MembreteVeterinario;
       autorUid: string;
       autorNombre: string;
       autorRol: Auth.Rol;

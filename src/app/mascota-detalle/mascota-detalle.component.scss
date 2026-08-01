@@ -311,6 +311,273 @@ ion-card-content {
 }
 
 /* ============================================
+   NOTAS DE CONSULTA (lista) — reemplaza el antiguo ion-item de una sola
+   línea: una nota profesional (con diagnóstico/membrete) necesita más
+   estructura que "autor + texto".
+============================================ */
+.lista-consultas {
+  margin-bottom: 4px;
+}
+
+.nota-consulta {
+  background: var(--ashbis-surface);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+
+  &.nota-profesional {
+    border-left: 3px solid var(--ashbis-red);
+  }
+}
+
+.nota-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ion-text-color);
+  }
+}
+
+.nota-clinica {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.nota-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.nota-diagnostico {
+  margin: 6px 0 4px;
+  font-size: 14px;
+  color: var(--ion-text-color);
+
+  strong {
+    color: var(--ashbis-red);
+  }
+}
+
+.nota-recetas {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .08));
+}
+
+.recetas-titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+
+  ion-icon {
+    font-size: 14px;
+  }
+}
+
+.recetas-item {
+  margin: 0 0 2px 20px;
+  font-size: 13px;
+  color: var(--ion-text-color);
+}
+
+.nota-contacto {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.nota-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.nota-firma {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nota-firma-img {
+  height: 30px;
+  max-width: 90px;
+  object-fit: contain;
+}
+
+.nota-timbre-img {
+  height: 44px;
+  width: 44px;
+  object-fit: contain;
+  opacity: .85;
+}
+
+/* ============================================
+   NUEVA CONSULTA (formulario, solo veterinario)
+============================================ */
+.btn-nueva-consulta {
+  --border-radius: 24px;
+  font-weight: 700;
+  margin: 4px 0 20px;
+}
+
+.tarjeta-consulta {
+  margin: 4px 0 20px;
+  border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .08));
+}
+
+.membrete-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ashbis-surface-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.membrete-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.membrete-datos {
+  min-width: 0;
+
+  p {
+    margin: 0;
+  }
+
+  .membrete-doctor {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ion-text-color);
+  }
+
+  .membrete-clinica {
+    font-size: 12px;
+    color: var(--ion-color-medium);
+  }
+
+  .membrete-contacto {
+    font-size: 11px;
+    color: var(--ion-color-medium);
+    margin-top: 2px;
+  }
+}
+
+.membrete-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: var(--ashbis-warning-surface);
+  color: var(--ashbis-warning-accent);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  margin: 0 0 14px;
+
+  ion-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+.input-consulta {
+  --background: transparent;
+  --padding-start: 0;
+  box-shadow: none;
+  margin-bottom: 4px;
+}
+
+.seccion-consulta {
+  margin-top: 18px;
+}
+
+.seccion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.item-agregado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--ashbis-surface-2);
+  border-radius: 10px;
+  padding: 8px 6px 8px 12px;
+  margin-bottom: 8px;
+
+  span {
+    font-size: 13px;
+    color: var(--ion-text-color);
+  }
+
+  ion-button {
+    margin: 0;
+    flex-shrink: 0;
+  }
+}
+
+.mini-form {
+  background: var(--ashbis-surface-2);
+  border-radius: 12px;
+  padding: 10px 10px 14px;
+  margin-bottom: 10px;
+
+  ion-item {
+    --background: transparent;
+    --padding-start: 4px;
+    box-shadow: none;
+    margin-bottom: 0;
+  }
+}
+
+.mini-form-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 0 4px;
+}
+
+.consulta-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* ============================================
    RESPONSIVE
 ============================================ */
 @media (max-width: 360px) {
