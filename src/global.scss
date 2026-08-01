@@ -68,9 +68,9 @@
      alterna la clase .ashbis-light en <html>, que redefine estas más abajo
      — así los componentes usan var(--ashbis-*) en vez de hex fijo y
      responden solos al cambio de tema. */
-  --ashbis-surface: #111111;
+  --ashbis-surface: #202020;
   --ashbis-surface-border: rgba(255, 255, 255, .06);
-  --ashbis-surface-2: #1c1c1c;
+  --ashbis-surface-2: #2a2a2a;
   --ashbis-danger-surface: #150707;
   --ashbis-warning-surface: #2e2600;
   --ashbis-warning-accent: #f5d76e;
@@ -91,15 +91,19 @@ html {
 }
 
 /* dark.class.css trae su propio --ion-background-color (#121212 en modo
-   md), pero la identidad de marca de Ashbis siempre fue negro puro — se
+   md), pero la identidad de marca de Ashbis usa su propio tono — se
    sobreescribe acá para que las pantallas que ya migraron a
-   var(--ion-background-color)/var(--ion-text-color) se vean exactamente
-   igual que antes en oscuro. Misma especificidad que las reglas de
-   dark.class.css (dos clases) para ganarles por orden de aparición. */
+   var(--ion-background-color)/var(--ion-text-color) usen ese tono en vez
+   del de Ionic. Misma especificidad que las reglas de dark.class.css (dos
+   clases) para ganarles por orden de aparición.
+   Antes era negro puro (#070707); se aclaró un poco a pedido — un gris muy
+   oscuro se siente menos "agujero negro" que negro puro sin dejar de ser
+   un tema oscuro. --ashbis-surface/-2 subieron la misma cantidad para no
+   perder el escalón de elevación entre fondo → tarjeta → tarjeta resaltada. */
 .ion-palette-dark.md,
 .ion-palette-dark.ios {
-  --ion-background-color: #070707;
-  --ion-background-color-rgb: 7, 7, 7;
+  --ion-background-color: #161616;
+  --ion-background-color-rgb: 22, 22, 22;
   --ion-text-color: #ffffff;
   --ion-text-color-rgb: 255, 255, 255;
 }
@@ -262,7 +266,7 @@ ion-button[color="medium"] {
    rojo marca en vez del azul por defecto de Ionic.
    =========================================================== */
 ion-alert {
-  --background: #141414;
+  --background: #202020;
   --backdrop-opacity: .68;
   --max-width: 340px;
 }
@@ -290,7 +294,7 @@ ion-toast {
   align-items: center;
   justify-content: center;
   gap: 22px;
-  background: #070707;
+  background: #161616;
 }
 
 .boot-splash-logo {
@@ -319,7 +323,7 @@ app-root:not(:empty) ~ #boot-splash {
 }
 
 ion-loading {
-  --background: #141414;
+  --background: #202020;
   --backdrop-opacity: .68;
   --spinner-color: #8b0808;
 }

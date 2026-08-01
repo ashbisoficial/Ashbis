@@ -159,11 +159,16 @@ ion-segment-button {
 /* ============================================
    TARJETAS DE ITEMS (mismo look que crear-mascotas: #141414, redondeado)
 ============================================ */
+ion-list {
+  background: transparent;
+}
+
 ion-item {
   --background: var(--ashbis-surface);
   --color: var(--ion-text-color);
   --border-radius: 12px;
   --padding-start: 14px;
+  --inner-border-width: 0;
   margin-bottom: 10px;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);

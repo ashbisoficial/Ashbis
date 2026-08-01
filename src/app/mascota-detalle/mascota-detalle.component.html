@@ -150,7 +150,7 @@
 
         <h3 class="subtitulo-resumen">Vacunas</h3>
         <ion-list *ngIf="vacunas.length; else sinVacunas">
-          <ion-item *ngFor="let v of vacunas" lines="full">
+          <ion-item *ngFor="let v of vacunas" lines="none">
             <ion-label class="ion-text-wrap">
               <h2>{{ v.tipo }}</h2>
               <p>Aplicada: {{ v.fechaAplicacion | date:'dd-MM-yyyy' }}</p>
@@ -165,7 +165,7 @@
 
         <h3 class="subtitulo-resumen">Medicamentos</h3>
         <ion-list *ngIf="medicamentos.length; else sinMedicamentos">
-          <ion-item *ngFor="let m of medicamentos" lines="full">
+          <ion-item *ngFor="let m of medicamentos" lines="none">
             <ion-label class="ion-text-wrap">
               <h2>{{ m.nombre }} <ion-note color="medium">• {{ m.mg }} mg</ion-note></h2>
               <p>Inicio: {{ m.fechaInicio | date:'dd-MM-yyyy' }}<ng-container *ngIf="m.fechaFin"> • Fin: {{ m.fechaFin | date:'dd-MM-yyyy' }}</ng-container></p>
@@ -179,7 +179,7 @@
 
         <h3 class="subtitulo-resumen">Exámenes</h3>
         <ion-list *ngIf="examenes.length; else sinExamenes">
-          <ion-item *ngFor="let e of examenes" lines="full">
+          <ion-item *ngFor="let e of examenes" lines="none">
             <ion-label class="ion-text-wrap">
               <h2>{{ e.tipo }}</h2>
               <p *ngIf="e.fechaRealizado">Realizado: {{ e.fechaRealizado | date:'dd-MM-yyyy' }}</p>
@@ -204,7 +204,7 @@
 
         <h3 class="subtitulo-resumen">Documentos</h3>
         <ion-list *ngIf="documentos.length; else sinDocumentos">
-          <ion-item *ngFor="let d of documentos" lines="full" button (click)="abrirArchivo(d.url)">
+          <ion-item *ngFor="let d of documentos" lines="none" button (click)="abrirArchivo(d.url)">
             <ion-icon name="document-text-outline" slot="start" color="medium"></ion-icon>
             <ion-label class="ion-text-wrap">
               <h2>{{ d.nombre }}</h2>
@@ -263,7 +263,7 @@
 
         <!-- Notas de consulta -->
         <ion-list>
-          <ion-item *ngFor="let nota of entradasHistorial" lines="full">
+          <ion-item *ngFor="let nota of entradasHistorial" lines="none">
             <ion-label class="ion-text-wrap">
               <h2>{{ nota.autorNombre }}</h2>
               <p class="nota-texto">{{ nota.texto }}</p>
