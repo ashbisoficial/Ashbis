@@ -185,11 +185,35 @@
               <p *ngIf="e.fechaRealizado">Realizado: {{ e.fechaRealizado | date:'dd-MM-yyyy' }}</p>
               <p *ngIf="!e.fechaRealizado && e.fechaProgramada">Programado: {{ e.fechaProgramada | date:'dd-MM-yyyy' }}</p>
               <p *ngIf="e.notas" class="nota-texto">{{ e.notas }}</p>
+              <div class="archivos-examen" *ngIf="e.ordenUrl || e.resultadoUrl">
+                <ion-button *ngIf="e.ordenUrl" size="small" fill="outline" color="medium" (click)="abrirArchivo(e.ordenUrl!)">
+                  <ion-icon name="document-text-outline" slot="start"></ion-icon>
+                  Ver orden
+                </ion-button>
+                <ion-button *ngIf="e.resultadoUrl" size="small" fill="outline" color="medium" (click)="abrirArchivo(e.resultadoUrl!)">
+                  <ion-icon name="document-text-outline" slot="start"></ion-icon>
+                  Ver resultado
+                </ion-button>
+              </div>
             </ion-label>
           </ion-item>
         </ion-list>
         <ng-template #sinExamenes>
           <ion-card><ion-card-content class="ion-text-center">Sin exámenes registrados.</ion-card-content></ion-card>
+        </ng-template>
+
+        <h3 class="subtitulo-resumen">Documentos</h3>
+        <ion-list *ngIf="documentos.length; else sinDocumentos">
+          <ion-item *ngFor="let d of documentos" lines="full" button (click)="abrirArchivo(d.url)">
+            <ion-icon name="document-text-outline" slot="start" color="medium"></ion-icon>
+            <ion-label class="ion-text-wrap">
+              <h2>{{ d.nombre }}</h2>
+              <p>{{ d.tipo }} • {{ d.fechaSubida | date:'dd-MM-yyyy' }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <ng-template #sinDocumentos>
+          <ion-card><ion-card-content class="ion-text-center">Sin documentos adjuntos.</ion-card-content></ion-card>
         </ng-template>
 
       </div>

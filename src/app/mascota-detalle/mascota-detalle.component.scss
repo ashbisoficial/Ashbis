@@ -260,6 +260,20 @@ ion-card-content {
   white-space: pre-wrap;
 }
 
+.archivos-examen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+
+  ion-button {
+    margin: 0;
+    --padding-start: 10px;
+    --padding-end: 10px;
+    font-size: 12px;
+  }
+}
+
 .nota-fecha {
   font-size: 11px !important;
 }

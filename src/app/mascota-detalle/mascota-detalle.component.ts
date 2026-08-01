@@ -10,7 +10,8 @@ import {
   VeterinariaFavorita,
   Vacuna,
   Examen,
-  Medicamento
+  Medicamento,
+  DocumentoMascota
 } from '../../app/firebase/firestore';
 import { Subscription } from 'rxjs';
 
@@ -145,9 +146,11 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   vacunas: Vacuna[] = [];
   medicamentos: Medicamento[] = [];
   examenes: Examen[] = [];
+  documentos: DocumentoMascota[] = [];
   private subVacunas?: Subscription;
   private subMedicamentos?: Subscription;
   private subExamenes?: Subscription;
+  private subDocumentos?: Subscription;
   /** true si soy dueño/equipo de esta mascota: solo esa cuenta puede generar
    *  el PIN y ver/revocar accesos otorgados a veterinarios. */
   puedoCompartirConVeterinario = false;
@@ -217,6 +220,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     this.subVacunas?.unsubscribe();
     this.subMedicamentos?.unsubscribe();
     this.subExamenes?.unsubscribe();
+    this.subDocumentos?.unsubscribe();
   }
 
   cargarSubColecciones() {
@@ -262,11 +266,11 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Vacunas/medicamentos/exámenes registrados por el dueño (mascota-editar):
-   *  antes un veterinario con acceso por PIN solo veía el historial de
-   *  notas de texto libre, sin poder ver nada de esto pese a que las
-   *  reglas de Firestore ya se lo permiten (puedeVerHistorialMedico). Solo
-   *  se cargan para el veterinario — el dueño ya las administra desde
+  /** Vacunas/medicamentos/exámenes/documentos registrados por el dueño
+   *  (mascota-editar): antes un veterinario con acceso por PIN solo veía el
+   *  historial de notas de texto libre, sin poder ver nada de esto pese a
+   *  que las reglas de Firestore ya se lo permiten (puedeVerHistorialMedico).
+   *  Solo se cargan para el veterinario — el dueño ya las administra desde
    *  "Editar mascota", cargarlas de nuevo acá sería una lectura de más. */
   private cargarDatosClinicosSiVet(): void {
     if (!this.soyVeterinario || !this.mascotaId) return;
@@ -285,6 +289,17 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     this.subExamenes = this.firestoreService.getExamenesByMascota(this.mascotaId)
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => this.examenes = data);
+
+    this.subDocumentos?.unsubscribe();
+    this.subDocumentos = this.firestoreService.getDocumentosByMascota(this.mascotaId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => this.documentos = data);
+  }
+
+  /** Abre la orden/resultado de un examen, o un documento adjunto, en una
+   *  pestaña nueva — mismo criterio que "Ver título" en el panel admin. */
+  abrirArchivo(url: string): void {
+    window.open(url, '_blank', 'noopener');
   }
 
   abrirEnMapa(vet: VeterinariaFavorita) {
