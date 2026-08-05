@@ -102,9 +102,18 @@
     "funeraria": "Funeraria",
     "filtros": "Filtros",
     "cercania": "Cercanía",
+    "recomendado": "Recomendado",
+    "ordenarPor": "Ordenar por",
     "precio": "Precio",
     "recomendadoParaTi": "Recomendado para ti",
-    "sinResultados": "No encontramos resultados con esos filtros.",
-    "verEnMapa": "Ver en el mapa"
+    "sinResultados": "Todavía no hay negocios registrados en esta categoría.",
+    "sinResultadosBusqueda": "No encontramos resultados con esa búsqueda.",
+    "verEnMapa": "Ver en el mapa",
+    "sinUbicacion": "Este negocio todavía no cargó su ubicación exacta.",
+    "errorMapa": "No se pudo cargar el mapa. Revisá tu conexión e intentá de nuevo.",
+    "llamar": "Llamar",
+    "sitioWeb": "Sitio web",
+    "verificado": "Verificado por Ashbis",
+    "direccionNoCargada": "Sin dirección cargada"
   }
 }

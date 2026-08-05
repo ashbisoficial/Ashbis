@@ -1,0 +1,362 @@
+.buscar-content {
+  --background: var(--ion-background-color);
+  color: var(--ion-text-color);
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 16px 32px;
+}
+
+.buscador-top {
+  --background: var(--ashbis-surface);
+  --border-radius: 14px;
+  --box-shadow: none;
+  --placeholder-color: var(--ion-color-medium);
+  --icon-color: var(--ion-color-medium);
+  --color: var(--ion-text-color);
+  padding: 12px 0 4px;
+}
+
+/* ============================================
+   VISTA CATEGORÍAS: botones centrales, no un selector arriba
+============================================ */
+.vista-categorias {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 180px);
+  justify-content: center;
+}
+
+.titulo-categorias {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 8px 0 24px;
+  color: var(--ion-text-color);
+}
+
+.grid-categorias {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.tarjeta-categoria {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .08));
+  border-radius: 20px;
+  padding: 28px 12px;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease;
+  color: var(--ion-text-color);
+
+  &:active {
+    transform: scale(.96);
+    border-color: var(--ashbis-red);
+  }
+}
+
+.categoria-icono {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139, 8, 8, .14);
+
+  ion-icon {
+    font-size: 28px;
+    color: var(--ashbis-red);
+  }
+}
+
+.categoria-label {
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ============================================
+   VISTA RESULTADOS
+============================================ */
+.barra-orden {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 14px 0 12px;
+  flex-wrap: wrap;
+}
+
+.categoria-actual {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
+.btn-orden {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .08));
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 15px;
+  }
+}
+
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.feed-resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tarjeta-resultado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--ashbis-surface);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.resultado-imagen {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ashbis-surface-2);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.resultado-emoji {
+  font-size: 28px;
+}
+
+.resultado-info {
+  flex: 1;
+  min-width: 0;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ion-text-color);
+    min-width: 0;
+  }
+}
+
+.resultado-nombre {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.badge-recomendado {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(139, 8, 8, .14);
+  color: var(--ashbis-red);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.icono-verificado {
+  color: #16a34a;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.resultado-direccion {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  ion-icon {
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+}
+
+.resultado-distancia {
+  color: var(--ashbis-red);
+  font-weight: 600;
+}
+
+.flecha-resultado {
+  transform: rotate(180deg);
+  color: var(--ion-color-medium);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.estado-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    font-size: 40px;
+    opacity: .5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+/* Cinta "Recomendado para ti" real, sobre la tarjeta completa */
+.tarjeta-resultado:has(.badge-recomendado) {
+  border-left: 3px solid var(--ashbis-red);
+}
+
+/* ============================================
+   VISTA DETALLE + MAPA
+============================================ */
+.vista-detalle {
+  padding-top: 12px;
+}
+
+.detalle-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+.detalle-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ashbis-surface-2);
+  font-size: 30px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.detalle-direccion {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.mapa-detalle {
+  width: 100%;
+  height: 240px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.aviso-sin-mapa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ashbis-surface);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  margin-bottom: 18px;
+}
+
+.acciones-contacto {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  ion-button {
+    --border-radius: 24px;
+    margin: 0;
+  }
+}
+
+.redes-sociales {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+
+  ion-icon {
+    font-size: 22px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 24px 32px;
+  }
+}

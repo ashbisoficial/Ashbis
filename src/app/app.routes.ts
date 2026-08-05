@@ -201,6 +201,13 @@ export const routes: Routes = [
           import('./servicio-panel/servicio-panel.component')
             .then(m => m.ServicioPanelComponent),
       },
+      // Directorio de veterinarios/servicios registrados en Ashbis (no
+      // confundir con el buscador de Google Places del Home, que sigue igual).
+      {
+        path: 'buscar',
+        loadComponent: () =>
+          import('./buscar/buscar.component').then(m => m.BuscarComponent),
+      },
       // ── Chat IA dentro de tabs (mantiene navbar) ─────────────────────────
       {
         path: 'chat-ia',

@@ -102,9 +102,18 @@
     "funeraria": "Pet funeral",
     "filtros": "Filters",
     "cercania": "Distance",
+    "recomendado": "Recommended",
+    "ordenarPor": "Sort by",
     "precio": "Price",
     "recomendadoParaTi": "Recommended for you",
-    "sinResultados": "We couldn't find results with those filters.",
-    "verEnMapa": "View on map"
+    "sinResultados": "No businesses registered in this category yet.",
+    "sinResultadosBusqueda": "We couldn't find results for that search.",
+    "verEnMapa": "View on map",
+    "sinUbicacion": "This business hasn't added its exact location yet.",
+    "errorMapa": "The map couldn't load. Check your connection and try again.",
+    "llamar": "Call",
+    "sitioWeb": "Website",
+    "verificado": "Verified by Ashbis",
+    "direccionNoCargada": "No address on file"
   }
 }
