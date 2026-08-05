@@ -1382,4 +1382,17 @@ export class FirestoreService {
       .replace(/\.{2,}/g, '.')  // evita path traversal con ..
       .slice(0, 100);
   }
+
+  // ── Buscador (veterinarios/servicios registrados en Ashbis) ─────────────────
+  // profesionalesPublicos es de solo lectura para el cliente (ver
+  // firestore.rules) — la mantiene al día onUsuarioActualizado en
+  // functions/src/index.ts a partir de usuarios/{uid}.
+
+  getProfesionalesPorCategoria(
+    categoria: Models.Buscador.CategoriaProfesional
+  ): Observable<Models.Buscador.ProfesionalPublico[]> {
+    const r = collection(this.firestore, Models.Buscador.PathProfesionalesPublicos);
+    const q = query(r, where('categoria', '==', categoria));
+    return collectionData(q, { idField: 'uid' }) as Observable<Models.Buscador.ProfesionalPublico[]>;
+  }
 }

@@ -1429,6 +1429,44 @@ export const onUsuarioActualizado = onDocumentWritten(
       }
     }
 
+    // Espejo público del buscador (veterinario/servicio) — mismo criterio
+    // que refugiosPublico: solo los campos de negocio, nunca email/teléfono/
+    // dirección personal. Sin telefonoNegocio no hay nada mostrable todavía
+    // (el registro/perfil exige cargarlo antes de pedir verificación, pero
+    // una cuenta recién creada puede no tenerlo aún), así que se salta el
+    // espejo hasta que lo complete en vez de publicar un cartel vacío.
+    if ((after['rol'] === 'veterinario' || after['rol'] === 'servicio') && after['telefonoNegocio']) {
+      try {
+        const categoria = after['rol'] === 'veterinario' ? 'veterinario' : after['tipoServicio'];
+        if (categoria) {
+          const nombre = after['rol'] === 'veterinario'
+            ? (after['nombreClinica'] || `${after['nombre'] ?? ''} ${after['apellido'] ?? ''}`.trim())
+            : (after['nombreNegocio'] || `${after['nombre'] ?? ''} ${after['apellido'] ?? ''}`.trim());
+          const doc: Record<string, unknown> = {
+            uid,
+            categoria,
+            nombre: (nombre || 'Sin nombre').toString().trim() || 'Sin nombre',
+            telefonoNegocio: after['telefonoNegocio'],
+            actualizadoEn: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          for (const campo of [
+            'direccionNegocio', 'latNegocio', 'lngNegocio', 'logoUrl',
+            'sitioWeb', 'instagram', 'facebook', 'whatsappNegocio',
+          ]) {
+            if (after[campo] !== undefined) doc[campo] = after[campo];
+          }
+          if (after['rol'] === 'veterinario') {
+            doc['verificado'] = after['verificado'] === true;
+            if (after['especiesAtendidas']) doc['especiesAtendidas'] = after['especiesAtendidas'];
+            if (after['modalidadAtencion']) doc['modalidadAtencion'] = after['modalidadAtencion'];
+          }
+          await admin.firestore().doc(`profesionalesPublicos/${uid}`).set(doc, { merge: true });
+        }
+      } catch (error) {
+        functions.logger.error('onUsuarioActualizado: error sincronizando profesionalesPublicos', error);
+      }
+    }
+
     // Solo avisa cuando el título CAMBIA (se sube por primera vez, o se
     // vuelve a subir uno nuevo) y todavía no está verificado — no en cada
     // guardado del perfil.

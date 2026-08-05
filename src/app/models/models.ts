@@ -74,6 +74,14 @@ export namespace Models {
        *  cuenta, para frenar cuentas falsas/spam. */
       telefonoNegocio?: string;
       direccionNegocio?: string;
+      /** Coordenadas de direccionNegocio, capturadas junto con el texto vía
+       *  Google Places Autocomplete (mismo buscador de lugares que ya usa
+       *  Home) — permiten mostrar el negocio en el mapa y ordenar por
+       *  cercanía en el buscador de Ashbis. Ausentes si la persona escribió
+       *  la dirección a mano en vez de elegirla de la lista del autocomplete,
+       *  o si todavía no la actualizó desde que se agregó este campo. */
+      latNegocio?: number;
+      lngNegocio?: number;
       /** Solo si rol === 'veterinario' y es una clínica (no independiente):
        *  nombre del veterinario responsable/director técnico,
        *  distinto de quien crea la cuenta (que puede ser un/a administrativo/a). */
@@ -623,6 +631,49 @@ export namespace Models {
        *  refugio, no verificado por Ashbis; se muestra igual con esa
        *  salvedad para dar transparencia antes de donar. */
       totalDonacionesDeclaradas: number;
+    }
+  }
+
+  // ─── BUSCADOR DE PROFESIONALES/SERVICIOS ───────────────────────────────────
+  export namespace Buscador {
+    /** Colección top-level, id de documento = uid del veterinario/servicio.
+     *  Mismo criterio que RefugiosPublico: la mantiene al día únicamente una
+     *  Cloud Function (Admin SDK) a partir de usuarios/{uid} — el cliente
+     *  nunca escribe acá directo. Solo trae los campos de negocio pensados
+     *  para mostrarse públicamente (ver comentarios de telefonoNegocio/
+     *  direccionNegocio/sitioWeb/instagram/etc. en Auth.UserProfile),
+     *  nunca el email o el teléfono/dirección personal de la cuenta. */
+    export const PathProfesionalesPublicos = 'profesionalesPublicos';
+
+    /** 'veterinario' cubre cualquier tipoNegocioVeterinario (independiente o
+     *  clínica); para 'servicio' se usa directamente el TipoServicio
+     *  (peluqueria/guarderia/funeraria) como categoría — así el buscador
+     *  filtra con una sola propiedad en vez de tener que combinar rol+tipo. */
+    export type CategoriaProfesional = 'veterinario' | Auth.TipoServicio;
+
+    export interface ProfesionalPublico {
+      uid: string;
+      categoria: CategoriaProfesional;
+      nombre: string;
+      telefonoNegocio?: string;
+      direccionNegocio?: string;
+      latNegocio?: number;
+      lngNegocio?: number;
+      logoUrl?: string;
+      sitioWeb?: string;
+      instagram?: string;
+      facebook?: string;
+      whatsappNegocio?: string;
+      /** Solo veterinario: gate real de si puede recibir pacientes por PIN
+       *  (ver validarPinVeterinario) — se muestra en el buscador para que la
+       *  persona sepa que el título ya fue revisado por Ashbis. Los servicios
+       *  no tienen este concepto (no manejan historial médico). */
+      verificado?: boolean;
+      /** Solo veterinario: para el ranking por especie del buscador (ver
+       *  "recomendado para ti"). */
+      especiesAtendidas?: string[];
+      modalidadAtencion?: Auth.ModalidadAtencion;
+      actualizadoEn?: any;
     }
   }
 

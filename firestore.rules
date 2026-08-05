@@ -368,6 +368,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Espejo público del buscador: solo los campos de negocio de un
+    // veterinario/servicio (ver ProfesionalPublico en models.ts) —
+    // sincronizado únicamente por Cloud Function, nunca por el cliente.
+    // Nunca incluye email ni teléfono/dirección personal de la cuenta.
+    match /profesionalesPublicos/{uid} {
+      allow read:  if isAuth();
+      allow write: if false;
+    }
+
     match /publicaciones/{postId} {
       // Feed público de adopción/recolección/donación: lo ve cualquiera
       // (incluso sin cuenta). Publicar/editar/borrar es solo de la cuenta

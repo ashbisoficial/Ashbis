@@ -39,6 +39,7 @@ import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
 import { PreferenciasService } from '../services/preferencias.service';
 import { QrDecodeService } from '../services/qr-decode.service';
+import { PlacesAutocompleteDirective, LugarSeleccionado } from '../shared/places-autocomplete.directive';
 
 interface FormPerfilVeterinario {
   nombreClinica: string;
@@ -51,6 +52,11 @@ interface FormPerfilVeterinario {
   especiesAtendidas: string[];
   direccionNegocio: string;
   telefonoNegocio: string;
+  /** Se completan solos al elegir una sugerencia del autocompletado de
+   *  direcciones (ver PlacesAutocompleteDirective) — ausentes si la persona
+   *  escribió la dirección a mano sin elegir ninguna sugerencia. */
+  latNegocio?: number;
+  lngNegocio?: number;
 }
 
 const ESPECIES_DISPONIBLES = [
@@ -80,6 +86,7 @@ const ETIQUETAS_MODALIDAD: Record<Models.Auth.ModalidadAtencion, string> = {
     IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
     IonItem, IonLabel, IonIcon, IonButton, IonList, IonSpinner,
     IonInput, IonSelect, IonSelectOption, IonCheckbox,
+    PlacesAutocompleteDirective,
   ],
 })
 export class VeterinarioPanelComponent implements OnInit, OnDestroy {
@@ -390,6 +397,12 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
     this.modoEdicionPerfil.set(false);
   }
 
+  onDireccionSeleccionada(lugar: LugarSeleccionado): void {
+    this.formPerfil.direccionNegocio = lugar.direccion;
+    this.formPerfil.latNegocio = lugar.lat;
+    this.formPerfil.lngNegocio = lugar.lng;
+  }
+
   toggleEspecie(especie: string, marcada: boolean): void {
     const set = new Set(this.formPerfil.especiesAtendidas);
     if (marcada) set.add(especie); else set.delete(especie);
@@ -417,6 +430,14 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
         especiesAtendidas: f.especiesAtendidas,
         ...(f.direccionNegocio.trim() ? { direccionNegocio: this.security.sanitizeText(f.direccionNegocio, 200) } : {}),
         ...(f.telefonoNegocio.trim() ? { telefonoNegocio: this.security.sanitizeText(f.telefonoNegocio, 30) } : {}),
+        // Solo si eligió una sugerencia del autocompletado en esta misma
+        // edición (ver onDireccionSeleccionada) — si solo tocó el texto sin
+        // elegir una sugerencia nueva, no se tocan las coordenadas
+        // guardadas antes (podrían quedar desactualizadas, pero es mejor
+        // eso que borrarlas de golpe en cualquier edición del perfil).
+        ...(f.latNegocio != null && f.lngNegocio != null
+          ? { latNegocio: f.latNegocio, lngNegocio: f.lngNegocio }
+          : {}),
       };
       await this.fs.updateDocument(`usuarios/${this.miUid}`, payload);
 

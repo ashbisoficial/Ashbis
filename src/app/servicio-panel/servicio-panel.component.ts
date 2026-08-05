@@ -34,6 +34,7 @@ import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { PreferenciasService } from '../services/preferencias.service';
 import { SecurityService } from '../services/security.service';
+import { PlacesAutocompleteDirective, LugarSeleccionado } from '../shared/places-autocomplete.directive';
 
 const ETIQUETAS_TIPO_SERVICIO: Record<Models.Auth.TipoServicio, string> = {
   peluqueria: 'Peluquería o servicios estéticos',
@@ -51,6 +52,8 @@ interface FormPerfilServicio {
   instagram: string;
   facebook: string;
   whatsappNegocio: string;
+  latNegocio?: number;
+  lngNegocio?: number;
 }
 
 @Component({
@@ -64,6 +67,7 @@ interface FormPerfilServicio {
     IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
     IonItem, IonLabel, IonIcon, IonButton, IonSpinner,
     IonInput, IonSelect, IonSelectOption, IonTextarea,
+    PlacesAutocompleteDirective,
   ],
 })
 export class ServicioPanelComponent implements OnInit, OnDestroy {
@@ -157,6 +161,12 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
     this.modoEdicion.set(false);
   }
 
+  onDireccionSeleccionada(lugar: LugarSeleccionado): void {
+    this.form.direccionNegocio = lugar.direccion;
+    this.form.latNegocio = lugar.lat;
+    this.form.lngNegocio = lugar.lng;
+  }
+
   async guardar(): Promise<void> {
     if (this.guardando || !this.miUid) return;
     if (!this.form.tipoServicio || !this.form.nombreNegocio.trim()) {
@@ -183,6 +193,9 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
         ...(instagram ? { instagram } : {}),
         ...(facebook ? { facebook } : {}),
         ...(this.form.whatsappNegocio.trim() ? { whatsappNegocio: this.security.sanitizeText(this.form.whatsappNegocio, 30).replace(/\D/g, '') } : {}),
+        ...(this.form.latNegocio != null && this.form.lngNegocio != null
+          ? { latNegocio: this.form.latNegocio, lngNegocio: this.form.lngNegocio }
+          : {}),
       });
       this.modoEdicion.set(false);
       await this.mostrarToast('Datos guardados.', 'success');

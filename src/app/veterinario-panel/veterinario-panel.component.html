@@ -66,8 +66,16 @@
         </ion-item>
         <ion-item lines="full">
           <ion-label position="stacked">Dirección de la clínica/consulta</ion-label>
-          <ion-input [(ngModel)]="formPerfil.direccionNegocio"></ion-input>
+          <ion-input
+            [(ngModel)]="formPerfil.direccionNegocio"
+            appPlacesAutocomplete
+            (lugarSeleccionado)="onDireccionSeleccionada($event)"
+            placeholder="Empezá a escribir y elegí una sugerencia"
+          ></ion-input>
         </ion-item>
+        <p class="nota-campo" *ngIf="formPerfil.latNegocio != null">
+          📍 Ubicación guardada — tu clínica va a poder verse en el mapa del buscador.
+        </p>
         <ion-item lines="full">
           <ion-label position="stacked">Teléfono de la clínica/consulta</ion-label>
           <ion-input type="tel" [(ngModel)]="formPerfil.telefonoNegocio"></ion-input>
