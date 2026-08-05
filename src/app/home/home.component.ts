@@ -9,6 +9,7 @@ import {
   IonInput, IonItem, IonLabel, IonTextarea
 } from '@ionic/angular/standalone';
 import { ToastController } from '@ionic/angular';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { map, switchMap, take } from 'rxjs/operators';
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -106,7 +107,7 @@ addIcons({
     CommonModule, FormsModule,
     IonCard, IonButton, IonButtons, IonIcon, IonCardContent, IonContent, IonSpinner,
     IonInput, IonItem, IonLabel, IonTextarea,
-    NotificacionesBellComponent
+    NotificacionesBellComponent, TranslatePipe
   ],
   providers: [ToastController],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

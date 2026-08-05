@@ -1,12 +1,15 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 
 export type Tema = 'oscuro' | 'claro';
 export type TamanoTexto = 'pequeno' | 'normal' | 'grande' | 'muy-grande';
+export type Idioma = 'es' | 'en';
 
 const CLAVE_TEMA = 'ashbis-tema';
 const CLAVE_TAMANO_TEXTO = 'ashbis-tamano-texto';
 const CLAVE_CAMARA = 'ashbis-camara-habilitada';
 const CLAVE_UBICACION = 'ashbis-ubicacion-habilitada';
+const CLAVE_IDIOMA = 'ashbis-idioma';
 
 const ESCALAS_TEXTO: Record<TamanoTexto, number> = {
   'pequeno': 92,
@@ -37,18 +40,23 @@ const ESCALAS_TEXTO: Record<TamanoTexto, number> = {
  */
 @Injectable({ providedIn: 'root' })
 export class PreferenciasService {
+  private readonly translate = inject(TranslateService);
+
   private temaActual: Tema = 'oscuro';
   private tamanoActual: TamanoTexto = 'normal';
   private camaraActual = true;
   private ubicacionActual = true;
+  private idiomaActual: Idioma = 'es';
 
   constructor() {
     this.temaActual = (localStorage.getItem(CLAVE_TEMA) as Tema) || 'oscuro';
     this.tamanoActual = (localStorage.getItem(CLAVE_TAMANO_TEXTO) as TamanoTexto) || 'normal';
     this.camaraActual = localStorage.getItem(CLAVE_CAMARA) !== 'false';
     this.ubicacionActual = localStorage.getItem(CLAVE_UBICACION) !== 'false';
+    this.idiomaActual = (localStorage.getItem(CLAVE_IDIOMA) as Idioma) || 'es';
     this.aplicarTema(this.temaActual);
     this.aplicarTamanoTexto(this.tamanoActual);
+    this.translate.use(this.idiomaActual);
   }
 
   get tema(): Tema {
@@ -65,6 +73,10 @@ export class PreferenciasService {
 
   get ubicacionHabilitada(): boolean {
     return this.ubicacionActual;
+  }
+
+  get idioma(): Idioma {
+    return this.idiomaActual;
   }
 
   setTema(tema: Tema): void {
@@ -87,6 +99,12 @@ export class PreferenciasService {
   setUbicacionHabilitada(habilitada: boolean): void {
     this.ubicacionActual = habilitada;
     localStorage.setItem(CLAVE_UBICACION, String(habilitada));
+  }
+
+  setIdioma(idioma: Idioma): void {
+    this.idiomaActual = idioma;
+    localStorage.setItem(CLAVE_IDIOMA, idioma);
+    this.translate.use(idioma);
   }
 
   private aplicarTema(tema: Tema): void {

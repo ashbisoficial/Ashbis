@@ -1,0 +1,110 @@
+{
+  "common": {
+    "cancelar": "Cancelar",
+    "guardar": "Guardar",
+    "aceptar": "Aceptar",
+    "buscar": "Buscar"
+  },
+  "tabs": {
+    "home": "Home",
+    "misMascotas": "Mis Mascotas",
+    "buscar": "Buscar",
+    "refugio": "Refugio",
+    "veterinario": "Veterinario",
+    "servicio": "Servicio",
+    "perfil": "Perfil"
+  },
+  "config": {
+    "titulo": "Configuración",
+    "guia": {
+      "titulo": "Guía de uso",
+      "subtitulo": "Cómo usar Ashbis, paso a paso"
+    },
+    "apariencia": {
+      "titulo": "Apariencia",
+      "tema": "Tema",
+      "oscuro": "Oscuro",
+      "claro": "Claro",
+      "tamanoLetra": "Tamaño de letra",
+      "idioma": "Idioma"
+    },
+    "notificaciones": {
+      "titulo": "Notificaciones",
+      "push": "Notificaciones push",
+      "pushDescripcion": "Invitaciones de equipo, solicitudes de transferencia/adopción.",
+      "bloqueadas": "Las bloqueaste desde el navegador/sistema. Para reactivarlas, cambia el permiso de notificaciones de Ashbis en la configuración de tu dispositivo.",
+      "iosAviso": "En iPhone/iPad, las notificaciones solo funcionan si agregás Ashbis a tu pantalla de inicio:",
+      "iosPaso1": "Tocá el botón Compartir ⬆️ en la barra de Safari.",
+      "iosPaso2": "Elegí \"Agregar a pantalla de inicio\".",
+      "iosPaso3": "Abrí Ashbis desde el ícono que se creó (no desde Safari) y volvé a activar el toggle acá.",
+      "noSoportado": "Tu navegador no soporta notificaciones push (o el sitio no está instalado como app en pantalla de inicio)."
+    },
+    "permisos": {
+      "titulo": "Permisos",
+      "subtitulo": "El permiso real del navegador/sistema no lo podemos cambiar nosotros — pero podés decirle a Ashbis que no use la cámara o tu ubicación aunque el permiso siga concedido.",
+      "camara": "Usar la cámara en la app",
+      "ubicacion": "Usar mi ubicación en la app",
+      "notificaciones": "Notificaciones",
+      "permisoNavegador": "Permiso del navegador: {{estado}}",
+      "notaNotificaciones": "La de notificaciones se activa desde la tarjeta \"Notificaciones\" más arriba.",
+      "estadoConcedido": "Concedido",
+      "estadoBloqueado": "Bloqueado",
+      "estadoNoDisponible": "No disponible",
+      "estadoSinPedir": "Sin pedir"
+    },
+    "cuenta": {
+      "titulo": "Cuenta",
+      "editarPerfil": "Editar perfil",
+      "cambiarContrasena": "Cambiar contraseña",
+      "cuentaGoogle": "Iniciás sesión con Google — la contraseña la administrás desde tu cuenta de Google.",
+      "cerrarSesion": "Cerrar sesión"
+    },
+    "equipos": {
+      "titulo": "Equipos en los que colaboro",
+      "salir": "Salir del equipo",
+      "nota": "Para ver el trabajo del refugio (mascotas, publicaciones, finanzas), usá la pestaña \"Refugio\" del menú.",
+      "refugio": "Refugio"
+    },
+    "mascotas": {
+      "titulo": "Perfiles de mascotas",
+      "gestionar": "Gestionar mis mascotas",
+      "nota": "El estado \"perdida\" de cada mascota (y qué datos de contacto se muestran en su QR público) se controla desde el perfil de esa mascota.",
+      "verPrivacidad": "Ver qué se comparte públicamente"
+    },
+    "zonaPeligro": {
+      "titulo": "Zona irreversible",
+      "eliminarCuenta": "Eliminar mi cuenta y datos"
+    }
+  },
+  "home": {
+    "verQr": "Ver QR",
+    "lugaresParaMascotas": "Lugares para Mascotas",
+    "lugaresDescripcion": "Haz clic en un botón para buscar lugares cercanos.",
+    "sinLugares": "No se encontraron lugares en 5 km.",
+    "veterinaria": "Veterinaria",
+    "tienda": "Tienda",
+    "abierto": "Abierto",
+    "cerrado": "Cerrado",
+    "sinHorario": "Sin horario",
+    "buscandoLugares": "Buscando lugares cercanos...",
+    "mapaFijo": "El mapa está fijo para que no se mueva solo al hacer scroll.",
+    "centrarEnMi": "Centrar en mí",
+    "expandirMapa": "Expandir mapa",
+    "achicarMapa": "Achicar mapa"
+  },
+  "buscar": {
+    "titulo": "Buscar",
+    "placeholder": "Buscar profesionales, tiendas, servicios...",
+    "categorias": "¿Qué estás buscando?",
+    "veterinario": "Veterinario",
+    "peluqueria": "Peluquería",
+    "guarderia": "Guardería",
+    "funeraria": "Funeraria",
+    "filtros": "Filtros",
+    "cercania": "Cercanía",
+    "precio": "Precio",
+    "recomendadoParaTi": "Recomendado para ti",
+    "sinResultados": "No encontramos resultados con esos filtros.",
+    "verEnMapa": "Ver en el mapa"
+  }
+}

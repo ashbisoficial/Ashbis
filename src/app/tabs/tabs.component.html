@@ -5,13 +5,21 @@
     <!-- 'href' usa el RouterLink que importamos en el .ts -->
     <ion-tab-button tab="home" href="/tabs/home">
       <ion-icon name="home-outline"></ion-icon>
-      <ion-label>Home</ion-label> <!-- 'ion-label' también se importa -->
+      <ion-label>{{ 'tabs.home' | translate }}</ion-label> <!-- 'ion-label' también se importa -->
     </ion-tab-button>
 
     <!-- 2. Pestaña Listar Mascotas -->
     <ion-tab-button tab="listar-mascotas" href="/tabs/listar-mascotas">
       <ion-icon name="list-outline"></ion-icon>
-      <ion-label>Mis Mascotas</ion-label>
+      <ion-label>{{ 'tabs.misMascotas' | translate }}</ion-label>
+    </ion-tab-button>
+
+    <!-- 3. Pestaña Buscar: directorio de veterinarios/servicios registrados
+         en Ashbis (no confundir con el buscador de Google Places del Home,
+         que sigue igual). -->
+    <ion-tab-button tab="buscar" href="/tabs/buscar">
+      <ion-icon name="search-outline"></ion-icon>
+      <ion-label>{{ 'tabs.buscar' | translate }}</ion-label>
     </ion-tab-button>
 
     <!-- 4. Pestaña Refugio (dueño y colaboradores): hub único de todo lo
@@ -19,27 +27,27 @@
          estadísticas, finanzas y chat del equipo. -->
     <ion-tab-button *ngIf="hrefRefugio" tab="refugio-panel" [href]="hrefRefugio">
       <ion-icon name="paw-outline"></ion-icon>
-      <ion-label>Refugio</ion-label>
+      <ion-label>{{ 'tabs.refugio' | translate }}</ion-label>
     </ion-tab-button>
 
     <!-- 4.5. Pestaña Veterinario (solo cuentas rol 'veterinario'): panel con
          "mis pacientes" y acceso al historial médico por PIN. -->
     <ion-tab-button *ngIf="esVeterinario" tab="veterinario-panel" href="/tabs/veterinario-panel">
       <ion-icon name="medkit-outline"></ion-icon>
-      <ion-label>Veterinario</ion-label>
+      <ion-label>{{ 'tabs.veterinario' | translate }}</ion-label>
     </ion-tab-button>
 
     <!-- 4.6. Pestaña Servicio (solo cuentas rol 'servicio': peluquería,
          guardería, funeraria): panel con los datos del negocio. -->
     <ion-tab-button *ngIf="esServicio" tab="servicio-panel" href="/tabs/servicio-panel">
       <ion-icon name="storefront-outline"></ion-icon>
-      <ion-label>Servicio</ion-label>
+      <ion-label>{{ 'tabs.servicio' | translate }}</ion-label>
     </ion-tab-button>
 
     <!-- 5. Pestaña Perfil -->
     <ion-tab-button tab="perfil" href="/tabs/perfil">
       <ion-icon name="person-outline"></ion-icon>
-      <ion-label>Perfil</ion-label>
+      <ion-label>{{ 'tabs.perfil' | translate }}</ion-label>
     </ion-tab-button>
 
   </ion-tab-bar>

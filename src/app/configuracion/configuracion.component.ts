@@ -23,19 +23,20 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { AlertController, ToastController } from '@ionic/angular';
+import { TranslatePipe } from '@ngx-translate/core';
 import { addIcons } from 'ionicons';
 import {
   colorPaletteOutline, notificationsOutline, shieldCheckmarkOutline,
   personOutline, pawOutline, warningOutline, textOutline, moonOutline,
   sunnyOutline, cameraOutline, locationOutline, keyOutline, trashOutline,
   chevronForwardOutline, checkmarkCircle, closeCircle, helpCircleOutline,
-  logOutOutline, peopleOutline,
+  logOutOutline, peopleOutline, languageOutline,
 } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { PushNotificationService } from '../services/push-notification.service';
-import { PreferenciasService, Tema, TamanoTexto } from '../services/preferencias.service';
+import { PreferenciasService, Tema, TamanoTexto, Idioma } from '../services/preferencias.service';
 
 type EstadoPermiso = 'concedido' | 'denegado' | 'no-pedido' | 'no-soportado';
 
@@ -50,6 +51,7 @@ type EstadoPermiso = 'concedido' | 'denegado' | 'no-pedido' | 'no-soportado';
     IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
     IonItem, IonLabel, IonIcon, IonButton, IonToggle,
     IonSegment, IonSegmentButton, IonSpinner,
+    TranslatePipe,
   ],
 })
 export class ConfiguracionComponent implements OnInit, OnDestroy {
@@ -73,6 +75,7 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
 
   tema: Tema = this.preferencias.tema;
   tamanoTexto: TamanoTexto = this.preferencias.tamanoTexto;
+  idioma: Idioma = this.preferencias.idioma;
 
   estadoNotificaciones: EstadoPermiso = 'no-pedido';
   cargandoNotificaciones = false;
@@ -97,7 +100,7 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
       personOutline, pawOutline, warningOutline, textOutline, moonOutline,
       sunnyOutline, cameraOutline, locationOutline, keyOutline, trashOutline,
       chevronForwardOutline, checkmarkCircle, closeCircle, helpCircleOutline,
-      logOutOutline, peopleOutline,
+      logOutOutline, peopleOutline, languageOutline,
     });
   }
 
@@ -163,6 +166,12 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
     if (tamano !== 'pequeno' && tamano !== 'normal' && tamano !== 'grande' && tamano !== 'muy-grande') return;
     this.tamanoTexto = tamano;
     this.preferencias.setTamanoTexto(tamano);
+  }
+
+  cambiarIdioma(idioma: string | number | undefined): void {
+    if (idioma !== 'es' && idioma !== 'en') return;
+    this.idioma = idioma;
+    this.preferencias.setIdioma(idioma);
   }
 
   // ── Notificaciones ───────────────────────────────────────────────────────

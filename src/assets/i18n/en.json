@@ -1,0 +1,110 @@
+{
+  "common": {
+    "cancelar": "Cancel",
+    "guardar": "Save",
+    "aceptar": "Accept",
+    "buscar": "Search"
+  },
+  "tabs": {
+    "home": "Home",
+    "misMascotas": "My Pets",
+    "buscar": "Search",
+    "refugio": "Shelter",
+    "veterinario": "Vet",
+    "servicio": "Business",
+    "perfil": "Profile"
+  },
+  "config": {
+    "titulo": "Settings",
+    "guia": {
+      "titulo": "User guide",
+      "subtitulo": "How to use Ashbis, step by step"
+    },
+    "apariencia": {
+      "titulo": "Appearance",
+      "tema": "Theme",
+      "oscuro": "Dark",
+      "claro": "Light",
+      "tamanoLetra": "Text size",
+      "idioma": "Language"
+    },
+    "notificaciones": {
+      "titulo": "Notifications",
+      "push": "Push notifications",
+      "pushDescripcion": "Team invitations, transfer/adoption requests.",
+      "bloqueadas": "You blocked them from your browser/system. To turn them back on, change Ashbis's notification permission in your device settings.",
+      "iosAviso": "On iPhone/iPad, notifications only work if you add Ashbis to your home screen:",
+      "iosPaso1": "Tap the Share button ⬆️ in the Safari toolbar.",
+      "iosPaso2": "Choose \"Add to Home Screen\".",
+      "iosPaso3": "Open Ashbis from the icon that was created (not from Safari) and turn the toggle back on here.",
+      "noSoportado": "Your browser doesn't support push notifications (or the site isn't installed as an app on your home screen)."
+    },
+    "permisos": {
+      "titulo": "Permissions",
+      "subtitulo": "We can't change your browser/system permission directly — but you can tell Ashbis not to use the camera or your location even if the permission is still granted.",
+      "camara": "Use the camera in the app",
+      "ubicacion": "Use my location in the app",
+      "notificaciones": "Notifications",
+      "permisoNavegador": "Browser permission: {{estado}}",
+      "notaNotificaciones": "Notifications are turned on from the \"Notifications\" card above.",
+      "estadoConcedido": "Granted",
+      "estadoBloqueado": "Blocked",
+      "estadoNoDisponible": "Unavailable",
+      "estadoSinPedir": "Not requested"
+    },
+    "cuenta": {
+      "titulo": "Account",
+      "editarPerfil": "Edit profile",
+      "cambiarContrasena": "Change password",
+      "cuentaGoogle": "You sign in with Google — you manage your password from your Google account.",
+      "cerrarSesion": "Log out"
+    },
+    "equipos": {
+      "titulo": "Teams I collaborate with",
+      "salir": "Leave team",
+      "nota": "To see the shelter's work (pets, posts, finances), use the \"Shelter\" tab in the menu.",
+      "refugio": "Shelter"
+    },
+    "mascotas": {
+      "titulo": "Pet profiles",
+      "gestionar": "Manage my pets",
+      "nota": "Each pet's \"lost\" status (and which contact details show on its public QR) is controlled from that pet's profile.",
+      "verPrivacidad": "See what's shared publicly"
+    },
+    "zonaPeligro": {
+      "titulo": "Irreversible zone",
+      "eliminarCuenta": "Delete my account and data"
+    }
+  },
+  "home": {
+    "verQr": "View QR",
+    "lugaresParaMascotas": "Places for Pets",
+    "lugaresDescripcion": "Tap a button to search for nearby places.",
+    "sinLugares": "No places found within 5 km.",
+    "veterinaria": "Vet clinic",
+    "tienda": "Pet store",
+    "abierto": "Open",
+    "cerrado": "Closed",
+    "sinHorario": "No hours listed",
+    "buscandoLugares": "Searching nearby places...",
+    "mapaFijo": "The map stays fixed so it doesn't move on its own when scrolling.",
+    "centrarEnMi": "Center on me",
+    "expandirMapa": "Expand map",
+    "achicarMapa": "Shrink map"
+  },
+  "buscar": {
+    "titulo": "Search",
+    "placeholder": "Search professionals, stores, services...",
+    "categorias": "What are you looking for?",
+    "veterinario": "Vet",
+    "peluqueria": "Grooming",
+    "guarderia": "Daycare",
+    "funeraria": "Pet funeral",
+    "filtros": "Filters",
+    "cercania": "Distance",
+    "precio": "Price",
+    "recomendadoParaTi": "Recommended for you",
+    "sinResultados": "We couldn't find results with those filters.",
+    "verEnMapa": "View on map"
+  }
+}

@@ -37,7 +37,7 @@
 
     <button class="acceso-rapido" (click)="irAQR()">
       <ion-icon name="qr-code-outline"></ion-icon>
-      <span>Ver QR</span>
+      <span>{{ 'home.verQr' | translate }}</span>
     </button>
 
     <!-- Chat IA oculto para la beta: el proxy a Gemini sigue fallando en
@@ -47,27 +47,23 @@
 
   <!-- SECCIÓN MAPA -->
   <ion-card class="map-card-container ion-no-margin">
-    <h2 class="map-title ion-text-center">Lugares para Mascotas</h2>
+    <h2 class="map-title ion-text-center">{{ 'home.lugaresParaMascotas' | translate }}</h2>
 
     <p *ngIf="!estaCargando && marcadoresEnMapa.length === 0"
        class="ion-text-center ion-margin-top texto-mapa">
-      {{
-        userPositionMarker
-          ? 'No se encontraron lugares en 5 km.'
-          : 'Haz clic en un botón para buscar lugares cercanos.'
-      }}
+      {{ (userPositionMarker ? 'home.sinLugares' : 'home.lugaresDescripcion') | translate }}
     </p>
 
     <!-- Leyenda de colores -->
     <div *ngIf="marcadoresEnMapa.length > 0" class="leyenda-mapa">
       <span class="leyenda-item">
-        <span class="dot dot-abierto"></span> Abierto
+        <span class="dot dot-abierto"></span> {{ 'home.abierto' | translate }}
       </span>
       <span class="leyenda-item">
-        <span class="dot dot-cerrado"></span> Cerrado
+        <span class="dot dot-cerrado"></span> {{ 'home.cerrado' | translate }}
       </span>
       <span class="leyenda-item">
-        <span class="dot dot-desconocido"></span> Sin horario
+        <span class="dot dot-desconocido"></span> {{ 'home.sinHorario' | translate }}
       </span>
     </div>
 
@@ -79,30 +75,30 @@
         [disabled]="estaCargando"
         shape="round" fill="solid">
         <ion-icon name="locate-outline" slot="start"></ion-icon>
-        Veterinaria
+        {{ 'home.veterinaria' | translate }}
       </ion-button>
-      
+
       <ion-button
         class="btn-big btn-outline"
         (click)="findPlacesAction('pet_store')"
         [disabled]="estaCargando"
         shape="round" fill="outline">
         <ion-icon name="bag-outline" slot="start"></ion-icon>
-        Tienda
+        {{ 'home.tienda' | translate }}
       </ion-button>
     </div>
 
     <!-- SPINNER -->
     <div *ngIf="estaCargando" class="spinner-container">
       <ion-spinner name="dots" color="danger"></ion-spinner>
-      <p>Buscando lugares cercanos...</p>
+      <p>{{ 'home.buscandoLugares' | translate }}</p>
     </div>
 
     <!-- Ayuda del mapa: fuera del mapa y pegada arriba, chiquita a propósito
          para no sumar peso visual — solo avisa que el mapa está fijo. -->
     <p class="map-ayuda">
       <ion-icon name="information-circle-outline"></ion-icon>
-      El mapa está fijo para que no se mueva solo al hacer scroll.
+      {{ 'home.mapaFijo' | translate }}
     </p>
 
     <!-- MAPA GOOGLE MAPS -->
@@ -117,8 +113,8 @@
             type="button"
             class="map-btn"
             (click)="centrarEnUsuario()"
-            aria-label="Centrar en mi ubicación"
-            title="Centrar en mi ubicación"
+            [attr.aria-label]="'home.centrarEnMi' | translate"
+            [attr.title]="'home.centrarEnMi' | translate"
           >
             <ion-icon name="navigate-outline"></ion-icon>
           </button>
@@ -126,8 +122,8 @@
             type="button"
             class="map-btn"
             (click)="toggleExpandirMapa()"
-            aria-label="Achicar mapa"
-            title="Achicar mapa"
+            [attr.aria-label]="'home.achicarMapa' | translate"
+            [attr.title]="'home.achicarMapa' | translate"
           >
             <ion-icon name="contract-outline"></ion-icon>
           </button>
@@ -139,11 +135,11 @@
     <div class="map-toolbar-botones">
       <button type="button" class="map-btn-outline" (click)="centrarEnUsuario()">
         <ion-icon name="navigate-outline"></ion-icon>
-        Centrar en mí
+        {{ 'home.centrarEnMi' | translate }}
       </button>
       <button type="button" class="map-btn-outline" (click)="toggleExpandirMapa()">
         <ion-icon [name]="mapaExpandido ? 'contract-outline' : 'expand-outline'"></ion-icon>
-        {{ mapaExpandido ? 'Achicar mapa' : 'Expandir mapa' }}
+        {{ (mapaExpandido ? 'home.achicarMapa' : 'home.expandirMapa') | translate }}
       </button>
     </div>
 
@@ -152,7 +148,7 @@
       <div class="panel-header">
         <div class="panel-header-left">
           <span class="panel-tipo-badge" [attr.data-tipo]="marcadorSeleccionado.tipo">
-            {{ marcadorSeleccionado.tipo === 'veterinary_care' ? 'Veterinaria' : 'Tienda' }}
+            {{ (marcadorSeleccionado.tipo === 'veterinary_care' ? 'home.veterinaria' : 'home.tienda') | translate }}
           </span>
           <span class="estado-badge" [attr.data-estado]="getEstadoColor(marcadorSeleccionado)">
             {{ getEstadoLabel(marcadorSeleccionado) }}

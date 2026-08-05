@@ -9,6 +9,7 @@ import {
   IonTabs,
   IonLabel
 } from '@ionic/angular/standalone';
+import { TranslatePipe } from '@ngx-translate/core';
 
 
 import { addIcons } from 'ionicons';
@@ -18,7 +19,8 @@ import {
   pawOutline,
   personOutline,
   medkitOutline,
-  storefrontOutline
+  storefrontOutline,
+  searchOutline
 } from 'ionicons/icons';
 import { take } from 'rxjs';
 import { RefugioContextService } from '../services/refugio-context.service';
@@ -37,7 +39,8 @@ import { FirestoreService } from '../firebase/firestore';
     IonTabBar,
     IonTabButton,
     IonTabs,
-    IonLabel
+    IonLabel,
+    TranslatePipe
   ]
 })
 export class TabsComponent {
@@ -68,7 +71,8 @@ export class TabsComponent {
       pawOutline,
       personOutline,
       medkitOutline,
-      storefrontOutline
+      storefrontOutline,
+      searchOutline
     });
 
     this.refugioCtx.contexto$()

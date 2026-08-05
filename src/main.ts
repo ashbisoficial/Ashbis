@@ -1,3 +1,4 @@
+import { inject } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeEsCl from '@angular/common/locales/es-CL';
 
@@ -21,6 +22,10 @@ import {
 
 import { provideFirestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager } from '@angular/fire/firestore';
 import { provideStorage, getStorage } from '@angular/fire/storage';
+
+import { HttpClient } from '@angular/common/http';
+import { provideTranslateService, provideTranslateLoader } from '@ngx-translate/core';
+import { I18nHttpLoader } from './app/i18n/i18n-http-loader';
 
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
@@ -78,6 +83,16 @@ bootstrapApplication(AppComponent, {
       localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) }),
     })),
 
-    provideStorage(() => getStorage())
+    provideStorage(() => getStorage()),
+
+    // Idioma: el default arranca en español y PreferenciasService cambia a
+    // 'en' si la persona lo eligió (localStorage) apenas arranca la app —
+    // ver su constructor. fallbackLang cubre claves que falten en el
+    // idioma activo en vez de mostrar la clave cruda.
+    provideTranslateService({
+      lang: 'es',
+      fallbackLang: 'es',
+      loader: provideTranslateLoader(() => new I18nHttpLoader(inject(HttpClient))),
+    }),
   ]
 }).catch(err => console.error(err));
