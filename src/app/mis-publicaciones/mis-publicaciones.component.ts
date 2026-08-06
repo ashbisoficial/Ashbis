@@ -175,7 +175,7 @@ export class MisPublicacionesComponent implements OnDestroy {
    *  permiso real del navegador). */
   abrirSelectorArchivo(input: HTMLInputElement): void {
     if (!this.preferencias.camaraHabilitada) {
-      this.presentToast('Activá la cámara en Configuración → Permisos para subir fotos.', 'danger');
+      this.presentToast('Activa la cámara en Configuración → Permisos para subir fotos.', 'danger');
       return;
     }
     input.click();

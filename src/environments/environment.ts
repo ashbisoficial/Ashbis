@@ -36,6 +36,8 @@ export const environment = {
   // No se puede usar window.location.origin porque en la app Android (Capacitor)
   // el origin es algo como "https://localhost" o "capacitor://localhost", no un
   // dominio escaneable desde otro teléfono.
+  // OJO: ashbis-web.web.app es la página de marketing (otro repo, otro dev)
+  // — la app vive en el site por defecto del proyecto, ashbis-ae5b2.web.app.
   appUrl: 'https://ashbis-ae5b2.web.app',
 
   // App Check reCAPTCHA v3 (defensa contra bots y abuso de cuota)

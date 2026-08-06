@@ -142,7 +142,7 @@ export class CrearMascotasComponent implements OnInit {
    *  permiso real del navegador). */
   async abrirSelectorArchivo(input: HTMLInputElement): Promise<void> {
     if (!this.preferencias.camaraHabilitada) {
-      await this.presentAlert('Activá la cámara en Configuración → Permisos para subir fotos.');
+      await this.presentAlert('Activa la cámara en Configuración → Permisos para subir fotos.');
       return;
     }
     input.click();
@@ -182,9 +182,15 @@ export class CrearMascotasComponent implements OnInit {
         await this.presentAlert('Cada imagen de galeria debe ser menor a 5 MB.');
         continue;
       }
+      // Se fija el índice ANTES de leer el archivo (async) y se asigna por
+      // índice, no con push: si se eligen varias fotos de tamaños distintos,
+      // sus lecturas pueden terminar en un orden distinto al de selección —
+      // con push, el preview quedaba desalineado de galeriaFiles, y
+      // removeFromGaleria(i) borraba una foto distinta a la que se veía.
+      const targetIndex = this.galeriaFiles.length;
       this.galeriaFiles.push(file);
       const reader = new FileReader();
-      reader.onload = () => this.galeriaPreviews.push(reader.result as string);
+      reader.onload = () => { this.galeriaPreviews[targetIndex] = reader.result as string; };
       reader.readAsDataURL(file);
     }
     event.target.value = '';

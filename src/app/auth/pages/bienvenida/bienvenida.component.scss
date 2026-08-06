@@ -1,0 +1,107 @@
+ion-content {
+  --background: var(--ion-background-color) !important;
+  color: var(--ion-text-color) !important;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px 4px 32px;
+}
+
+.portada {
+  margin-bottom: 20px;
+
+  h1 {
+    margin: 8px 0 4px;
+    font-size: 22px;
+  }
+}
+
+.subtitulo {
+  margin: 0 auto;
+  max-width: 340px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  line-height: 1.5;
+}
+
+.seccion-card {
+  --background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border);
+  border-radius: 14px;
+  margin-bottom: 16px;
+  box-shadow: none;
+
+  ion-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+
+    ion-icon {
+      font-size: 17px;
+      color: var(--ashbis-red, #8b0808);
+    }
+  }
+}
+
+.seccion-subtitulo {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ion-color-medium);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.campo-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+.campo-label-mt {
+  margin-top: 18px;
+}
+
+.campo-nota {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ion-color-medium);
+}
+
+ion-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+
+  ion-label p {
+    font-size: 12px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.item-toggle ion-label p {
+  margin-top: 2px;
+}
+
+ion-segment {
+  --background: var(--ashbis-surface-2);
+  border-radius: 10px;
+}
+
+ion-button[color="danger"] {
+  --background: #8b0808;
+  --border-radius: 24px !important;
+  height: 46px;
+  font-weight: bold;
+  margin-top: 8px;
+}

@@ -69,6 +69,11 @@ export class MascotaEditarComponent implements OnDestroy {
 
   mascota = signal<Mascota | null>(null);
   section = signal<Section>('info');
+  /** true si quien edita es un veterinario con acceso por PIN (no el
+   *  dueño/equipo) — oculta "Info Mascota"/"Calendario" (no le competen) y
+   *  evita programarle recordatorios locales en su propio celular (ver
+   *  programarRecordatorioVacuna/Cita/Medicamento, pensados para el dueño). */
+  soyVeterinario = signal(false);
   /** Foto de la galería abierta en grande (estilo Instagram); null = cerrada. */
   fotoAmpliada = signal<string | null>(null);
 
@@ -158,11 +163,25 @@ export class MascotaEditarComponent implements OnDestroy {
       starOutline, star, closeOutline
     });
 
+    const miUid = this.auth.currentUser?.uid;
+    if (miUid) {
+      this.fs.getDocument(`usuarios/${miUid}`).then(perfil => {
+        this.soyVeterinario.set(perfil?.rol === 'veterinario');
+        if (this.soyVeterinario()) this.section.set('vacunas');
+      });
+    }
+
     const id = this.route.snapshot.paramMap.get('id')!;
     this.sub = this.fs.getPetById(id).subscribe(doc => {
       if (doc) {
         this.mascota.set(doc);
-        this.buildForm(doc);
+        // getPetById es en tiempo real: sin este chequeo, subir una foto a
+        // la galería o marcar una como principal (que actualizan el mismo
+        // documento) reconstruía este form de golpe y borraba lo que la
+        // persona estuviera tipeando sin guardar todavía en "Info".
+        if (!this.form || !this.form.dirty) {
+          this.buildForm(doc);
+        }
 
         // Suscribir citas de la mascota
         this.subCitas?.unsubscribe();
@@ -270,6 +289,7 @@ export class MascotaEditarComponent implements OnDestroy {
     try {
       const payload = { ...this.form.value } as Partial<Mascota>;
       await this.fs.updatePet(this.mascota()!.id, payload);
+      this.form.markAsPristine();
       this.showToast('Información actualizada.');
     } catch (e) {
       console.error(e);
@@ -289,7 +309,7 @@ export class MascotaEditarComponent implements OnDestroy {
    *  permiso real del navegador). */
   abrirSelectorArchivo(input: HTMLInputElement): void {
     if (!this.preferencias.camaraHabilitada) {
-      this.showToast('Activá la cámara en Configuración → Permisos para subir archivos.');
+      this.showToast('Activa la cámara en Configuración → Permisos para subir archivos.');
       return;
     }
     input.click();
@@ -320,9 +340,20 @@ export class MascotaEditarComponent implements OnDestroy {
   async onRemovePhoto(url: string) {
     if (!this.mascota()) return;
     const petId = this.mascota()!.id;
+    // Si la foto borrada era la principal, hay que reasignar fotoUrl acá
+    // mismo (capturado ANTES de los await, no leyendo mascota() después —
+    // el signal puede haberse actualizado ya vía el listener en tiempo
+    // real): si no, queda apuntando a un archivo recién borrado de Storage
+    // y se ve como imagen rota en la tarjeta, el carnet y la ficha de
+    // "perdida".
+    const eraPrincipal = url === this.mascota()?.fotoUrl;
+    const restantes = (this.mascota()?.galeria || []).filter(g => g !== url);
     try {
       await this.fs.removePhoto(petId, url);
       await this.fs.deletePhotoFromStorage(url);
+      if (eraPrincipal) {
+        await this.fs.updatePet(petId, { fotoUrl: restantes[0] ?? '' });
+      }
       this.showToast('Foto eliminada');
       this.cerrarFoto();
     } catch (e) {
@@ -495,7 +526,9 @@ export class MascotaEditarComponent implements OnDestroy {
         this.showToast('Cita creada.');
       }
 
-      await this.programarRecordatorioCita(citaId, payload);
+      // Solo para el dueño: si lo hiciera un veterinario, el recordatorio
+      // quedaría en SU celular, no en el de quien realmente cuida la mascota.
+      if (!this.soyVeterinario()) await this.programarRecordatorioCita(citaId, payload);
       this.citaModalOpen.set(false);
     } catch (e) {
       console.error(e);
@@ -616,7 +649,7 @@ export class MascotaEditarComponent implements OnDestroy {
         this.showToast('Vacuna registrada.');
       }
 
-      await this.programarRecordatorioVacuna(vacunaId, payload);
+      if (!this.soyVeterinario()) await this.programarRecordatorioVacuna(vacunaId, payload);
       this.vacunaModalOpen.set(false);
     } catch (e) {
       console.error(e);
@@ -952,7 +985,9 @@ async onUploadResultado(ev: Event, e: Examen) {
         this.showToast('Medicamento registrado.');
       }
 
-      await this.programarRecordatoriosMedicamento(medicamentoId, { ...payload, fechaFin });
+      if (!this.soyVeterinario()) {
+        await this.programarRecordatoriosMedicamento(medicamentoId, { ...payload, fechaFin });
+      }
       this.medicamentoModalOpen.set(false);
     } catch (e) {
       console.error(e);
@@ -1092,6 +1127,7 @@ async onUploadResultado(ev: Event, e: Examen) {
    *  MAX_DOSIS_PROGRAMADAS), se rellena en silencio con la próxima tanda —
    *  así los tratamientos "para siempre" no dejan de avisar con el tiempo. */
   private async refrescarRecordatoriosVencidos(lista: Medicamento[]): Promise<void> {
+    if (this.soyVeterinario()) return;
     const ahora = Date.now();
     for (const m of lista) {
       if (!m.id || m.fechaFin || !m.tramos?.length || !m.horaInicio) continue;

@@ -62,15 +62,18 @@ ion-segment-button {
 }
 
 /* Identidad de la mascota (solo veterinario): para confirmar de un vistazo
-   que está en el paciente correcto antes de escribir nada. */
+   que está en el paciente correcto antes de escribir nada. Borde superior
+   rojo para que se lea como el encabezado de una ficha clínica, no como
+   una tarjeta más de la lista. */
 .tarjeta-identidad {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 14px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: var(--ashbis-surface);
   border-radius: 12px;
+  border-top: 3px solid var(--ashbis-red, #8b0808);
 
   ion-avatar {
     width: 48px;
@@ -283,30 +286,143 @@ ion-card-content {
   font-size: 11px !important;
 }
 
-.nueva-nota {
+/* ============================================
+   HISTORIAL COMO ÓRDENES CLÍNICAS
+============================================ */
+
+/* Colores por tipo de orden, mapeados a los ion-color-* que ya trae el
+   tema (ver CONFIG_TIPO_ORDEN en el componente) — nada de hex nuevos. */
+%colores-tipo-orden {
+  &[data-color="medium"]    { --color-tipo: var(--ion-color-medium); }
+  &[data-color="tertiary"]  { --color-tipo: var(--ion-color-tertiary, #6030ff); }
+  &[data-color="success"]   { --color-tipo: var(--ion-color-success, #2dd55b); }
+  &[data-color="secondary"] { --color-tipo: var(--ion-color-secondary, #0163aa); }
+  &[data-color="danger"]    { --color-tipo: var(--ashbis-red, #8b0808); }
+}
+
+.lista-ordenes {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.orden-card {
+  @extend %colores-tipo-orden;
+  background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .12));
+  border-left: 3px solid var(--color-tipo, var(--ashbis-red));
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.orden-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  margin-bottom: 4px;
+}
+
+.orden-tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--color-tipo, var(--ashbis-red));
+
+  ion-icon { font-size: 14px; }
+}
+
+.orden-fecha {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
+.orden-autor {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.orden-card .nota-campo {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--ion-text-color);
+
+  strong { color: var(--ion-color-medium); font-weight: 600; }
+}
+
+.orden-card .nota-texto {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.btn-ver-pdf {
+  margin: 8px 0 0;
+  --border-radius: 8px;
+}
+
+/* Selector de tipo de orden (formulario nuevo) */
+.nueva-nota {
   margin: 4px 0 20px;
+  padding: 14px;
+  background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .12));
+  border-radius: 14px;
 
-  ion-textarea {
-    flex: 1;
-    background: var(--ashbis-surface);
-    border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .12));
-    border-radius: 12px;
-    --padding-start: 12px;
-    --padding-end: 12px;
-    --padding-top: 10px;
-    --padding-bottom: 10px;
-    font-size: 13px;
+  // Contraste contra el fondo del contenedor (mismo --ashbis-surface que
+  // el ion-item global de más arriba, sin esto se veía todo plano).
+  ion-item {
+    --background: var(--ion-background-color);
+    box-shadow: none;
   }
+}
 
-  ion-button {
-    --border-radius: 50%;
-    --background: #8b0808;
-    width: 44px;
-    height: 44px;
-    margin: 0;
+.label-tipo-orden {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.selector-tipo-orden {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.chip-tipo-orden {
+  @extend %colores-tipo-orden;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .16));
+  background: var(--ion-background-color);
+  color: var(--ion-color-medium);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+
+  ion-icon { font-size: 15px; }
+
+  &.activo {
+    background: var(--color-tipo, var(--ashbis-red));
+    border-color: var(--color-tipo, var(--ashbis-red));
+    color: #fff;
   }
 }
 

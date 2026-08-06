@@ -2,7 +2,9 @@ import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { onRequest } from 'firebase-functions/v2/https';
 import { onDocumentCreated, onDocumentDeleted, onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineSecret } from 'firebase-functions/params';
+import { Storage } from '@google-cloud/storage';
 
 admin.initializeApp();
 
@@ -1159,7 +1161,7 @@ async function enviarPushPorEmail(
 }
 
 export const onInvitacionEquipoCreada = onDocumentCreated(
-  { document: 'invitacionesEquipo/{id}', region: 'us-central1' },
+  { document: 'invitacionesEquipo/{id}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -1176,7 +1178,7 @@ export const onInvitacionEquipoCreada = onDocumentCreated(
 );
 
 export const onTransferenciaCreada = onDocumentCreated(
-  { document: 'transferencias/{id}', region: 'us-central1' },
+  { document: 'transferencias/{id}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -1198,7 +1200,7 @@ export const onTransferenciaCreada = onDocumentCreated(
 // enterarse: la página de Notificaciones solo miraba transferencias e
 // invitaciones de equipo, y no había push. Este trigger cierra ese hueco.
 export const onPostulacionCreada = onDocumentCreated(
-  { document: 'postulaciones/{id}', region: 'us-central1' },
+  { document: 'postulaciones/{id}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -1224,7 +1226,7 @@ function previewTexto(texto: string): string {
 // calcula el propio cliente (comparando el último mensaje contra su marca
 // de lectura); esto es solo el aviso fuera de la app.
 export const onMensajeChatDirectoCreado = onDocumentCreated(
-  { document: 'chatsDirectos/{chatId}/mensajes/{msgId}', region: 'us-central1' },
+  { document: 'chatsDirectos/{chatId}/mensajes/{msgId}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -1247,7 +1249,7 @@ export const onMensajeChatDirectoCreado = onDocumentCreated(
 // Chat de equipo del refugio: push a todo el equipo (dueño + miembros)
 // menos a quien escribió.
 export const onMensajeChatEquipoCreado = onDocumentCreated(
-  { document: 'usuarios/{refugioUid}/chatEquipo/{msgId}', region: 'us-central1' },
+  { document: 'usuarios/{refugioUid}/chatEquipo/{msgId}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -1272,7 +1274,7 @@ export const onMensajeChatEquipoCreado = onDocumentCreated(
 // momento — solo lo vería si entra a revisar el historial. Este trigger le
 // avisa apenas ocurre, para que sepa quién puede ver la ficha de su mascota.
 export const onAccesoVeterinarioCreado = onDocumentCreated(
-  { document: 'mascotas/{petId}/accesosVeterinario/{vetUid}', region: 'us-central1' },
+  { document: 'mascotas/{petId}/accesosVeterinario/{vetUid}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -1297,7 +1299,7 @@ export const onAccesoVeterinarioCreado = onDocumentCreated(
 // entre a mirar. Solo se avisa cuando la escribe un veterinario — si la
 // escribe el propio dueño/equipo no hace falta notificarlo a sí mismo.
 export const onHistorialMedicoCreado = onDocumentCreated(
-  { document: 'mascotas/{petId}/historialMedico/{entradaId}', region: 'us-central1' },
+  { document: 'mascotas/{petId}/historialMedico/{entradaId}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     const data = event.data?.data();
     if (!data || data['autorRol'] !== 'veterinario') return;
@@ -1327,7 +1329,7 @@ export const onHistorialMedicoCreado = onDocumentCreated(
 // después de publicar (nueva foto, etc.), esta función mantiene esa copia
 // al día en cualquier publicación de adopción activa que la referencie.
 export const onMascotaActualizada = onDocumentWritten(
-  { document: 'mascotas/{petId}', region: 'us-central1' },
+  { document: 'mascotas/{petId}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     const after = event.data?.after?.data();
     if (!after) return; // se borró la mascota: nada que resincronizar
@@ -1410,8 +1412,51 @@ async function avisarDiscordVeterinarioPendiente(
   }
 }
 
+/** Análoga a avisarDiscordVeterinarioPendiente, para cuando un refugio sube
+ *  su documento legal (personería jurídica/RUT/certificado) — antes esa
+ *  verificación era 100% manual, sin ninguna lista ni aviso. */
+async function avisarDiscordRefugioPendiente(
+  uid: string,
+  data: FirebaseFirestore.DocumentData
+): Promise<void> {
+  const webhook = DISCORD_WEBHOOK.value();
+  if (!webhook) {
+    functions.logger.error('Discord webhook no configurado (secret DISCORD_WEBHOOK)');
+    return;
+  }
+  const nombre = (data['nombreRefugio'] || '').toString().trim() || 'Sin nombre';
+  const fields: { name: string; value: string; inline?: boolean }[] = [
+    { name: '🏠 Refugio', value: nombre, inline: true },
+    { name: '📧 Email', value: data['email'] || '—', inline: true },
+  ];
+  if (data['telefonoNegocio']) fields.push({ name: '📞 Teléfono', value: data['telefonoNegocio'], inline: true });
+  if (data['direccionNegocio']) fields.push({ name: '📍 Dirección', value: data['direccionNegocio'], inline: true });
+  if (data['documentoLegalUrl']) fields.push({ name: '📎 Documento legal', value: data['documentoLegalUrl'], inline: false });
+
+  const discordRes = await fetch(webhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: 'Ashbis Web',
+      avatar_url: 'https://ashbis-web.web.app/img/logo4.png',
+      allowed_mentions: { parse: [] },
+      embeds: [{
+        title: '🏠 Refugio esperando verificación',
+        description: `UID: \`${uid}\``,
+        color: 0xC10000,
+        fields,
+        footer: { text: 'Ashbis · revisá y aprobá desde el panel admin' },
+        timestamp: new Date().toISOString(),
+      }],
+    }),
+  });
+  if (!discordRes.ok) {
+    functions.logger.error('avisarDiscordRefugioPendiente: Discord respondió con error', await discordRes.text());
+  }
+}
+
 export const onUsuarioActualizado = onDocumentWritten(
-  { document: 'usuarios/{uid}', region: 'us-central1', secrets: [DISCORD_WEBHOOK] },
+  { document: 'usuarios/{uid}', region: 'us-central1', secrets: [DISCORD_WEBHOOK], maxInstances: 10 },
   async (event) => {
     const after = event.data?.after?.data();
     if (!after) return;
@@ -1429,41 +1474,54 @@ export const onUsuarioActualizado = onDocumentWritten(
       }
     }
 
-    // Espejo público del buscador (veterinario/servicio) — mismo criterio
-    // que refugiosPublico: solo los campos de negocio, nunca email/teléfono/
-    // dirección personal. Sin telefonoNegocio no hay nada mostrable todavía
-    // (el registro/perfil exige cargarlo antes de pedir verificación, pero
-    // una cuenta recién creada puede no tenerlo aún), así que se salta el
-    // espejo hasta que lo complete en vez de publicar un cartel vacío.
-    if ((after['rol'] === 'veterinario' || after['rol'] === 'servicio') && after['telefonoNegocio']) {
+    // Buscador: espejo público de veterinario/servicio/pyme, mismo criterio
+    // que refugiosPublico de arriba — solo campos "de negocio" (ver
+    // DirectorioPublico.EntradaDirectorio en models.ts), nunca email/
+    // teléfono/dirección personal ni documentos de verificación. Se usa
+    // FieldValue.delete() (no simplemente omitir la clave) para los campos
+    // opcionales vacíos: si no, borrar un dato en el panel de origen (ej.
+    // el sitio web) nunca se reflejaba acá — mismo bug que ya se corrigió
+    // del lado de veterinario-panel/servicio-panel. 'pyme' comparte el
+    // mismo tratamiento que 'servicio' (nombreNegocio/descripcion/etc.),
+    // solo cambia qué campo trae el sub-tipo (tipoServicio vs tipoPyme).
+    if (after['rol'] === 'veterinario' || after['rol'] === 'servicio' || after['rol'] === 'pyme') {
       try {
-        const categoria = after['rol'] === 'veterinario' ? 'veterinario' : after['tipoServicio'];
-        if (categoria) {
-          const nombre = after['rol'] === 'veterinario'
-            ? (after['nombreClinica'] || `${after['nombre'] ?? ''} ${after['apellido'] ?? ''}`.trim())
-            : (after['nombreNegocio'] || `${after['nombre'] ?? ''} ${after['apellido'] ?? ''}`.trim());
-          const doc: Record<string, unknown> = {
-            uid,
-            categoria,
-            nombre: (nombre || 'Sin nombre').toString().trim() || 'Sin nombre',
-            telefonoNegocio: after['telefonoNegocio'],
-            actualizadoEn: admin.firestore.FieldValue.serverTimestamp(),
-          };
-          for (const campo of [
-            'direccionNegocio', 'latNegocio', 'lngNegocio', 'logoUrl',
-            'sitioWeb', 'instagram', 'facebook', 'whatsappNegocio',
-          ]) {
-            if (after[campo] !== undefined) doc[campo] = after[campo];
-          }
-          if (after['rol'] === 'veterinario') {
-            doc['verificado'] = after['verificado'] === true;
-            if (after['especiesAtendidas']) doc['especiesAtendidas'] = after['especiesAtendidas'];
-            if (after['modalidadAtencion']) doc['modalidadAtencion'] = after['modalidadAtencion'];
-          }
-          await admin.firestore().doc(`profesionalesPublicos/${uid}`).set(doc, { merge: true });
-        }
+        const del = admin.firestore.FieldValue.delete();
+        const esVet = after['rol'] === 'veterinario';
+        const esPyme = after['rol'] === 'pyme';
+        const nombre = ((esVet ? after['nombreClinica'] : after['nombreNegocio']) || '').toString().trim();
+        const tipo = esVet ? after['tipoNegocioVeterinario'] : esPyme ? after['tipoPyme'] : after['tipoServicio'];
+        const especialidades = Array.isArray(after['especialidades']) ? after['especialidades'] : [];
+        const especiesAtendidas = Array.isArray(after['especiesAtendidas']) ? after['especiesAtendidas'] : [];
+        await admin.firestore().doc(`directorioPublico/${uid}`).set({
+          uid,
+          rol: after['rol'],
+          nombre: nombre || (esVet ? 'Veterinario/a' : 'Negocio'),
+          tipo: tipo || del,
+          modalidadAtencion: esVet && after['modalidadAtencion'] ? after['modalidadAtencion'] : del,
+          especialidades: esVet && especialidades.length ? especialidades : del,
+          especiesAtendidas: esVet && especiesAtendidas.length ? especiesAtendidas : del,
+          lugarEstudios: esVet && after['lugarEstudios'] ? after['lugarEstudios'] : del,
+          direccionNegocio: after['direccionNegocio'] || del,
+          telefonoNegocio: after['telefonoNegocio'] || del,
+          // Coordenadas capturadas vía Google Places Autocomplete en el
+          // panel de veterinario/servicio (ver PlacesAutocompleteDirective)
+          // — permiten mostrar el negocio en el mapa in-app del buscador.
+          latNegocio: after['latNegocio'] != null ? after['latNegocio'] : del,
+          lngNegocio: after['lngNegocio'] != null ? after['lngNegocio'] : del,
+          descripcion: !esVet && after['descripcion'] ? after['descripcion'] : del,
+          sitioWeb: after['sitioWeb'] || del,
+          instagram: after['instagram'] || del,
+          facebook: after['facebook'] || del,
+          whatsappNegocio: after['whatsappNegocio'] || del,
+          logoUrl: after['logoUrl'] || del,
+          verificado: esVet ? after['verificado'] === true : del,
+          region: after['region'] || del,
+          comuna: after['comuna'] || del,
+          actualizadoEn: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
       } catch (error) {
-        functions.logger.error('onUsuarioActualizado: error sincronizando profesionalesPublicos', error);
+        functions.logger.error('onUsuarioActualizado: error sincronizando directorioPublico', error);
       }
     }
 
@@ -1482,14 +1540,33 @@ export const onUsuarioActualizado = onDocumentWritten(
         functions.logger.error('onUsuarioActualizado: error avisando por Discord', error);
       }
     }
+
+    // Mismo criterio que arriba, para cuando un refugio sube/reemplaza su
+    // documento legal.
+    if (
+      after['rol'] === 'refugio' &&
+      after['verificado'] !== true &&
+      after['documentoLegalUrl'] &&
+      after['documentoLegalUrl'] !== before?.['documentoLegalUrl']
+    ) {
+      try {
+        await avisarDiscordRefugioPendiente(uid, after);
+      } catch (error) {
+        functions.logger.error('onUsuarioActualizado: error avisando por Discord (refugio)', error);
+      }
+    }
   }
 );
 
 // ─── Cloud Function: revisarVerificacionVeterinario ───────────────────────────
-// Aprueba o rechaza el título de un veterinario. Solo la cuenta admin de
-// Ashbis puede llamarla (ver ADMIN_EMAILS) — nunca el cliente directo: las
-// reglas de Firestore bloquean escribir "verificado" en cualquier sentido,
-// a propósito (ver comentario en firestore.rules).
+// Aprueba o rechaza la verificación antifraude de una cuenta profesional —
+// el título de un veterinario o el documento legal de un refugio (mismo
+// campo `verificado`, mismo flujo de revisión manual). Solo la cuenta admin
+// de Ashbis puede llamarla (ver ADMIN_EMAILS) — nunca el cliente directo:
+// las reglas de Firestore bloquean escribir "verificado" en cualquier
+// sentido, a propósito (ver comentario en firestore.rules). El nombre
+// quedó de cuando solo cubría veterinarios; no se renombró para no dejar
+// huérfano el endpoint ya desplegado.
 export const revisarVerificacionVeterinario = onRequest(
   { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB', maxInstances: 10 },
   async (req, res) => {
@@ -1519,13 +1596,14 @@ export const revisarVerificacionVeterinario = onRequest(
 
     const uid = sanitizeInput(req.body?.uid, 128);
     const aprobar = req.body?.aprobar === true;
-    if (!uid) { res.status(400).json({ error: 'Falta el uid del veterinario.' }); return; }
+    if (!uid) { res.status(400).json({ error: 'Falta el uid de la cuenta.' }); return; }
 
     try {
       const ref = admin.firestore().doc(`usuarios/${uid}`);
       const snap = await ref.get();
-      if (!snap.exists || snap.data()?.['rol'] !== 'veterinario') {
-        res.status(404).json({ error: 'No se encontró esa cuenta de veterinario.' });
+      const rol = snap.data()?.['rol'];
+      if (!snap.exists || (rol !== 'veterinario' && rol !== 'refugio')) {
+        res.status(404).json({ error: 'No se encontró esa cuenta de veterinario o refugio.' });
         return;
       }
       await ref.update({
@@ -1551,7 +1629,7 @@ async function ajustarTotalDonaciones(uid: string, mov: FirebaseFirestore.Docume
 }
 
 export const onMovimientoFinancieroCreado = onDocumentCreated(
-  { document: 'usuarios/{uid}/movimientosFinancieros/{movId}', region: 'us-central1' },
+  { document: 'usuarios/{uid}/movimientosFinancieros/{movId}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     try {
       await ajustarTotalDonaciones(event.params.uid, event.data?.data(), 1);
@@ -1562,7 +1640,7 @@ export const onMovimientoFinancieroCreado = onDocumentCreated(
 );
 
 export const onMovimientoFinancieroEliminado = onDocumentDeleted(
-  { document: 'usuarios/{uid}/movimientosFinancieros/{movId}', region: 'us-central1' },
+  { document: 'usuarios/{uid}/movimientosFinancieros/{movId}', region: 'us-central1', maxInstances: 10 },
   async (event) => {
     try {
       await ajustarTotalDonaciones(event.params.uid, event.data?.data(), -1);
@@ -1646,6 +1724,127 @@ export const reenviarNotificacionTransferencia = onRequest(
     } catch (error) {
       functions.logger.error('reenviarNotificacionTransferencia error', error);
       res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+  }
+);
+
+// ─── Cloud Function: syncPlayStats ────────────────────────────────────────
+// Lee el export de estadísticas de Play Console (instalaciones, rating) desde
+// el bucket privado de Cloud Storage que Google mantiene por cuenta de
+// desarrollador, y publica un resumen en Firestore (public_stats/playstore)
+// para que el sitio web lo muestre. Requiere que el service account con el
+// que corren las Cloud Functions (691736988474-compute@developer.gserviceaccount.com)
+// esté invitado en Play Console con acceso de Viewer a nivel de cuenta —
+// eso es un paso manual que solo puede hacer el dueño de la cuenta de Play.
+const PLAY_PACKAGE_NAME = 'proyecto.ashbis2026';
+// TODO: reemplazar por el bucket real (formato pubsite_prod_rev_XXXXXXXXXXXXX)
+// que aparece en Play Console → Configuración de la cuenta → Descargar informes.
+const PLAY_REPORTS_BUCKET = 'PENDIENTE_BUCKET_NAME';
+
+function decodePlayCsv(buffer: Buffer): string {
+  // Los exports de Play Console vienen en UTF-16LE con BOM.
+  if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) {
+    return buffer.toString('utf16le', 2);
+  }
+  return buffer.toString('utf8');
+}
+
+function parsePlayCsv(text: string): Record<string, string>[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map((line) => {
+    const cells = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
+    const row: Record<string, string> = {};
+    headers.forEach((h, i) => { row[h] = cells[i] ?? ''; });
+    return row;
+  });
+}
+
+function findHeader(headers: string[], mustInclude: string[]): string | undefined {
+  return headers.find((h) => {
+    const lower = h.toLowerCase();
+    return mustInclude.every((term) => lower.includes(term));
+  });
+}
+
+function latestRowByDate(rows: Record<string, string>[]): Record<string, string> | undefined {
+  if (rows.length === 0) return undefined;
+  const dateCol = findHeader(Object.keys(rows[0]), ['date']);
+  if (!dateCol) return rows[rows.length - 1];
+  return [...rows].sort((a, b) => (a[dateCol] > b[dateCol] ? -1 : 1))[0];
+}
+
+export const syncPlayStats = onSchedule(
+  { schedule: 'every day 08:00', timeZone: 'America/Santiago', region: 'us-central1', maxInstances: 1 },
+  async () => {
+    if (PLAY_REPORTS_BUCKET === 'PENDIENTE_BUCKET_NAME') {
+      functions.logger.warn('syncPlayStats: falta configurar PLAY_REPORTS_BUCKET.');
+      return;
+    }
+
+    try {
+      const storage = new Storage();
+      const bucket = storage.bucket(PLAY_REPORTS_BUCKET);
+
+      let installsActive: number | null = null;
+      let installsTotal: number | null = null;
+      let ratingAverage: number | null = null;
+
+      // ── Instalaciones ──────────────────────────────────────────────────
+      const [installFiles] = await bucket.getFiles({
+        prefix: `stats/installs/installs_${PLAY_PACKAGE_NAME}_`,
+      });
+      const latestInstallFile = [...installFiles].sort((a, b) => b.name.localeCompare(a.name))[0];
+
+      if (latestInstallFile) {
+        const [buf] = await latestInstallFile.download();
+        const rows = parsePlayCsv(decodePlayCsv(buf));
+        const row = latestRowByDate(rows);
+        if (row) {
+          const headers = Object.keys(row);
+          const activeCol = findHeader(headers, ['active', 'install']);
+          const totalCol =
+            findHeader(headers, ['total', 'user', 'install']) ||
+            findHeader(headers, ['total', 'device', 'install']);
+          if (activeCol && row[activeCol]) installsActive = parseInt(row[activeCol], 10) || null;
+          if (totalCol && row[totalCol]) installsTotal = parseInt(row[totalCol], 10) || null;
+        }
+      }
+
+      // ── Rating ────────────────────────────────────────────────────────
+      const [ratingFiles] = await bucket.getFiles({
+        prefix: `stats/ratings/ratings_${PLAY_PACKAGE_NAME}_`,
+      });
+      const latestRatingFile = [...ratingFiles].sort((a, b) => b.name.localeCompare(a.name))[0];
+
+      if (latestRatingFile) {
+        const [buf] = await latestRatingFile.download();
+        const rows = parsePlayCsv(decodePlayCsv(buf));
+        const row = latestRowByDate(rows);
+        if (row) {
+          const headers = Object.keys(row);
+          const ratingCol =
+            findHeader(headers, ['total', 'average', 'rating']) ||
+            findHeader(headers, ['average', 'rating']);
+          if (ratingCol && row[ratingCol]) ratingAverage = parseFloat(row[ratingCol]) || null;
+        }
+      }
+
+      if (installsActive === null && installsTotal === null && ratingAverage === null) {
+        functions.logger.warn('syncPlayStats: no se pudo extraer ningún dato de los CSV descargados.');
+        return;
+      }
+
+      const data: Record<string, unknown> = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+      if (installsActive !== null) data.installsActive = installsActive;
+      if (installsTotal !== null) data.installsTotal = installsTotal;
+      if (ratingAverage !== null) data.ratingAverage = ratingAverage;
+
+      await admin.firestore().doc('public_stats/playstore').set(data, { merge: true });
+      functions.logger.info('syncPlayStats: actualizado', data);
+    } catch (error) {
+      functions.logger.error('syncPlayStats error', error);
     }
   }
 );

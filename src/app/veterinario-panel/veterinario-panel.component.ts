@@ -33,6 +33,7 @@ import {
   chevronForwardOutline,
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
+import { deleteField } from 'firebase/firestore';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
@@ -47,6 +48,7 @@ interface FormPerfilVeterinario {
   modalidadAtencion: Models.Auth.ModalidadAtencion | '';
   nombreDoctor: string;
   numeroRegistroProfesional: string;
+  rut: string;
   lugarEstudios: string;
   especialidadesTexto: string;
   especiesAtendidas: string[];
@@ -118,6 +120,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
   etiquetaModalidad = signal<string | null>(null);
   nombreDoctor = signal<string | null>(null);
   numeroRegistroProfesional = signal<string | null>(null);
+  rut = signal<string | null>(null);
   especialidades = signal<string[]>([]);
   lugarEstudios = signal<string | null>(null);
   especiesAtendidas = signal<string[]>([]);
@@ -165,6 +168,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       modalidadAtencion: '',
       nombreDoctor: '',
       numeroRegistroProfesional: '',
+      rut: '',
       lugarEstudios: '',
       especialidadesTexto: '',
       especiesAtendidas: [],
@@ -182,6 +186,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       this.nombreClinica.set(perfil?.nombreClinica?.trim() || null);
       this.nombreDoctor.set(perfil?.nombreDoctor?.trim() || null);
       this.numeroRegistroProfesional.set(perfil?.numeroRegistroProfesional?.trim() || null);
+      this.rut.set(perfil?.rut?.trim() || null);
       this.especialidades.set(perfil?.especialidades ?? []);
       this.lugarEstudios.set(perfil?.lugarEstudios?.trim() || null);
       this.especiesAtendidas.set(perfil?.especiesAtendidas ?? []);
@@ -234,7 +239,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
   async quitarPaciente(p: Models.Mascotas.AccesoVeterinario): Promise<void> {
     const alert = await this.alertCtrl.create({
       header: 'Quitar paciente',
-      message: `Vas a dejar de ver a ${p.mascotaNombre} en tu lista de pacientes. Si lo necesitás de nuevo, el dueño te va a tener que compartir el PIN otra vez.`,
+      message: `Vas a dejar de ver a ${p.mascotaNombre} en tu lista de pacientes. Si lo necesitas de nuevo, el dueño te va a tener que compartir el PIN otra vez.`,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {
@@ -260,7 +265,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
    *  permiso real del navegador). */
   abrirSelectorArchivo(input: HTMLInputElement): void {
     if (!this.preferencias.camaraHabilitada) {
-      this.mostrarToast('Activá la cámara en Configuración → Permisos para subir archivos.', 'danger');
+      this.mostrarToast('Activa la cámara en Configuración → Permisos para subir archivos.', 'danger');
       return;
     }
     input.click();
@@ -271,7 +276,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
    *  título cualquiera sin ningún dato de contacto real detrás. */
   abrirSelectorTitulo(input: HTMLInputElement): void {
     if (!this.telefonoNegocio()) {
-      this.mostrarToast('Agregá el teléfono de tu clínica/consulta antes de pedir la verificación (tocá el lápiz para editarlo).', 'danger');
+      this.mostrarToast('Agrega el teléfono de tu clínica/consulta antes de pedir la verificación (toca el lápiz para editarlo).', 'danger');
       return;
     }
     this.abrirSelectorArchivo(input);
@@ -347,7 +352,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
    *  agregarPaciente(). */
   async escanearQrPaciente(input: HTMLInputElement): Promise<void> {
     if (!this.preferencias.camaraHabilitada) {
-      await this.mostrarToast('Activá la cámara en Configuración → Permisos para escanear un QR.', 'danger');
+      await this.mostrarToast('Activa la cámara en Configuración → Permisos para escanear un QR.', 'danger');
       return;
     }
     input.click();
@@ -384,6 +389,7 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       modalidadAtencion: this.modalidadAtencion() ?? '',
       nombreDoctor: this.nombreDoctor() ?? '',
       numeroRegistroProfesional: this.numeroRegistroProfesional() ?? '',
+      rut: this.rut() ?? '',
       lugarEstudios: this.lugarEstudios() ?? '',
       especialidadesTexto: this.especialidades().join(', '),
       especiesAtendidas: [...this.especiesAtendidas()],
@@ -403,6 +409,14 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
     this.formPerfil.lngNegocio = lugar.lng;
   }
 
+  /** El campo "Director/a técnico" solo aplica a clínicas (no a un
+   *  veterinario independiente) — ver el mismo criterio en
+   *  registro.component.ts (esClinicaConEquipo). */
+  get esClinicaConEquipo(): boolean {
+    const tipo = this.formPerfil.tipoNegocioVeterinario;
+    return tipo === 'clinica_pequena' || tipo === 'clinica_grande';
+  }
+
   toggleEspecie(especie: string, marcada: boolean): void {
     const set = new Set(this.formPerfil.especiesAtendidas);
     if (marcada) set.add(especie); else set.delete(especie);
@@ -414,22 +428,31 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
     this.guardandoPerfil = true;
     try {
       const f = this.formPerfil;
+      const esClinica = f.tipoNegocioVeterinario === 'clinica_pequena' || f.tipoNegocioVeterinario === 'clinica_grande';
+      const nombreDoctor = esClinica ? this.security.sanitizeText(f.nombreDoctor, 200) : '';
+      const direccionNegocio = f.direccionNegocio.trim() ? this.security.sanitizeText(f.direccionNegocio, 200) : '';
+      const telefonoNegocio = f.telefonoNegocio.trim() ? this.security.sanitizeText(f.telefonoNegocio, 30) : '';
       const especialidades = f.especialidadesTexto
         .split(',')
         .map(e => this.security.sanitizeText(e.trim(), 60))
         .filter(Boolean);
 
+      // deleteField() para los campos que la persona puede querer vaciar de
+      // nuevo (ej. cambiar de clínica a independiente, o borrar un teléfono
+      // viejo): mandar '' u omitir la clave no borra el valor anterior en
+      // Firestore, solo un delete explícito lo hace.
       const payload = {
         nombreClinica: this.security.sanitizeText(f.nombreClinica, 200),
         ...(f.tipoNegocioVeterinario ? { tipoNegocioVeterinario: f.tipoNegocioVeterinario } : {}),
         ...(f.modalidadAtencion ? { modalidadAtencion: f.modalidadAtencion } : {}),
-        nombreDoctor: this.security.sanitizeText(f.nombreDoctor, 200),
+        nombreDoctor: nombreDoctor || deleteField(),
         numeroRegistroProfesional: this.security.sanitizeText(f.numeroRegistroProfesional, 100),
+        rut: f.rut.trim() ? this.security.sanitizeText(f.rut, 12) : deleteField(),
         lugarEstudios: this.security.sanitizeText(f.lugarEstudios, 200),
         especialidades,
         especiesAtendidas: f.especiesAtendidas,
-        ...(f.direccionNegocio.trim() ? { direccionNegocio: this.security.sanitizeText(f.direccionNegocio, 200) } : {}),
-        ...(f.telefonoNegocio.trim() ? { telefonoNegocio: this.security.sanitizeText(f.telefonoNegocio, 30) } : {}),
+        direccionNegocio: direccionNegocio || deleteField(),
+        telefonoNegocio: telefonoNegocio || deleteField(),
         // Solo si eligió una sugerencia del autocompletado en esta misma
         // edición (ver onDireccionSeleccionada) — si solo tocó el texto sin
         // elegir una sugerencia nueva, no se tocan las coordenadas
@@ -442,13 +465,14 @@ export class VeterinarioPanelComponent implements OnInit, OnDestroy {
       await this.fs.updateDocument(`usuarios/${this.miUid}`, payload);
 
       this.nombreClinica.set(payload.nombreClinica || null);
-      this.nombreDoctor.set(payload.nombreDoctor || null);
+      this.nombreDoctor.set(nombreDoctor || null);
       this.numeroRegistroProfesional.set(payload.numeroRegistroProfesional || null);
+      this.rut.set(f.rut.trim() ? this.security.sanitizeText(f.rut, 12) : null);
       this.lugarEstudios.set(payload.lugarEstudios || null);
       this.especialidades.set(especialidades);
       this.especiesAtendidas.set(f.especiesAtendidas);
-      if ('direccionNegocio' in payload) this.direccionNegocio.set(payload.direccionNegocio || null);
-      if ('telefonoNegocio' in payload) this.telefonoNegocio.set(payload.telefonoNegocio || null);
+      this.direccionNegocio.set(direccionNegocio || null);
+      this.telefonoNegocio.set(telefonoNegocio || null);
       if (f.tipoNegocioVeterinario) {
         this.tipoNegocioVeterinario.set(f.tipoNegocioVeterinario);
         this.etiquetaTipoNegocio.set(ETIQUETAS_TIPO_NEGOCIO[f.tipoNegocioVeterinario]);

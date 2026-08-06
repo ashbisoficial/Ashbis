@@ -29,6 +29,7 @@ import {
   IonList,
   IonModal,
   IonNote,
+  IonProgressBar,
   IonRow,
   IonSelect,
   IonSelectOption,
@@ -39,13 +40,17 @@ import {
   IonCheckbox
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { eye, eyeOff, closeOutline } from 'ionicons/icons';
+import {
+  eye, eyeOff, closeOutline,
+  personOutline, homeOutline, medkitOutline, storefrontOutline, bagHandleOutline,
+} from 'ionicons/icons';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
 import { Models } from 'src/app/models/models';
 import { SecurityService } from 'src/app/services/security.service';
 import { TerminosContenidoComponent } from 'src/app/terminos/terminos-contenido.component';
 import { PrivacidadContenidoComponent } from 'src/app/privacidad/privacidad-contenido.component';
+import { RegionComunaSelectComponent } from 'src/app/shared/components/region-comuna-select/region-comuna-select.component';
 
 @Component({
   selector: 'app-registro',
@@ -80,8 +85,10 @@ import { PrivacidadContenidoComponent } from 'src/app/privacidad/privacidad-cont
     IonHeader,
     IonToolbar,
     IonTitle,
+    IonProgressBar,
     TerminosContenidoComponent,
-    PrivacidadContenidoComponent
+    PrivacidadContenidoComponent,
+    RegionComunaSelectComponent
   ],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
@@ -111,8 +118,8 @@ export class RegistroComponent {
       nombre: ['', [Validators.required, Validators.minLength(3), Validators.pattern(this.nombreRegex)]],
       apellido: ['', [Validators.required, Validators.minLength(3), Validators.pattern(this.nombreRegex)]],
       telefono: ['', [Validators.required, Validators.pattern(this.telefonoRegex)]],
-      direccion: ['', [Validators.required, Validators.minLength(10)]],
       region: ['', Validators.required],
+      comuna: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.pattern(this.passwordRegex)]],
       confirmPassword: ['', Validators.required],
@@ -126,6 +133,7 @@ export class RegistroComponent {
       modalidadAtencion: ['' as Models.Auth.ModalidadAtencion | ''],
       nombreNegocio: [''],
       tipoServicio: ['' as Models.Auth.TipoServicio | ''],
+      tipoPyme: ['' as Models.Auth.TipoPyme | ''],
       consentimiento: [false, [Validators.requiredTrue]]
     },
     { validators: [this.passwordsIgualesValidator(), this.rolExtraValidator()] }
@@ -146,10 +154,32 @@ export class RegistroComponent {
     { value: 'peluqueria', label: 'Peluquería o servicios estéticos' },
     { value: 'guarderia', label: 'Guardería o pensión' },
     { value: 'funeraria', label: 'Servicios funerarios' },
+    { value: 'hotel', label: 'Hotel para mascotas' },
+    { value: 'transporte', label: 'Transporte de mascotas' },
+  ];
+
+  readonly tiposPyme: { value: Models.Auth.TipoPyme; label: string }[] = [
+    { value: 'ropa', label: 'Ropa y accesorios de vestir' },
+    { value: 'juguetes', label: 'Juguetes' },
+    { value: 'accesorios', label: 'Accesorios (correas, comederos, camas...)' },
+    { value: 'comida', label: 'Alimento para mascotas' },
+    { value: 'snacks', label: 'Snacks y premios' },
+    { value: 'otro', label: 'Otro' },
+  ];
+
+  readonly tiposCuenta: { valor: Models.Auth.Rol; label: string; icono: string }[] = [
+    { valor: 'usuario', label: 'Dueño', icono: 'person-outline' },
+    { valor: 'refugio', label: 'Refugio', icono: 'home-outline' },
+    { valor: 'veterinario', label: 'Veterinario', icono: 'medkit-outline' },
+    { valor: 'servicio', label: 'Servicio', icono: 'storefront-outline' },
+    { valor: 'pyme', label: 'Pyme', icono: 'bag-handle-outline' },
   ];
 
   constructor() {
-    addIcons({ eye, eyeOff, closeOutline });
+    addIcons({
+      eye, eyeOff, closeOutline,
+      personOutline, homeOutline, medkitOutline, storefrontOutline, bagHandleOutline,
+    });
   }
 
   /** true si el rol elegido es veterinario Y el tipo de negocio implica
@@ -202,6 +232,93 @@ export class RegistroComponent {
     return this.datosForm.controls;
   }
 
+  // ── Registro en pasos ────────────────────────────────────────────────────
+  // Mismo FormGroup de siempre, solo se muestra un paso a la vez. El paso 1
+  // ("Datos del rol") se salta para 'usuario', que no tiene campos propios.
+  readonly ULTIMO_PASO = 3;
+  pasoActual = 0;
+
+  private readonly titulosPaso: Record<number, string> = {
+    0: 'Tipo de cuenta',
+    1: 'Datos de tu cuenta',
+    2: 'Datos personales',
+    3: 'Credenciales',
+  };
+
+  get tituloPasoActual(): string {
+    return this.titulosPaso[this.pasoActual] || '';
+  }
+
+  get pasosVisibles(): number[] {
+    const base = [0, 1, 2, 3];
+    return this.f.rol.value === 'usuario' ? base.filter(p => p !== 1) : base;
+  }
+
+  get posicionPaso(): number {
+    return this.pasosVisibles.indexOf(this.pasoActual) + 1;
+  }
+
+  get totalPasosVisibles(): number {
+    return this.pasosVisibles.length;
+  }
+
+  get progresoPaso(): number {
+    return this.posicionPaso / this.totalPasosVisibles;
+  }
+
+  siguiente(): void {
+    if (!this.validarPaso(this.pasoActual)) return;
+    const visibles = this.pasosVisibles;
+    const posicionActual = visibles.indexOf(this.pasoActual);
+    this.pasoActual = visibles[posicionActual + 1] ?? this.pasoActual;
+  }
+
+  atras(): void {
+    const visibles = this.pasosVisibles;
+    const posicionActual = visibles.indexOf(this.pasoActual);
+    this.pasoActual = visibles[posicionActual - 1] ?? this.pasoActual;
+  }
+
+  /** Controles con Validators propios que viven en cada paso — los campos
+   *  de "Datos del rol" (paso 1) no tienen Validators individuales, se
+   *  validan solo a través de los errores de rolExtraValidator (ver abajo). */
+  private controlesPaso(paso: number): string[] {
+    switch (paso) {
+      case 2: return ['nombre', 'apellido', 'telefono', 'region', 'comuna'];
+      case 3: return ['email', 'password', 'confirmPassword', 'consentimiento'];
+      default: return [];
+    }
+  }
+
+  private validarPaso(paso: number): boolean {
+    const nombres = this.controlesPaso(paso);
+    nombres.forEach(n => this.datosForm.get(n)?.markAsTouched());
+    if (nombres.some(n => this.datosForm.get(n)?.invalid)) return false;
+
+    if (paso === 1) {
+      const camposPorRol: Record<string, string[]> = {
+        refugio: ['nombreRefugio'],
+        veterinario: ['tipoNegocioVeterinario', 'nombreDoctor', 'numeroRegistroProfesional', 'modalidadAtencion'],
+        servicio: ['tipoServicio', 'nombreNegocio'],
+        pyme: ['tipoPyme', 'nombreNegocio'],
+      };
+      (camposPorRol[this.f.rol.value as string] || []).forEach(n => this.datosForm.get(n)?.markAsTouched());
+      const erroresPaso1 = [
+        'nombreRefugioRequerido', 'tipoNegocioRequerido', 'nombreDoctorRequerido',
+        'numeroRegistroRequerido', 'modalidadRequerida', 'tipoServicioRequerido', 'tipoPymeRequerido', 'nombreNegocioRequerido',
+      ];
+      if (erroresPaso1.some(e => this.datosForm.hasError(e))) return false;
+      if (this.esVeterinarioMedico && !this.tituloFile) {
+        this.errorTitulo = 'Sube tu título o certificado profesional.';
+        return false;
+      }
+    }
+
+    if (paso === 3 && this.datosForm.hasError('passwordMismatch')) return false;
+
+    return true;
+  }
+
   abrirTerminos(event: Event): void {
     event.preventDefault();
     this.mostrarModalTerminos = true;
@@ -227,6 +344,7 @@ export class RegistroComponent {
       modalidadAtencion: '',
       nombreNegocio: '',
       tipoServicio: '',
+      tipoPyme: '',
     });
     this.tituloFile = null;
     this.tituloNombre = null;
@@ -265,6 +383,14 @@ export class RegistroComponent {
       if (rol === 'servicio') {
         if (!form.get('tipoServicio')?.value) {
           return { tipoServicioRequerido: true };
+        }
+        if (!form.get('nombreNegocio')?.value?.trim()) {
+          return { nombreNegocioRequerido: true };
+        }
+      }
+      if (rol === 'pyme') {
+        if (!form.get('tipoPyme')?.value) {
+          return { tipoPymeRequerido: true };
         }
         if (!form.get('nombreNegocio')?.value?.trim()) {
           return { nombreNegocioRequerido: true };
@@ -320,8 +446,8 @@ export class RegistroComponent {
         nombre: this.security.sanitizeText(data.nombre!),
         apellido: this.security.sanitizeText(data.apellido!),
         telefono: this.security.sanitizeText(data.telefono!),
-        direccion: this.security.sanitizeText(data.direccion!),
         region: this.security.sanitizeText(data.region!),
+        comuna: this.security.sanitizeText(data.comuna!),
         email: cleanEmail,
         provider: 'password',
         fechaRegistro: new Date().toISOString(),
@@ -349,6 +475,10 @@ export class RegistroComponent {
           tipoServicio: data.tipoServicio as Models.Auth.TipoServicio,
           ...(data.nombreNegocio?.trim() ? { nombreNegocio: this.security.sanitizeText(data.nombreNegocio) } : {}),
         } : {}),
+        ...(rol === 'pyme' ? {
+          tipoPyme: data.tipoPyme as Models.Auth.TipoPyme,
+          ...(data.nombreNegocio?.trim() ? { nombreNegocio: this.security.sanitizeText(data.nombreNegocio) } : {}),
+        } : {}),
         consentGiven: true,
         consentDate: new Date().toISOString(),
         consentVersion: '2.0'
@@ -361,8 +491,10 @@ export class RegistroComponent {
         telefono: datosUser.telefono
       });
       // El usuario ya queda autenticado tras createUserWithEmailAndPassword,
-      // así que navegamos directo a home (no a /login, que lo rebotaría por publicGuard).
-      await this.router.navigate(['/tabs/home'], { replaceUrl: true });
+      // así que navegamos directo a bienvenida (no a /login, que lo rebotaría
+      // por publicGuard) — ahí se preguntan tema/tamaño de letra/permisos
+      // antes de entrar a /tabs/home.
+      await this.router.navigate(['/bienvenida'], { replaceUrl: true });
     } catch (error: any) {
       console.error('Error registrando', error);
       if (error?.code === 'auth/email-already-in-use') {

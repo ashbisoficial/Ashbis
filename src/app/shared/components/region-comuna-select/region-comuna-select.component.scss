@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+/* Replica a mano el estilo de ion-item de registro/completar-perfil (línea
+   roja inferior, ancho 90% centrado) porque el CSS de esas pantallas está
+   encapsulado por Angular y no llega hasta este componente hijo. Perfil usa
+   variant="plain" para quedarse con el ion-item por defecto de Ionic, igual
+   al resto de sus campos (ninguno tiene esta línea). */
+:host([data-variant="form"]) {
+  ion-item {
+    --background: transparent !important;
+    --color: var(--ion-text-color) !important;
+    --highlight-color-focused: #d30000 !important;
+    --highlight-color-valid: #d30000 !important;
+    --highlight-color-invalid: #d30000 !important;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  ion-item::part(native) {
+    border-bottom: 2px solid #d30000 !important;
+    width: 90%;
+    margin: 16px auto 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  ion-label {
+    background: var(--ion-background-color) !important;
+    color: var(--ion-text-color) !important;
+    font-size: 14px;
+  }
+
+  ion-select {
+    background: transparent !important;
+    color: var(--ion-text-color) !important;
+  }
+
+  ion-select::part(text) {
+    color: var(--ion-color-medium) !important;
+  }
+}
+
+.required {
+  color: #ff0000;
+}

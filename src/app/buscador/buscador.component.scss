@@ -1,0 +1,174 @@
+.filtro-rol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px auto 14px;
+  max-width: 360px;
+}
+
+.categoria-boton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .14));
+  background: var(--ashbis-surface);
+  color: var(--ion-text-color);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+
+  ion-icon {
+    font-size: 20px;
+    color: var(--ashbis-red, #8b0808);
+    flex-shrink: 0;
+  }
+
+  &.activo {
+    background: var(--ashbis-red, #8b0808);
+    border-color: var(--ashbis-red, #8b0808);
+    color: #fff;
+
+    ion-icon { color: #fff; }
+  }
+}
+
+.filtro-subtipo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 18px;
+}
+
+.chip-subtipo {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .16));
+  background: var(--ion-background-color);
+  color: var(--ion-color-medium);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+
+  &.activo {
+    background: var(--ashbis-red, #8b0808);
+    border-color: var(--ashbis-red, #8b0808);
+    color: #fff;
+  }
+}
+
+.vacio {
+  text-align: center;
+  color: var(--ion-color-medium);
+  margin-top: 24px;
+}
+
+.tarjeta-directorio {
+  border: 1px solid var(--ashbis-surface-border);
+  border-radius: 14px;
+  --background: var(--ashbis-surface);
+}
+
+.directorio-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.badges-directorio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+
+  ion-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+
+    ion-icon { font-size: 12px; }
+  }
+}
+
+.directorio-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.directorio-icono {
+  width: 44px;
+  height: 44px;
+  font-size: 28px;
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
+.directorio-titulo {
+  flex: 1;
+  min-width: 0;
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.directorio-dato {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin: 4px 0;
+  color: var(--ion-text-color);
+
+  ion-icon {
+    color: var(--ion-color-medium);
+    flex-shrink: 0;
+  }
+}
+
+.chips-especialidades {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+
+  .chip {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--ion-background-color);
+    border: 1px solid var(--ashbis-surface-border);
+    font-size: 11px;
+    color: var(--ion-color-medium);
+  }
+
+  .chip-especie {
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.08);
+  }
+}
+
+.directorio-links {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}

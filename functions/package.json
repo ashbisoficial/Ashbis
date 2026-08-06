@@ -11,6 +11,7 @@
     "deploy": "firebase deploy --only functions"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.14.0",
     "cors": "^2.8.5",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^5.1.1"

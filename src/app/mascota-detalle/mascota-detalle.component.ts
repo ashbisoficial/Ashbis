@@ -16,6 +16,7 @@ import {
 import { Subscription } from 'rxjs';
 
 import { Models } from '../../app/models/models';
+import { OrdenPdfService } from 'src/app/services/orden-pdf.service';
 
 import {
   AlertController,
@@ -37,12 +38,10 @@ import {
   IonSpinner,
   IonButton,
   IonIcon,
+  IonInput,
   IonTextarea,
   IonAvatar,
   IonNote,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
   ToastController
 } from '@ionic/angular/standalone';
 
@@ -57,11 +56,12 @@ import {
   sendOutline,
   timeOutline,
   alertCircleOutline,
-  addOutline,
-  closeCircleOutline,
+  createOutline,
+  clipboardOutline,
   medkitOutline,
+  shieldCheckmarkOutline,
   flaskOutline,
-  ribbonOutline
+  cutOutline
 } from 'ionicons/icons';
 
 import { AuthenticationService } from 'src/app/firebase/authentication';
@@ -69,26 +69,66 @@ import { Router } from '@angular/router';
 import { RefugioContextService } from 'src/app/services/refugio-context.service';
 import { take } from 'rxjs';
 
-/** Estado local del mini-formulario "Agregar medicamento" dentro de Nueva
- *  consulta — mismos campos que usa el dueño en mascota-editar, pero con
- *  una sola fase de frecuencia (sin fases múltiples) para mantener el
- *  formulario del veterinario simple y rápido de completar en consulta. */
-type NuevoMedicamento = {
-  nombre: string;
-  mg: number | null;
-  fechaInicio: string;
-  horaInicio: string;
-  frecuenciaHoras: number;
-  duracionDias: number | null;
-  notas: string;
-};
+interface ConfigTipoOrden {
+  label: string;
+  icono: string;
+  color: string;
+  motivoLabel: string;
+  motivoPlaceholder: string;
+  diagnosticoLabel: string;
+  diagnosticoPlaceholder: string;
+  tratamientoLabel: string;
+  tratamientoPlaceholder: string;
+  textoLabel: string;
+}
 
-type NuevoExamen = {
-  tipo: string;
-  fechaProgramada: string;
-  lugar: string;
-  costo: number | null;
-  notas: string;
+/** Etiquetas de los mismos 4 campos de siempre (motivo/diagnóstico/
+ *  tratamiento/texto — ver Models.HistorialMedico.Entrada), reformuladas
+ *  según el tipo de orden para que se lea como un registro clínico real en
+ *  vez de una nota genérica. No agrega campos nuevos al modelo de datos. */
+const CONFIG_TIPO_ORDEN: Record<Models.HistorialMedico.TipoEntrada, ConfigTipoOrden> = {
+  consulta: {
+    label: 'Consulta general', icono: 'clipboard-outline', color: 'medium',
+    motivoLabel: 'Motivo de consulta', motivoPlaceholder: 'Ej: control anual, vómitos hace 2 días',
+    diagnosticoLabel: 'Diagnóstico / impresión clínica', diagnosticoPlaceholder: '',
+    tratamientoLabel: 'Plan indicado', tratamientoPlaceholder: 'Procedimientos, exámenes solicitados, medicación...',
+    textoLabel: 'Otras observaciones',
+  },
+  receta: {
+    label: 'Receta médica', icono: 'medkit-outline', color: 'tertiary',
+    motivoLabel: 'Diagnóstico / motivo del tratamiento', motivoPlaceholder: '',
+    diagnosticoLabel: 'Medicamento(s), dosis y vía', diagnosticoPlaceholder: 'Ej: Amoxicilina 250mg, VO, cada 12h x 7 días',
+    tratamientoLabel: 'Duración e indicaciones de administración', tratamientoPlaceholder: '',
+    textoLabel: 'Indicaciones al propietario / signos de alarma',
+  },
+  vacunacion: {
+    label: 'Vacunación / desparasitación', icono: 'shield-checkmark-outline', color: 'success',
+    motivoLabel: 'Vacuna / producto aplicado', motivoPlaceholder: '',
+    diagnosticoLabel: 'Próxima dosis / refuerzo', diagnosticoPlaceholder: '',
+    tratamientoLabel: 'Vía de aplicación y lote', tratamientoPlaceholder: '',
+    textoLabel: 'Observaciones',
+  },
+  examen: {
+    label: 'Examen / imagenología', icono: 'flask-outline', color: 'secondary',
+    motivoLabel: 'Motivo clínico del estudio', motivoPlaceholder: '',
+    diagnosticoLabel: 'Estudio(s) solicitado(s)', diagnosticoPlaceholder: 'Ej: hemograma, radiografía de tórax',
+    tratamientoLabel: 'Preparación previa', tratamientoPlaceholder: 'Ayuno, sedación...',
+    textoLabel: 'Resultado / hallazgos',
+  },
+  cirugia: {
+    label: 'Cirugía', icono: 'cut-outline', color: 'danger',
+    motivoLabel: 'Procedimiento propuesto', motivoPlaceholder: '',
+    diagnosticoLabel: 'Evaluación prequirúrgica', diagnosticoPlaceholder: '',
+    tratamientoLabel: 'Protocolo anestésico', tratamientoPlaceholder: '',
+    textoLabel: 'Indicaciones postoperatorias',
+  },
+  otro: {
+    label: 'Otro', icono: 'document-text-outline', color: 'medium',
+    motivoLabel: 'Motivo', motivoPlaceholder: '',
+    diagnosticoLabel: 'Diagnóstico', diagnosticoPlaceholder: '',
+    tratamientoLabel: 'Tratamiento', tratamientoPlaceholder: '',
+    textoLabel: 'Observaciones',
+  },
 };
 
 @Component({
@@ -120,12 +160,10 @@ type NuevoExamen = {
 
     IonButton,
     IonIcon,
+    IonInput,
     IonTextarea,
     IonAvatar,
     IonNote,
-    IonInput,
-    IonSelect,
-    IonSelectOption
   ],
   templateUrl: './mascota-detalle.component.html',
   styleUrls: ['./mascota-detalle.component.scss'],
@@ -140,6 +178,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   private alertCtrl = inject(AlertController);
   private toastCtrl = inject(ToastController);
   private refugioCtx = inject(RefugioContextService);
+  private ordenPdfSvc = inject(OrdenPdfService);
 
   mascotaId = '';
   private miUid = '';
@@ -157,12 +196,21 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
       sendOutline,
       timeOutline,
       alertCircleOutline,
-      addOutline,
-      closeCircleOutline,
+      createOutline,
+      clipboardOutline,
       medkitOutline,
+      shieldCheckmarkOutline,
       flaskOutline,
-      ribbonOutline
+      cutOutline
     });
+  }
+
+  readonly tiposOrden: { valor: Models.HistorialMedico.TipoEntrada; config: ConfigTipoOrden }[] =
+    (Object.entries(CONFIG_TIPO_ORDEN) as [Models.HistorialMedico.TipoEntrada, ConfigTipoOrden][])
+      .map(([valor, config]) => ({ valor, config }));
+
+  configTipo(tipo: Models.HistorialMedico.TipoEntrada | undefined): ConfigTipoOrden {
+    return CONFIG_TIPO_ORDEN[tipo ?? 'consulta'];
   }
 
   segmentoActual: 'veterinarias' | 'historial' | 'resumen' = 'veterinarias';
@@ -180,6 +228,11 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
    *  se muestra el segmento, para no mostrar un instante "Veterinarias"
    *  (segmento por defecto) y que salte a "Historial" apenas resuelve. */
   rolListo = false;
+  /** Perfil completo de usuarios/{miUid} cuando soyVeterinario — nombre de
+   *  la clínica, teléfono/dirección, registro profesional y logo/timbre/
+   *  firma. Se usa para armar el PDF de cada orden que carga (ver
+   *  generarPdfOrden más abajo); no hace falta pedirlo de nuevo ahí. */
+  perfilVeterinario: any = null;
 
   vacunas: Vacuna[] = [];
   medicamentos: Medicamento[] = [];
@@ -190,43 +243,6 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   private subExamenes?: Subscription;
   private subDocumentos?: Subscription;
 
-  // ── Formulario "Nueva consulta" (solo veterinario) ──────────────────────
-  mostrarFormConsulta = false;
-  /** Perfil completo del veterinario autenticado — se usa para el membrete
-   *  (doctor, clínica, contacto, logo, firma, timbre) que se adjunta a cada
-   *  consulta que escribe. */
-  perfilVet: Models.Auth.UserProfile | null = null;
-  diagnostico = '';
-  notasConsulta = '';
-  guardandoConsulta = false;
-
-  medicamentosNuevos: NuevoMedicamento[] = [];
-  mostrarFormMedicamento = false;
-  formMedicamento: NuevoMedicamento = this.medicamentoVacio();
-
-  examenesNuevos: NuevoExamen[] = [];
-  mostrarFormExamen = false;
-  formExamen: NuevoExamen = this.examenVacio();
-
-  /** Fecha (yyyy-MM-dd) en la que termina el tratamiento, o null si la fase
-   *  es indefinida — mismo cálculo que mascota-editar.component.ts. */
-  private calcularFechaFinMedicamento(fechaInicio: string, tramos: { frecuenciaHoras: number; duracionDias: number | null }[]): string | null {
-    if (tramos.some(t => t.duracionDias == null)) return null;
-    const totalDias = tramos.reduce((acc, t) => acc + (t.duracionDias ?? 0), 0);
-    const [yyyy, mm, dd] = fechaInicio.substring(0, 10).split('-').map(n => parseInt(n, 10));
-    const fin = new Date(yyyy, mm - 1, dd);
-    fin.setDate(fin.getDate() + totalDias - 1);
-    return `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
-  }
-
-  private medicamentoVacio(): NuevoMedicamento {
-    const hoy = new Date().toISOString().substring(0, 10);
-    return { nombre: '', mg: null, fechaInicio: hoy, horaInicio: '08:00', frecuenciaHoras: 24, duracionDias: null, notas: '' };
-  }
-
-  private examenVacio(): NuevoExamen {
-    return { tipo: '', fechaProgramada: '', lugar: '', costo: null, notas: '' };
-  }
   /** true si soy dueño/equipo de esta mascota: solo esa cuenta puede generar
    *  el PIN y ver/revocar accesos otorgados a veterinarios. */
   puedoCompartirConVeterinario = false;
@@ -239,8 +255,20 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   entradasHistorial: Models.HistorialMedico.Entrada[] = [];
   accesosVeterinario: Models.Mascotas.AccesoVeterinario[] = [];
   colaboradoresHogarTemporal: Models.Mascotas.ColaboradorMascota[] = [];
-  nuevaNota = '';
+  /** Antes era un único cuadro de texto libre; ahora captura una atención
+   *  estructurada (motivo/diagnóstico/tratamiento) — "texto" queda para
+   *  observaciones sueltas que no encajan en los otros 3 campos. Al menos
+   *  uno de los 4 tiene que venir completo para poder guardar. "tipo" solo
+   *  cambia las etiquetas que ve el veterinario (ver CONFIG_TIPO_ORDEN);
+   *  el dato que se guarda son los mismos 4 campos de siempre. */
+  nuevaEntrada: { tipo: Models.HistorialMedico.TipoEntrada; motivo: string; diagnostico: string; tratamiento: string; texto: string } =
+    { tipo: 'consulta', motivo: '', diagnostico: '', tratamiento: '', texto: '' };
   enviandoNota = false;
+
+  get puedeAgregarNota(): boolean {
+    const n = this.nuevaEntrada;
+    return !!(n.motivo.trim() || n.diagnostico.trim() || n.tratamiento.trim() || n.texto.trim());
+  }
 
   ngOnInit() {
 
@@ -338,7 +366,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
       this.soyVeterinario = perfil?.rol === 'veterinario';
       if (this.soyVeterinario) {
         this.segmentoActual = 'historial';
-        this.perfilVet = perfil as Models.Auth.UserProfile;
+        this.perfilVeterinario = perfil;
       }
       this.rolListo = true;
       this.cargarDatosClinicosSiVet();
@@ -389,6 +417,19 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     (event.target as HTMLImageElement).style.display = 'none';
   }
 
+  /** El veterinario ya podía leer los exámenes en "Resumen", pero no tenía
+   *  forma de abrir el archivo de la orden/resultado que subió el dueño. */
+  abrirArchivoExamen(url: string): void {
+    window.open(url, '_blank', 'noopener');
+  }
+
+  /** Único camino hoy hacia "Editar mascota" para un veterinario — ese
+   *  componente ya detecta soyVeterinario y muestra solo Vacunas/Exámenes/
+   *  Medicamentos (nunca Info Mascota/Calendario, que son del dueño). */
+  irAHistorialClinico(): void {
+    this.router.navigate(['/tabs/mascota-editar', this.mascotaId, 'editar']);
+  }
+
   abrirEnMapa(vet: VeterinariaFavorita) {
     this.router.navigate(['/home'], {
       queryParams: {
@@ -413,12 +454,24 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   }
 
   async agregarNota(): Promise<void> {
-    const texto = this.nuevaNota.trim();
-    if (!texto || this.enviandoNota) return;
+    if (!this.puedeAgregarNota || this.enviandoNota) return;
     this.enviandoNota = true;
     try {
-      await this.firestoreService.agregarEntradaHistorial(this.mascotaId, texto);
-      this.nuevaNota = '';
+      // Solo el veterinario genera el PDF de la orden — es quien firma/
+      // sella; una nota del dueño no tiene "clínica" ni logo que mostrar.
+      if (this.soyVeterinario && this.mascota) {
+        await this.firestoreService.agregarEntradaHistorialConPdf(
+          this.mascotaId,
+          this.mascota.uidUsuario,
+          this.nuevaEntrada,
+          entradaId => this.generarPdfOrden(entradaId)
+        );
+      } else {
+        await this.firestoreService.agregarEntradaHistorial(this.mascotaId, this.nuevaEntrada);
+      }
+      // Mantiene el tipo elegido: es común cargar varias órdenes del mismo
+      // tipo seguidas (ej. varias vacunas en la misma visita).
+      this.nuevaEntrada = { tipo: this.nuevaEntrada.tipo, motivo: '', diagnostico: '', tratamiento: '', texto: '' };
     } catch {
       await this.mostrarToast('No se pudo guardar la nota. Intenta nuevamente.', 'danger');
     } finally {
@@ -426,133 +479,44 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── Nueva consulta (solo veterinario): diagnóstico + medicamentos/exámenes ──
+  /** Arma el PDF de la orden con los datos ya cargados en pantalla: la
+   *  mascota (this.mascota), el perfil del veterinario logueado
+   *  (perfilVeterinario, con su logo/timbre/firma) y los campos que llenó
+   *  en el formulario, ya con la etiqueta que corresponde al tipo elegido
+   *  (ver CONFIG_TIPO_ORDEN). */
+  private async generarPdfOrden(entradaId: string): Promise<Blob> {
+    const perfil = this.perfilVeterinario;
+    const config = this.configTipo(this.nuevaEntrada.tipo);
 
-  toggleFormConsulta(): void {
-    this.mostrarFormConsulta = !this.mostrarFormConsulta;
-  }
+    const campos: { label: string; valor: string }[] = [];
+    if (this.nuevaEntrada.motivo.trim()) campos.push({ label: config.motivoLabel, valor: this.nuevaEntrada.motivo.trim() });
+    if (this.nuevaEntrada.diagnostico.trim()) campos.push({ label: config.diagnosticoLabel, valor: this.nuevaEntrada.diagnostico.trim() });
+    if (this.nuevaEntrada.tratamiento.trim()) campos.push({ label: config.tratamientoLabel, valor: this.nuevaEntrada.tratamiento.trim() });
+    if (this.nuevaEntrada.texto.trim()) campos.push({ label: config.textoLabel, valor: this.nuevaEntrada.texto.trim() });
 
-  toggleFormMedicamento(): void {
-    this.mostrarFormMedicamento = !this.mostrarFormMedicamento;
-    if (this.mostrarFormMedicamento) this.formMedicamento = this.medicamentoVacio();
-  }
-
-  async agregarMedicamentoALista(): Promise<void> {
-    const m = this.formMedicamento;
-    if (!m.nombre.trim() || !m.mg || !m.fechaInicio || !m.frecuenciaHoras) {
-      await this.mostrarToast('Completa nombre, dosis, fecha de inicio y frecuencia.', 'danger');
-      return;
-    }
-    this.medicamentosNuevos = [...this.medicamentosNuevos, { ...m, nombre: m.nombre.trim() }];
-    this.mostrarFormMedicamento = false;
-  }
-
-  quitarMedicamentoDeLista(i: number): void {
-    this.medicamentosNuevos = this.medicamentosNuevos.filter((_, idx) => idx !== i);
-  }
-
-  toggleFormExamen(): void {
-    this.mostrarFormExamen = !this.mostrarFormExamen;
-    if (this.mostrarFormExamen) this.formExamen = this.examenVacio();
-  }
-
-  async agregarExamenALista(): Promise<void> {
-    const e = this.formExamen;
-    if (!e.tipo.trim()) {
-      await this.mostrarToast('Indica qué examen estás solicitando.', 'danger');
-      return;
-    }
-    this.examenesNuevos = [...this.examenesNuevos, { ...e, tipo: e.tipo.trim() }];
-    this.mostrarFormExamen = false;
-  }
-
-  quitarExamenDeLista(i: number): void {
-    this.examenesNuevos = this.examenesNuevos.filter((_, idx) => idx !== i);
-  }
-
-  /** true si el veterinario tiene al menos un dato profesional cargado en su
-   *  perfil (panel veterinario) — se usa para avisar si el membrete va a
-   *  salir vacío, sin bloquear el guardado por eso. */
-  get membreteIncompleto(): boolean {
-    return !this.perfilVet?.nombreDoctor && !this.perfilVet?.nombreClinica;
-  }
-
-  /** Guarda la consulta completa: la nota de historial (diagnóstico +
-   *  notas + membrete profesional snapshoteado) y, si se cargaron, los
-   *  medicamentos/exámenes nuevos como registros propios — mismas
-   *  colecciones que ya usa el dueño, así aparecen solas en su vista de
-   *  "Editar mascota" sin necesitar ningún paso extra. */
-  async guardarConsulta(): Promise<void> {
-    const diagnostico = this.diagnostico.trim();
-    if (!diagnostico || this.guardandoConsulta) {
-      if (!diagnostico) await this.mostrarToast('Escribe un diagnóstico antes de guardar.', 'danger');
-      return;
-    }
-    this.guardandoConsulta = true;
-    try {
-      const membrete: Models.HistorialMedico.MembreteVeterinario = {
-        nombreDoctor: this.perfilVet?.nombreDoctor || undefined,
-        nombreClinica: this.perfilVet?.nombreClinica || undefined,
-        telefonoNegocio: this.perfilVet?.telefonoNegocio || undefined,
-        direccionNegocio: this.perfilVet?.direccionNegocio || undefined,
-        logoUrl: this.perfilVet?.logoUrl || undefined,
-        firmaUrl: this.perfilVet?.firmaUrl || undefined,
-        timbreUrl: this.perfilVet?.timbreUrl || undefined,
-      };
-
-      const medicamentosIds = await Promise.all(this.medicamentosNuevos.map(async m => {
-        const tramos = [{ frecuenciaHoras: m.frecuenciaHoras, duracionDias: m.duracionDias }];
-        const payload: Medicamento = {
-          nombre: m.nombre,
-          mg: m.mg!,
-          fechaInicio: m.fechaInicio,
-          horaInicio: m.horaInicio,
-          tramos,
-          fechaFin: this.calcularFechaFinMedicamento(m.fechaInicio, tramos) || undefined,
-          notas: m.notas.trim() || undefined,
-          creadoPor: this.miUid,
-        } as Medicamento;
-        const ref = await this.firestoreService.addMedicamento(this.mascotaId, payload);
-        return ref.id as string;
-      }));
-
-      const examenesIds = await Promise.all(this.examenesNuevos.map(async e => {
-        const payload: Examen = {
-          tipo: e.tipo,
-          fechaProgramada: e.fechaProgramada || undefined,
-          lugar: e.lugar.trim() || undefined,
-          costo: e.costo ?? undefined,
-          notas: e.notas.trim() || undefined,
-          creadoPor: this.miUid,
-        } as Examen;
-        const ref = await this.firestoreService.addExamen(this.mascotaId, payload);
-        return ref.id as string;
-      }));
-
-      const medicamentosResumen = this.medicamentosNuevos.map(m =>
-        `${m.nombre} ${m.mg}mg — cada ${m.frecuenciaHoras}h${m.duracionDias ? ` por ${m.duracionDias} días` : ' (indefinido)'}`
-      );
-      const examenesResumen = this.examenesNuevos.map(e =>
-        e.fechaProgramada ? `${e.tipo} — ${e.fechaProgramada}` : e.tipo
-      );
-
-      await this.firestoreService.agregarEntradaHistorial(
-        this.mascotaId,
-        this.notasConsulta.trim() || diagnostico,
-        { diagnostico, membrete, medicamentosIds, examenesIds, medicamentosResumen, examenesResumen }
-      );
-
-      this.diagnostico = '';
-      this.notasConsulta = '';
-      this.medicamentosNuevos = [];
-      this.examenesNuevos = [];
-      this.mostrarFormConsulta = false;
-      await this.mostrarToast('Consulta guardada.', 'success');
-    } catch {
-      await this.mostrarToast('No se pudo guardar la consulta. Intenta nuevamente.', 'danger');
-    } finally {
-      this.guardandoConsulta = false;
-    }
+    return this.ordenPdfSvc.generar(
+      {
+        nombreClinica: perfil?.nombreClinica ?? null,
+        direccionNegocio: perfil?.direccionNegocio ?? null,
+        telefonoNegocio: perfil?.telefonoNegocio ?? null,
+        nombreVeterinario: `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || 'Veterinario/a',
+        numeroRegistroProfesional: perfil?.numeroRegistroProfesional ?? null,
+        logoUrl: perfil?.logoUrl ?? null,
+        timbreUrl: perfil?.timbreUrl ?? null,
+        firmaUrl: perfil?.firmaUrl ?? null,
+      },
+      {
+        nombre: this.mascota?.nombre ?? '',
+        especie: this.mascota?.especie,
+        raza: this.mascota?.raza,
+        sexo: this.mascota?.sexo,
+        edad: this.mascota?.edad,
+        peso: this.mascota?.peso,
+        color: this.mascota?.color,
+        numeroChip: this.mascota?.numeroChip,
+      },
+      { entradaId, tipoLabel: config.label, campos, fecha: new Date() }
+    );
   }
 
   // ── Compartir con veterinario (PIN) ─────────────────────────────────────

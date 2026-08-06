@@ -1,0 +1,118 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Panel de pyme</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="container">
+
+    <div *ngIf="cargando()" class="ion-text-center ion-padding">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+
+    <ion-card class="seccion-card" *ngIf="!cargando()">
+      <ion-card-header>
+        <div class="header-con-accion">
+          <ion-card-title>
+            <ion-icon name="bag-handle-outline"></ion-icon>
+            {{ nombreNegocio() || 'Tu marca' }}
+          </ion-card-title>
+          <ion-button *ngIf="!modoEdicion()" fill="clear" size="small" (click)="iniciarEdicion()">
+            <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+        <p class="seccion-subtitulo">
+          Esta información aparece cuando alguien te encuentra desde el buscador de Ashbis.
+        </p>
+      </ion-card-header>
+
+      <!-- Vista de solo lectura -->
+      <ion-card-content *ngIf="!modoEdicion()">
+        <div class="logo-wrap" *ngIf="logoUrl()">
+          <img [src]="logoUrl()" alt="Logo de la marca" />
+        </div>
+        <p class="dato-perfil" *ngIf="etiquetaTipoPyme()"><ion-icon name="bag-handle-outline"></ion-icon> {{ etiquetaTipoPyme() }}</p>
+        <p class="dato-perfil" *ngIf="direccionNegocio()">{{ direccionNegocio() }}</p>
+        <p class="dato-perfil" *ngIf="telefonoNegocio()">{{ telefonoNegocio() }}</p>
+        <p class="descripcion" *ngIf="descripcion()">{{ descripcion() }}</p>
+        <div class="enlaces-negocio" *ngIf="sitioWeb() || instagram() || facebook() || whatsappNegocio()">
+          <a *ngIf="sitioWeb()" [href]="sitioWeb()" target="_blank" rel="noopener"><ion-icon name="globe-outline"></ion-icon> Sitio web</a>
+          <a *ngIf="instagram()" [href]="instagram()" target="_blank" rel="noopener"><ion-icon name="logo-instagram"></ion-icon> Instagram</a>
+          <a *ngIf="facebook()" [href]="facebook()" target="_blank" rel="noopener"><ion-icon name="logo-facebook"></ion-icon> Facebook</a>
+          <a *ngIf="whatsappNegocio()" [href]="'https://wa.me/' + whatsappNegocio()" target="_blank" rel="noopener"><ion-icon name="logo-whatsapp"></ion-icon> WhatsApp</a>
+        </div>
+        <p class="vacio" *ngIf="!nombreNegocio() && !etiquetaTipoPyme()">
+          Todavía no completaste los datos de tu marca — toca el lápiz para agregarlos.
+        </p>
+      </ion-card-content>
+
+      <!-- Edición -->
+      <ion-card-content *ngIf="modoEdicion()" class="form-edicion">
+        <div class="logo-edicion">
+          <div class="logo-wrap" *ngIf="logoUrl()">
+            <img [src]="logoUrl()" alt="Logo de la marca" />
+          </div>
+          <input #logoInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="subirLogo($event)" />
+          <ion-button size="small" fill="outline" color="medium" [disabled]="subiendoLogo()" (click)="abrirSelectorLogo()">
+            <ion-icon name="image-outline" slot="start"></ion-icon>
+            {{ subiendoLogo() ? 'Subiendo...' : (logoUrl() ? 'Cambiar logo' : 'Subir logo') }}
+          </ion-button>
+        </div>
+
+        <ion-item lines="full">
+          <ion-label position="stacked">Qué vendes</ion-label>
+          <ion-select [(ngModel)]="form.tipoPyme" interface="popover" placeholder="Elige una opción">
+            <ion-select-option *ngFor="let opt of tiposPyme" [value]="opt[0]">{{ opt[1] }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Nombre de tu marca o emprendimiento</ion-label>
+          <ion-input [(ngModel)]="form.nombreNegocio"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Dirección (si tienes local o punto de retiro)</ion-label>
+          <ion-input [(ngModel)]="form.direccionNegocio"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Teléfono del negocio</ion-label>
+          <ion-input type="tel" [(ngModel)]="form.telefonoNegocio"></ion-input>
+        </ion-item>
+        <p class="nota-campo">Estos datos son del negocio, distintos de tu teléfono/dirección personal de la cuenta.</p>
+        <ion-item lines="full">
+          <ion-label position="stacked">Descripción</ion-label>
+          <ion-textarea [(ngModel)]="form.descripcion" autoGrow="true" placeholder="Cuenta de qué se trata tu marca"></ion-textarea>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Página web o tienda online</ion-label>
+          <ion-input type="url" [(ngModel)]="form.sitioWeb" placeholder="https://..."></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Instagram</ion-label>
+          <ion-input type="url" [(ngModel)]="form.instagram" placeholder="https://instagram.com/tu_marca"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">Facebook</ion-label>
+          <ion-input type="url" [(ngModel)]="form.facebook" placeholder="https://facebook.com/tu_marca"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">WhatsApp (solo número, con código de país)</ion-label>
+          <ion-input type="tel" [(ngModel)]="form.whatsappNegocio" placeholder="Ej: 56912345678"></ion-input>
+        </ion-item>
+
+        <div class="acciones-form">
+          <ion-button [disabled]="guardando" (click)="guardar()">
+            {{ guardando ? 'Guardando...' : 'Guardar' }}
+          </ion-button>
+          <ion-button fill="outline" color="medium" [disabled]="guardando" (click)="cancelarEdicion()">
+            Cancelar
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+</ion-content>

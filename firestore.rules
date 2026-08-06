@@ -96,7 +96,9 @@ service cloud.firestore {
           (!('direccion' in data) || data.direccion.size() <= 500) &&
           (!('descripcion' in data) || data.descripcion.size() <= 1000) &&
           (!('texto' in data) || data.texto.size() <= 2000) &&
-          (!('diagnostico' in data) || data.diagnostico.size() <= 2000)
+          (!('motivo' in data) || data.motivo.size() <= 1000) &&
+          (!('diagnostico' in data) || data.diagnostico.size() <= 1000) &&
+          (!('tratamiento' in data) || data.tratamiento.size() <= 2000)
         );
     }
 
@@ -109,7 +111,7 @@ service cloud.firestore {
       allow read:   if isUser(uid) || esMiembroDelRefugio(uid) || esAdminAshbis();
       allow create: if isUser(uid) && noLongStrings(request.resource.data)
                     && request.resource.data.get('rol', 'usuario')
-                       in ['usuario', 'refugio', 'veterinario', 'servicio']
+                       in ['usuario', 'refugio', 'veterinario', 'servicio', 'pyme']
                     // "verificado" nunca se autodeclara true al crear la
                     // cuenta — mismo motivo que en "update" más abajo.
                     && request.resource.data.get('verificado', false) == false;
@@ -253,13 +255,15 @@ service cloud.firestore {
       allow delete: if esAdminDelRefugio(resource.data.uidUsuario);
 
       // Lectura extendida a puedeVerHistorialMedico (incluye veterinarios
-      // con acceso por PIN): son parte del historial médico de la mascota.
-      // Crear/editar/borrar sigue reservado a puedeAccederMascota (el
-      // dueño/equipo del refugio).
+      // con acceso por PIN). Crear/editar también se extiende a un
+      // veterinario con acceso por PIN (puede recetar/cargar vacunas,
+      // exámenes, medicamentos y citas de un paciente puntual) — pero NO
+      // borrar, para que no pueda eliminar por error algo cargado por el
+      // dueño o por otro colega; borrar sigue reservado a puedeAccederMascota.
       match /vacunas/{vacunaId} {
         allow read: if puedeVerHistorialMedico(petId);
-        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
-        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
+        allow update: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       // Medicamentos y exámenes: a diferencia de vacunas/citas/documentos,
@@ -270,22 +274,20 @@ service cloud.firestore {
       // una nota nueva en historialMedico, mismo criterio append-only.
       match /medicamentos/{medId} {
         allow read: if puedeVerHistorialMedico(petId);
-        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId))
-                      && noLongStrings(request.resource.data);
-        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
+        allow update: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       match /examenes/{examenId} {
         allow read: if puedeVerHistorialMedico(petId);
-        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId))
-                      && noLongStrings(request.resource.data);
-        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
+        allow update: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       match /citas/{citaId} {
         allow read: if puedeVerHistorialMedico(petId);
-        allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
-        allow update: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);
+        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
+        allow update: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
       match /documentos/{docId} {
@@ -300,10 +302,16 @@ service cloud.firestore {
       // borrarlas después de creadas — mismo criterio que chatEquipo.
       match /historialMedico/{entradaId} {
         allow read:   if puedeVerHistorialMedico(petId);
+        // Al menos uno de los 4 campos (motivo/diagnóstico/tratamiento/texto)
+        // tiene que venir con contenido real — antes solo existía "texto".
         allow create: if puedeVerHistorialMedico(petId)
                       && request.resource.data.autorUid == request.auth.uid
-                      && request.resource.data.texto is string
-                      && request.resource.data.texto.size() > 0
+                      && (
+                        (request.resource.data.get('motivo', '') is string && request.resource.data.get('motivo', '').size() > 0) ||
+                        (request.resource.data.get('diagnostico', '') is string && request.resource.data.get('diagnostico', '').size() > 0) ||
+                        (request.resource.data.get('tratamiento', '') is string && request.resource.data.get('tratamiento', '').size() > 0) ||
+                        (request.resource.data.get('texto', '') is string && request.resource.data.get('texto', '').size() > 0)
+                      )
                       && noLongStrings(request.resource.data);
         allow update: if false;
         allow delete: if false;
@@ -368,11 +376,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Espejo público del buscador: solo los campos de negocio de un
-    // veterinario/servicio (ver ProfesionalPublico en models.ts) —
-    // sincronizado únicamente por Cloud Function, nunca por el cliente.
-    // Nunca incluye email ni teléfono/dirección personal de la cuenta.
-    match /profesionalesPublicos/{uid} {
+    // Buscador: espejo público de veterinarios/servicio/pyme, mismo criterio
+    // que refugiosPublico — solo Cloud Functions (Admin SDK) lo escribe,
+    // nunca el cliente. Ver DirectorioPublico.EntradaDirectorio en models.ts
+    // para la lista exacta de campos (todos "de negocio", nunca datos
+    // personales ni documentos de verificación).
+    match /directorioPublico/{uid} {
       allow read:  if isAuth();
       allow write: if false;
     }
@@ -612,6 +621,15 @@ service cloud.firestore {
       allow create: if isUser(request.resource.data.uid) && noLongStrings(request.resource.data);
       allow update: if false;
       allow delete: if false;
+    }
+
+    // Métricas públicas de Play Store (instalaciones, rating) para mostrar en
+    // el sitio web. Solo las escribe la Cloud Function syncPlayStats (Admin
+    // SDK, ignora estas reglas) a partir del export de Play Console —
+    // el cliente nunca escribe, solo lee.
+    match /public_stats/{docId} {
+      allow read:  if true;
+      allow write: if false;
     }
 
     match /{document=**} {

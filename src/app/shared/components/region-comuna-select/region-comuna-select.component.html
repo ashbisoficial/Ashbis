@@ -1,0 +1,31 @@
+<ion-item>
+  <ion-icon *ngIf="icon" [name]="icon" slot="start"></ion-icon>
+  <ion-label position="stacked">Región <span class="required" *ngIf="required">*</span></ion-label>
+  <ion-select
+    interface="popover"
+    placeholder="Selecciona una región"
+    [formControl]="regionControl"
+    [disabled]="disabled"
+    (ionBlur)="regionControl.markAsTouched()">
+    <ion-select-option *ngFor="let r of regiones" [value]="r.value">{{ r.label }}</ion-select-option>
+  </ion-select>
+</ion-item>
+<ion-note color="danger" *ngIf="regionControl.touched && regionControl.hasError('required')">
+  La región es obligatoria
+</ion-note>
+
+<ion-item>
+  <ion-icon *ngIf="icon" [name]="icon" slot="start"></ion-icon>
+  <ion-label position="stacked">Comuna <span class="required" *ngIf="required">*</span></ion-label>
+  <ion-select
+    interface="popover"
+    [placeholder]="comunasDisponibles.length ? 'Selecciona una comuna' : 'Primero elige una región'"
+    [disabled]="disabled || !comunasDisponibles.length"
+    [formControl]="comunaControl"
+    (ionBlur)="comunaControl.markAsTouched()">
+    <ion-select-option *ngFor="let c of comunasDisponibles" [value]="c">{{ c }}</ion-select-option>
+  </ion-select>
+</ion-item>
+<ion-note color="danger" *ngIf="comunaControl.touched && comunaControl.hasError('required')">
+  La comuna es obligatoria
+</ion-note>

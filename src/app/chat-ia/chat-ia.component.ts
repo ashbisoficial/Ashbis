@@ -122,7 +122,7 @@ export class ChatIaComponent implements OnInit {
     if (categoria.id === 'app') {
       this.agregarMensaje(
         'Ashbis IA',
-        'Contame qué necesitás: cómo usar una función, tipos de cuenta, o si querés reportar un error. ❓'
+        'Cuéntame qué necesitas: cómo usar una función, tipos de cuenta, o si quieres reportar un error. ❓'
       );
       this.pasoActual = 3;
     } else {

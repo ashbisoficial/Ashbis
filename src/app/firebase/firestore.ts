@@ -536,33 +536,30 @@ export class FirestoreService {
     return collectionData(q, { idField: 'id' }) as Observable<Models.HistorialMedico.Entrada[]>;
   }
 
-  async agregarEntradaHistorial(
-    petId: string,
-    texto: string,
-    extra?: {
-      diagnostico?: string;
-      membrete?: Models.HistorialMedico.MembreteVeterinario;
-      medicamentosIds?: string[];
-      examenesIds?: string[];
-      medicamentosResumen?: string[];
-      examenesResumen?: string[];
-    }
-  ): Promise<void> {
+  private async construirPayloadHistorial(datos: {
+    tipo?: Models.HistorialMedico.TipoEntrada;
+    motivo?: string; diagnostico?: string; tratamiento?: string; texto?: string;
+  }): Promise<Omit<Models.HistorialMedico.Entrada, 'id' | 'createdAt'>> {
     const uid = this.assertAuthenticated();
     const perfil = await this.getDocument(`usuarios/${uid}`);
     const autorNombre = `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim() || perfil?.email || 'Alguien';
-    const payload: Omit<Models.HistorialMedico.Entrada, 'id' | 'createdAt'> = {
-      texto,
+    return {
+      ...(datos.tipo ? { tipo: datos.tipo } : {}),
+      ...(datos.motivo?.trim() ? { motivo: datos.motivo.trim() } : {}),
+      ...(datos.diagnostico?.trim() ? { diagnostico: datos.diagnostico.trim() } : {}),
+      ...(datos.tratamiento?.trim() ? { tratamiento: datos.tratamiento.trim() } : {}),
+      ...(datos.texto?.trim() ? { texto: datos.texto.trim() } : {}),
       autorUid: uid,
       autorNombre,
       autorRol: (perfil?.rol as Models.Auth.Rol) ?? 'usuario',
-      ...(extra?.diagnostico ? { diagnostico: extra.diagnostico } : {}),
-      ...(extra?.membrete ? { membrete: extra.membrete } : {}),
-      ...(extra?.medicamentosIds?.length ? { medicamentosIds: extra.medicamentosIds } : {}),
-      ...(extra?.examenesIds?.length ? { examenesIds: extra.examenesIds } : {}),
-      ...(extra?.medicamentosResumen?.length ? { medicamentosResumen: extra.medicamentosResumen } : {}),
-      ...(extra?.examenesResumen?.length ? { examenesResumen: extra.examenesResumen } : {}),
     };
+  }
+
+  async agregarEntradaHistorial(petId: string, datos: {
+    tipo?: Models.HistorialMedico.TipoEntrada;
+    motivo?: string; diagnostico?: string; tratamiento?: string; texto?: string;
+  }): Promise<void> {
+    const payload = await this.construirPayloadHistorial(datos);
     await addDoc(
       collection(this.firestore, `mascotas/${petId}/${Models.HistorialMedico.PathEntradas}`),
       // createdAt se agrega DESPUÉS de sanitizeFirestoreObject: es un
@@ -573,6 +570,49 @@ export class FirestoreService {
       // resuelve a una fecha real).
       { ...this.security.sanitizeFirestoreObject(payload as any), createdAt: serverTimestamp() }
     );
+  }
+
+  /** Igual que agregarEntradaHistorial, pero además genera y sube el PDF de
+   *  la orden (datos de la mascota + del veterinario/clínica + su logo/
+   *  timbre/firma) y lo deja linkeado en `pdfUrl`. historialMedico es
+   *  append-only (allow update: if false en firestore.rules), así que
+   *  pdfUrl tiene que ir en el mismo create — nunca se puede agregar
+   *  después con un update. Por eso acá se arma el ID del documento ANTES
+   *  de escribirlo (para poder subir el PDF a esa ruta) y recién al final
+   *  se hace un único setDoc con todo junto. */
+  async agregarEntradaHistorialConPdf(
+    petId: string,
+    duenoUid: string,
+    datos: {
+      tipo?: Models.HistorialMedico.TipoEntrada;
+      motivo?: string; diagnostico?: string; tratamiento?: string; texto?: string;
+    },
+    generarPdf: (entradaId: string) => Promise<Blob>
+  ): Promise<void> {
+    const payload = await this.construirPayloadHistorial(datos);
+    const docRef = doc(collection(this.firestore, `mascotas/${petId}/${Models.HistorialMedico.PathEntradas}`));
+
+    let pdfUrl: string | undefined;
+    try {
+      const blob = await generarPdf(docRef.id);
+      const path = `mascotas/${duenoUid}/${petId}/${Models.HistorialMedico.PathEntradas}/${docRef.id}/orden.pdf`;
+      const r = ref(this.storage, path);
+      await uploadBytes(r, blob, { contentType: 'application/pdf' });
+      pdfUrl = await getDownloadURL(r);
+    } catch (error) {
+      // El PDF es un adicional — si falla su generación/subida, igual se
+      // guarda la orden clínica (lo importante) sin bloquear al veterinario.
+      console.error('agregarEntradaHistorialConPdf: no se pudo generar/subir el PDF', error);
+    }
+
+    await setDoc(docRef, {
+      // pdfUrl fuera de sanitizeFirestoreObject a propósito: mismo criterio
+      // que tituloUrl/logoUrl en otros métodos de este archivo — sanitizeText
+      // trunca a 500 chars y podría cortar una URL de descarga larga.
+      ...this.security.sanitizeFirestoreObject(payload as any),
+      ...(pdfUrl ? { pdfUrl } : {}),
+      createdAt: serverTimestamp(),
+    });
   }
 
   /**
@@ -602,7 +642,7 @@ export class FirestoreService {
     return body.mascota;
   }
 
-  // ── Verificación de veterinarios (solo cuenta admin de Ashbis) ────────────
+  // ── Verificación de cuentas profesionales (solo cuenta admin de Ashbis) ───
 
   /** Veterinarios sin verificar todavía — para el panel admin. Solo la
    *  cuenta admin de Ashbis tiene permiso de Firestore para esta consulta
@@ -613,6 +653,18 @@ export class FirestoreService {
     return collectionData(q, { idField: 'uid' }) as Observable<Models.Auth.UserProfile[]>;
   }
 
+  /** Igual que getVeterinariosPendientes, para refugios (documento legal en
+   *  vez de título profesional). */
+  getRefugiosPendientes(): Observable<Models.Auth.UserProfile[]> {
+    const r = collection(this.firestore, 'usuarios');
+    const q = query(r, where('rol', '==', 'refugio'), where('verificado', '==', false));
+    return collectionData(q, { idField: 'uid' }) as Observable<Models.Auth.UserProfile[]>;
+  }
+
+  /** Aprueba/rechaza tanto veterinarios como refugios — el nombre quedó de
+   *  cuando la Cloud Function solo cubría veterinarios; el backend ya
+   *  resuelve el rol solo mirando el documento, así que funciona igual para
+   *  ambos sin mandar el rol acá. */
   async revisarVerificacionVeterinario(uid: string, aprobar: boolean): Promise<void> {
     const user = this.auth.currentUser;
     if (!user) throw new Error('Usuario no autenticado');
@@ -915,6 +967,15 @@ export class FirestoreService {
       Observable<Models.RefugiosPublico.InfoPublicaRefugio | undefined>;
   }
 
+  /** Buscador: veterinarios y servicios registrados en Ashbis, con sus
+   *  datos de negocio públicos. Firestore no hace texto libre nativo, así
+   *  que el filtro por nombre/especialidad se hace en el cliente sobre esta
+   *  misma lista (no es una colección grande — solo cuentas profesionales). */
+  getDirectorioPublico(): Observable<Models.DirectorioPublico.EntradaDirectorio[]> {
+    const r = collection(this.firestore, Models.DirectorioPublico.PathDirectorioPublico);
+    return collectionData(r) as Observable<Models.DirectorioPublico.EntradaDirectorio[]>;
+  }
+
   // ── Publicaciones (refugio: adopción/recolección/donación) ─────────────────
 
   getPublicacionesActivas(): Observable<Models.Publicaciones.Publicacion[]> {
@@ -1176,7 +1237,7 @@ export class FirestoreService {
       where('estado', '==', 'pendiente')
     ));
     if (!yaExiste.empty) {
-      throw new Error('Ya hay una solicitud pendiente para esta mascota con ese email. Podés reenviarla desde el panel del refugio.');
+      throw new Error('Ya hay una solicitud pendiente para esta mascota con ese email. Puedes reenviarla desde el panel del refugio.');
     }
 
     const clean = this.security.sanitizeFirestoreObject({
@@ -1383,16 +1444,4 @@ export class FirestoreService {
       .slice(0, 100);
   }
 
-  // ── Buscador (veterinarios/servicios registrados en Ashbis) ─────────────────
-  // profesionalesPublicos es de solo lectura para el cliente (ver
-  // firestore.rules) — la mantiene al día onUsuarioActualizado en
-  // functions/src/index.ts a partir de usuarios/{uid}.
-
-  getProfesionalesPorCategoria(
-    categoria: Models.Buscador.CategoriaProfesional
-  ): Observable<Models.Buscador.ProfesionalPublico[]> {
-    const r = collection(this.firestore, Models.Buscador.PathProfesionalesPublicos);
-    const q = query(r, where('categoria', '==', categoria));
-    return collectionData(q, { idField: 'uid' }) as Observable<Models.Buscador.ProfesionalPublico[]>;
-  }
 }

@@ -52,7 +52,7 @@ captures/
 # Comment next line if keeping position of elements in Navigation Editor is relevant for you
 .idea/navEditor.xml
 
-# Keystore files (nunca deben subirse: firman las actualizaciones de la app en Play Store)
+# Keystore files
 *.jks
 *.keystore
 keystore.properties

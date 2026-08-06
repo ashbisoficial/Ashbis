@@ -82,7 +82,7 @@ export class ForgotPasswordComponent implements OnInit {
 
     try {
       await this.authenticationService.resetPassword(email);
-      this.successMessage = 'Si el correo existe, recibira instrucciones de recuperacion.';
+      this.successMessage = 'Si el correo existe, recibirás instrucciones de recuperación.';
       this.emailForm.reset();
       setTimeout(() => this.router.navigate(['/login']), 3000);
     } catch (err) {

@@ -96,10 +96,17 @@
 
       </ion-list>
 
-      <!-- RESUMEN (solo veterinario): datos clínicos de solo lectura que ya
-           cargó el dueño desde "Editar mascota" — antes de esto el
-           veterinario no veía nada más que las notas de texto libre. -->
+      <!-- RESUMEN (solo veterinario): datos clínicos que ya cargó el dueño
+           desde "Editar mascota", más el acceso para que el propio
+           veterinario cargue/actualice vacunas, exámenes y medicamentos de
+           este paciente puntual (antes solo podía leer y dejar una nota de
+           texto libre en "Historial"). -->
       <div *ngSwitchCase="'resumen'">
+
+        <ion-button expand="block" fill="outline" color="danger" (click)="irAHistorialClinico()">
+          <ion-icon name="create-outline" slot="start"></ion-icon>
+          Cargar/actualizar vacunas, exámenes y medicamentos
+        </ion-button>
 
         <ion-card *ngIf="mascota.alergias?.length || mascota.enfermedadesCronicas?.length || mascota.medicamentosPermanentes?.length || mascota.esAgresivo || mascota.senasParticulares"
           class="tarjeta-alertas">
@@ -196,6 +203,12 @@
                 </ion-button>
               </div>
             </ion-label>
+            <ion-button *ngIf="e.ordenUrl" slot="end" size="small" fill="clear" (click)="abrirArchivoExamen(e.ordenUrl)">
+              Ver orden
+            </ion-button>
+            <ion-button *ngIf="e.resultadoUrl" slot="end" size="small" fill="clear" (click)="abrirArchivoExamen(e.resultadoUrl)">
+              Ver resultado
+            </ion-button>
           </ion-item>
         </ion-list>
         <ng-template #sinExamenes>
@@ -261,42 +274,27 @@
           </ion-card-content>
         </ion-card>
 
-        <!-- Notas de consulta -->
-        <div class="lista-consultas">
-          <div class="nota-consulta" [class.nota-profesional]="!!nota.membrete" *ngFor="let nota of entradasHistorial">
-            <div class="nota-header">
-              <div class="nota-autor">
-                <h2>{{ nota.membrete?.nombreDoctor || nota.autorNombre }}</h2>
-                <p class="nota-clinica" *ngIf="nota.membrete?.nombreClinica">{{ nota.membrete?.nombreClinica }}</p>
-              </div>
-              <img *ngIf="nota.membrete?.logoUrl" [src]="nota.membrete?.logoUrl" class="nota-logo" alt="Logo de la clínica" (error)="ocultarImagenRota($event)">
+        <!-- Notas de consulta: cada una se lee como una orden clínica
+             (tipo + campos según CONFIG_TIPO_ORDEN), no como una nota suelta. -->
+        <div class="lista-ordenes">
+          <div class="orden-card" *ngFor="let nota of entradasHistorial" [attr.data-color]="configTipo(nota.tipo).color">
+            <div class="orden-header">
+              <span class="orden-tipo-badge">
+                <ion-icon [name]="configTipo(nota.tipo).icono"></ion-icon>
+                {{ configTipo(nota.tipo).label }}
+              </span>
+              <span class="orden-fecha">{{ fechaNota(nota) }}</span>
             </div>
-
-            <p class="nota-diagnostico" *ngIf="nota.diagnostico"><strong>Diagnóstico:</strong> {{ nota.diagnostico }}</p>
-            <p class="nota-texto" *ngIf="nota.texto && nota.texto !== nota.diagnostico">{{ nota.texto }}</p>
-
-            <div class="nota-recetas" *ngIf="nota.medicamentosResumen?.length">
-              <p class="recetas-titulo"><ion-icon name="medkit-outline"></ion-icon> Medicamentos recetados</p>
-              <p class="recetas-item" *ngFor="let m of nota.medicamentosResumen">{{ m }}</p>
-            </div>
-            <div class="nota-recetas" *ngIf="nota.examenesResumen?.length">
-              <p class="recetas-titulo"><ion-icon name="flask-outline"></ion-icon> Exámenes solicitados</p>
-              <p class="recetas-item" *ngFor="let e of nota.examenesResumen">{{ e }}</p>
-            </div>
-
-            <p class="nota-contacto" *ngIf="nota.membrete?.telefonoNegocio || nota.membrete?.direccionNegocio">
-              {{ nota.membrete?.telefonoNegocio }}<ng-container *ngIf="nota.membrete?.telefonoNegocio && nota.membrete?.direccionNegocio"> • </ng-container>{{ nota.membrete?.direccionNegocio }}
-            </p>
-
-            <div class="nota-footer">
-              <p class="nota-fecha">{{ fechaNota(nota) }}</p>
-              <div class="nota-firma" *ngIf="nota.membrete?.firmaUrl || nota.membrete?.timbreUrl">
-                <img *ngIf="nota.membrete?.timbreUrl" [src]="nota.membrete?.timbreUrl" class="nota-timbre-img" alt="Timbre" (error)="ocultarImagenRota($event)">
-                <img *ngIf="nota.membrete?.firmaUrl" [src]="nota.membrete?.firmaUrl" class="nota-firma-img" alt="Firma" (error)="ocultarImagenRota($event)">
-              </div>
-            </div>
+            <p class="orden-autor">{{ nota.autorNombre }}</p>
+            <p *ngIf="nota.motivo" class="nota-campo"><strong>{{ configTipo(nota.tipo).motivoLabel }}:</strong> {{ nota.motivo }}</p>
+            <p *ngIf="nota.diagnostico" class="nota-campo"><strong>{{ configTipo(nota.tipo).diagnosticoLabel }}:</strong> {{ nota.diagnostico }}</p>
+            <p *ngIf="nota.tratamiento" class="nota-campo"><strong>{{ configTipo(nota.tipo).tratamientoLabel }}:</strong> {{ nota.tratamiento }}</p>
+            <p *ngIf="nota.texto" class="nota-texto"><strong>{{ configTipo(nota.tipo).textoLabel }}:</strong> {{ nota.texto }}</p>
+            <ion-button *ngIf="nota.pdfUrl" size="small" fill="outline" color="medium" class="btn-ver-pdf" (click)="abrirArchivoExamen(nota.pdfUrl)">
+              <ion-icon name="document-text-outline" slot="start"></ion-icon>
+              Ver PDF de la orden
+            </ion-button>
           </div>
-
           <ion-card *ngIf="entradasHistorial.length === 0">
             <ion-card-content class="ion-text-center">
               Aún no hay notas en el historial médico.
@@ -304,170 +302,39 @@
           </ion-card>
         </div>
 
-        <!-- Dueño/equipo: nota simple de texto libre -->
-        <div class="nueva-nota" *ngIf="rolListo && !soyVeterinario">
-          <ion-textarea
-            [(ngModel)]="nuevaNota"
-            placeholder="Agregar una nota al historial (diagnóstico, tratamiento, indicaciones...)"
-            autoGrow="true"
-            [rows]="2">
-          </ion-textarea>
-          <ion-button [disabled]="!nuevaNota.trim() || enviandoNota" (click)="agregarNota()">
-            <ion-icon name="send-outline" slot="icon-only"></ion-icon>
+        <div class="nueva-nota nueva-nota-estructurada">
+          <p class="label-tipo-orden">Tipo de orden</p>
+          <div class="selector-tipo-orden">
+            <button type="button" *ngFor="let t of tiposOrden"
+              class="chip-tipo-orden" [class.activo]="nuevaEntrada.tipo === t.valor"
+              [attr.data-color]="t.config.color"
+              (click)="nuevaEntrada.tipo = t.valor">
+              <ion-icon [name]="t.config.icono"></ion-icon>
+              {{ t.config.label }}
+            </button>
+          </div>
+
+          <ion-item lines="full">
+            <ion-label position="stacked">{{ configTipo(nuevaEntrada.tipo).motivoLabel }}</ion-label>
+            <ion-input [(ngModel)]="nuevaEntrada.motivo" [placeholder]="configTipo(nuevaEntrada.tipo).motivoPlaceholder"></ion-input>
+          </ion-item>
+          <ion-item lines="full">
+            <ion-label position="stacked">{{ configTipo(nuevaEntrada.tipo).diagnosticoLabel }}</ion-label>
+            <ion-input [(ngModel)]="nuevaEntrada.diagnostico" [placeholder]="configTipo(nuevaEntrada.tipo).diagnosticoPlaceholder"></ion-input>
+          </ion-item>
+          <ion-item lines="full">
+            <ion-label position="stacked">{{ configTipo(nuevaEntrada.tipo).tratamientoLabel }}</ion-label>
+            <ion-textarea [(ngModel)]="nuevaEntrada.tratamiento" autoGrow="true" [rows]="2" [placeholder]="configTipo(nuevaEntrada.tipo).tratamientoPlaceholder"></ion-textarea>
+          </ion-item>
+          <ion-item lines="none">
+            <ion-label position="stacked">{{ configTipo(nuevaEntrada.tipo).textoLabel }}</ion-label>
+            <ion-textarea [(ngModel)]="nuevaEntrada.texto" autoGrow="true" [rows]="2"></ion-textarea>
+          </ion-item>
+          <ion-button expand="block" [disabled]="!puedeAgregarNota || enviandoNota" (click)="agregarNota()">
+            <ion-icon name="send-outline" slot="start"></ion-icon>
+            Agregar al historial
           </ion-button>
         </div>
-
-        <!-- Veterinario: formulario completo de consulta -->
-        <ng-container *ngIf="rolListo && soyVeterinario">
-          <ion-button expand="block" class="btn-nueva-consulta" *ngIf="!mostrarFormConsulta" (click)="toggleFormConsulta()">
-            <ion-icon name="add-outline" slot="start"></ion-icon>
-            Nueva consulta
-          </ion-button>
-
-          <ion-card class="tarjeta-consulta" *ngIf="mostrarFormConsulta">
-            <ion-card-header>
-              <ion-card-title>Nueva consulta</ion-card-title>
-            </ion-card-header>
-            <ion-card-content>
-
-              <div class="membrete-preview">
-                <img *ngIf="perfilVet?.logoUrl" [src]="perfilVet?.logoUrl" class="membrete-logo" alt="Logo" (error)="ocultarImagenRota($event)">
-                <div class="membrete-datos">
-                  <p class="membrete-doctor" *ngIf="perfilVet?.nombreDoctor">Dr(a). {{ perfilVet?.nombreDoctor }}</p>
-                  <p class="membrete-clinica" *ngIf="perfilVet?.nombreClinica">{{ perfilVet?.nombreClinica }}</p>
-                  <p class="membrete-contacto" *ngIf="perfilVet?.telefonoNegocio || perfilVet?.direccionNegocio">
-                    {{ perfilVet?.telefonoNegocio }}<ng-container *ngIf="perfilVet?.telefonoNegocio && perfilVet?.direccionNegocio"> • </ng-container>{{ perfilVet?.direccionNegocio }}
-                  </p>
-                </div>
-              </div>
-              <p class="membrete-aviso" *ngIf="membreteIncompleto">
-                <ion-icon name="alert-circle-outline"></ion-icon>
-                Completa tus datos profesionales en tu panel para que aparezcan en el membrete de la consulta.
-              </p>
-
-              <ion-item lines="none" class="input-consulta">
-                <ion-label position="stacked">Diagnóstico *</ion-label>
-                <ion-textarea [(ngModel)]="diagnostico" autoGrow="true" [rows]="2" placeholder="Ej: Otitis externa aguda"></ion-textarea>
-              </ion-item>
-
-              <ion-item lines="none" class="input-consulta">
-                <ion-label position="stacked">Notas / indicaciones (opcional)</ion-label>
-                <ion-textarea [(ngModel)]="notasConsulta" autoGrow="true" [rows]="2" placeholder="Tratamiento, indicaciones para el dueño, próximo control..."></ion-textarea>
-              </ion-item>
-
-              <!-- Medicamentos -->
-              <div class="seccion-consulta">
-                <p class="seccion-titulo"><ion-icon name="medkit-outline"></ion-icon> Medicamentos recetados</p>
-
-                <div class="item-agregado" *ngFor="let m of medicamentosNuevos; let i = index">
-                  <span>{{ m.nombre }} {{ m.mg }}mg — cada {{ m.frecuenciaHoras }}h{{ m.duracionDias ? ' por ' + m.duracionDias + ' días' : ' (indefinido)' }}</span>
-                  <ion-button fill="clear" size="small" color="danger" (click)="quitarMedicamentoDeLista(i)">
-                    <ion-icon name="close-circle-outline" slot="icon-only"></ion-icon>
-                  </ion-button>
-                </div>
-
-                <ion-button expand="block" fill="outline" color="medium" size="small" *ngIf="!mostrarFormMedicamento" (click)="toggleFormMedicamento()">
-                  <ion-icon name="add-outline" slot="start"></ion-icon>
-                  Agregar medicamento
-                </ion-button>
-
-                <div class="mini-form" *ngIf="mostrarFormMedicamento">
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Nombre</ion-label>
-                    <ion-input [(ngModel)]="formMedicamento.nombre" clearInput></ion-input>
-                  </ion-item>
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Dosis (mg)</ion-label>
-                    <ion-input type="number" inputmode="decimal" [(ngModel)]="formMedicamento.mg"></ion-input>
-                  </ion-item>
-                  <ion-item lines="none" class="input-fecha">
-                    <ion-label position="stacked">Inicio del tratamiento</ion-label>
-                    <input type="date" class="date-input-custom" [(ngModel)]="formMedicamento.fechaInicio">
-                  </ion-item>
-                  <ion-item lines="none" class="input-fecha">
-                    <ion-label position="stacked">Hora de la primera dosis</ion-label>
-                    <input type="time" class="date-input-custom" [(ngModel)]="formMedicamento.horaInicio">
-                  </ion-item>
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Cada cuántas horas</ion-label>
-                    <ion-select [(ngModel)]="formMedicamento.frecuenciaHoras" interface="popover">
-                      <ion-select-option [value]="8">Cada 8 horas</ion-select-option>
-                      <ion-select-option [value]="12">Cada 12 horas</ion-select-option>
-                      <ion-select-option [value]="24">Cada 24 horas</ion-select-option>
-                      <ion-select-option [value]="48">Cada 48 horas</ion-select-option>
-                      <ion-select-option [value]="72">Cada 72 horas</ion-select-option>
-                    </ion-select>
-                  </ion-item>
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Duración en días (vacío = indefinido)</ion-label>
-                    <ion-input type="number" inputmode="numeric" [(ngModel)]="formMedicamento.duracionDias"></ion-input>
-                  </ion-item>
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Notas (opcional)</ion-label>
-                    <ion-input [(ngModel)]="formMedicamento.notas"></ion-input>
-                  </ion-item>
-                  <div class="mini-form-botones">
-                    <ion-button fill="clear" color="medium" (click)="toggleFormMedicamento()">Cancelar</ion-button>
-                    <ion-button fill="solid" color="danger" (click)="agregarMedicamentoALista()">Agregar</ion-button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Exámenes -->
-              <div class="seccion-consulta">
-                <p class="seccion-titulo"><ion-icon name="flask-outline"></ion-icon> Exámenes solicitados</p>
-
-                <div class="item-agregado" *ngFor="let e of examenesNuevos; let i = index">
-                  <span>{{ e.tipo }}<ng-container *ngIf="e.fechaProgramada"> — {{ e.fechaProgramada }}</ng-container></span>
-                  <ion-button fill="clear" size="small" color="danger" (click)="quitarExamenDeLista(i)">
-                    <ion-icon name="close-circle-outline" slot="icon-only"></ion-icon>
-                  </ion-button>
-                </div>
-
-                <ion-button expand="block" fill="outline" color="medium" size="small" *ngIf="!mostrarFormExamen" (click)="toggleFormExamen()">
-                  <ion-icon name="add-outline" slot="start"></ion-icon>
-                  Agregar examen
-                </ion-button>
-
-                <div class="mini-form" *ngIf="mostrarFormExamen">
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Tipo de examen</ion-label>
-                    <ion-input [(ngModel)]="formExamen.tipo" placeholder="Ej: Hemograma completo" clearInput></ion-input>
-                  </ion-item>
-                  <ion-item lines="none" class="input-fecha">
-                    <ion-label position="stacked">Fecha programada (opcional)</ion-label>
-                    <input type="date" class="date-input-custom" [(ngModel)]="formExamen.fechaProgramada">
-                  </ion-item>
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Lugar (opcional)</ion-label>
-                    <ion-input [(ngModel)]="formExamen.lugar"></ion-input>
-                  </ion-item>
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Costo estimado (opcional)</ion-label>
-                    <ion-input type="number" inputmode="decimal" [(ngModel)]="formExamen.costo"></ion-input>
-                  </ion-item>
-                  <ion-item lines="none">
-                    <ion-label position="stacked">Notas (opcional)</ion-label>
-                    <ion-input [(ngModel)]="formExamen.notas"></ion-input>
-                  </ion-item>
-                  <div class="mini-form-botones">
-                    <ion-button fill="clear" color="medium" (click)="toggleFormExamen()">Cancelar</ion-button>
-                    <ion-button fill="solid" color="danger" (click)="agregarExamenALista()">Agregar</ion-button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="consulta-botones">
-                <ion-button fill="clear" color="medium" [disabled]="guardandoConsulta" (click)="toggleFormConsulta()">Cancelar</ion-button>
-                <ion-button fill="solid" [disabled]="!diagnostico.trim() || guardandoConsulta" (click)="guardarConsulta()">
-                  <ion-spinner name="dots" *ngIf="guardandoConsulta"></ion-spinner>
-                  <ng-container *ngIf="!guardandoConsulta">Guardar consulta</ng-container>
-                </ion-button>
-              </div>
-
-            </ion-card-content>
-          </ion-card>
-        </ng-container>
 
       </div>
 

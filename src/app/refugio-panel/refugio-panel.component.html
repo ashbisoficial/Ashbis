@@ -29,7 +29,7 @@
             <p *ngIf="verificado()">El equipo de Ashbis confirmó la identidad legal de este refugio.</p>
             <p *ngIf="!verificado() && documentoLegalUrl()">Documento enviado, en revisión por el equipo de Ashbis.</p>
             <p *ngIf="!verificado() && !documentoLegalUrl()">
-              Subí un documento legal (personería jurídica, RUT o certificado de constitución) para que Ashbis pueda
+              Sube un documento legal (personería jurídica, RUT o certificado de constitución) para que Ashbis pueda
               verificar la cuenta. Se muestra como insignia en tus publicaciones para dar más confianza.
             </p>
           </div>
@@ -137,8 +137,10 @@
       </ion-card-content>
     </ion-card>
 
-    <!-- Transferencias enviadas (adopción/hogar temporal): solo la cuenta dueña. -->
-    <ion-card class="seccion-card" *ngIf="esDueno && transferenciasPendientesLista().length">
+    <!-- Transferencias enviadas (adopción/hogar temporal): dueño o cualquier
+         miembro del equipo (admin o staff), igual que puedeOperarComoRefugio()
+         en firestore.rules. -->
+    <ion-card class="seccion-card" *ngIf="esMiembroDelEquipo() && transferenciasPendientesLista().length">
       <ion-card-header>
         <ion-card-title>
           <ion-icon name="paw-outline"></ion-icon>
@@ -242,14 +244,14 @@
               <h2>{{ m.nombre }}</h2>
               <p>{{ m.email }} · {{ m.rolEquipo === 'admin' ? 'Admin' : 'Staff' }}</p>
             </ion-label>
-            <ion-button *ngIf="esDueno" slot="end" size="small" fill="outline" color="danger" (click)="quitarMiembro(m)">
+            <ion-button *ngIf="esAdminEquipo()" slot="end" size="small" fill="outline" color="danger" (click)="quitarMiembro(m)">
               Quitar
             </ion-button>
           </ion-item>
         </ion-list>
         <p class="vacio" *ngIf="!miembros().length">Todavía no hay nadie más en el equipo.</p>
 
-        <ng-container *ngIf="esDueno">
+        <ng-container *ngIf="esAdminEquipo()">
           <ion-button expand="block" fill="outline" color="medium" (click)="invitarAlEquipo()">
             <ion-icon name="add-outline" slot="start"></ion-icon>
             Invitar al equipo

@@ -15,6 +15,8 @@ export const environment = {
 
   // Mismo motivo que en environment.ts: los QR deben apuntar a la URL pública,
   // nunca a window.location.origin (rompe en la app Android/Capacitor).
+  // OJO: ashbis-web.web.app es la página de marketing (otro repo, otro dev)
+  // — la app vive en el site por defecto del proyecto, ashbis-ae5b2.web.app.
   appUrl: 'https://ashbis-ae5b2.web.app',
 
   appCheckSiteKey: '6LdcheUsAAAAAIup4YqAAxTuwnXiRqEJ7dYf7XD6',

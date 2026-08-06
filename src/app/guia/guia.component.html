@@ -11,7 +11,7 @@
   <div class="portada">
     <img src="assets/img/logo_ashbis.jpeg" alt="Ashbis" class="portada-logo" />
     <h1>Bienvenido a Ashbis</h1>
-    <p>Todo lo que necesitás saber para aprovechar la app al máximo, paso a paso.</p>
+    <p>Todo lo que necesitas saber para aprovechar la app al máximo, paso a paso.</p>
   </div>
 
   <div class="indice">
@@ -22,76 +22,79 @@
 
     <section id="cuenta" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="person-add-outline"></ion-icon></div>
-      <h2>1. Creá tu cuenta</h2>
-      <p>Al registrarte elegís uno de tres tipos de cuenta:</p>
+      <h2>1. Crea tu cuenta</h2>
+      <p>Al registrarte, eliges uno de cuatro tipos de cuenta:</p>
       <ul>
-        <li><strong>Dueño:</strong> gestioná el perfil de tus propias mascotas.</li>
-        <li><strong>Refugio:</strong> además de tus mascotas, podés publicar adopciones, campañas de donación y sumar a tu equipo a otras personas que ayuden a operar la cuenta.</li>
-        <li><strong>Veterinario:</strong> cuenta profesional — subís tu título para que Ashbis verifique tu cuenta, y accedés al historial médico de tus pacientes con el ID de la mascota y el PIN que te comparta su dueño.</li>
+        <li><strong>Dueño:</strong> gestiona el perfil de tus propias mascotas.</li>
+        <li><strong>Refugio:</strong> además de tus mascotas, puedes publicar adopciones, campañas de donación y sumar a tu equipo a otras personas que ayuden a operar la cuenta.</li>
+        <li><strong>Veterinario:</strong> cuenta profesional — sube su título para que Ashbis verifique la cuenta, y accede al historial médico de sus pacientes con el ID de la mascota y el PIN que le comparta el dueño (no tiene mascotas propias dentro de la app). Al cargar una consulta, receta, vacunación u otro tipo de orden, se genera automáticamente un PDF con los datos de la clínica, del paciente y de la orden, más su firma y timbre si los cargó en su perfil.</li>
+        <li><strong>Servicio:</strong> peluquería/estética, guardería o pensión, o servicios funerarios — no pide título profesional.</li>
       </ul>
-      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Podés cambiar la foto de perfil y tus datos personales en cualquier momento desde Perfil.</p>
+      <p>El registro se completa en pasos cortos (tipo de cuenta, datos propios de ese tipo de cuenta, datos personales y credenciales) en vez de un formulario único larguísimo. La dirección exacta ya no se pide al registrarte — es opcional y la agregas cuando quieras desde Perfil; región y comuna sí se piden desde el principio.</p>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Puedes cambiar la foto de perfil y tus datos personales en cualquier momento desde Perfil.</p>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Apenas creas la cuenta, una pantalla de bienvenida te pregunta por tema claro/oscuro, tamaño de letra, y si quieres activar notificaciones, cámara y ubicación — puedes cambiar cualquiera de esas preferencias más tarde desde <a (click)="irA('configuracion')">Configuración</a>.</p>
     </section>
 
     <section id="mascotas" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="paw-outline"></ion-icon></div>
-      <h2>2. Agregá a tu mascota</h2>
-      <p>Desde la pestaña <strong>Agregar</strong> creás su ficha: nombre, especie, raza, edad, sexo, color y una foto. Después la vas a encontrar en <strong>Mis Mascotas</strong>, con su estado (Normal o Perdida) visible en la tarjeta.</p>
-      <p>Tocá <strong>Editar ficha</strong> para actualizar sus datos o subir fotos a la galería, o <strong>Ver Perfil</strong> para entrar a su ficha completa.</p>
+      <h2>2. Agrega a tu mascota</h2>
+      <p>Desde la pestaña <strong>Agregar</strong> creas su ficha: nombre, especie, raza, edad, sexo, color y una foto. Después la vas a encontrar en <strong>Mis Mascotas</strong>, con su estado (Normal o Perdida) visible en la tarjeta.</p>
+      <p>Toca <strong>Editar ficha</strong> para actualizar sus datos o subir fotos a la galería, o <strong>Ver Perfil</strong> para entrar a su ficha completa.</p>
     </section>
 
     <section id="carnet" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="qr-code-outline"></ion-icon></div>
       <h2>3. Carnet digital y código QR</h2>
       <p>Cada mascota tiene su propio código QR. Al escanearlo, cualquier persona ve su <strong>carnet digital</strong> (una ficha pública con foto y datos básicos) sin necesidad de tener la app instalada.</p>
-      <p>Desde el perfil de la mascota, tocá <strong>QR</strong> para verlo o descargarlo, y <strong>Historial</strong> para abrir el carnet directamente.</p>
+      <p>Desde el perfil de la mascota, toca <strong>QR</strong> para verlo o descargarlo, y <strong>Historial</strong> para abrir el carnet directamente.</p>
     </section>
 
     <section id="perdida" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="warning-outline"></ion-icon></div>
       <h2>4. Reportar una mascota perdida</h2>
-      <p>En el perfil de la mascota, tocá <strong>Reportar perdida</strong>. Mientras esté marcada así, tu número de contacto (y el de los contactos de emergencia que agregues en tu Perfil) aparece en su ficha pública del QR, para que quien la encuentre pueda avisarte.</p>
-      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Apenas la recuperes, tocá <strong>Marcar como encontrada</strong> — tu contacto deja de mostrarse en el QR.</p>
+      <p>En el perfil de la mascota, toca <strong>Reportar perdida</strong>. Mientras esté marcada así, tu número de contacto (y el de los contactos de emergencia que agregues en tu Perfil) aparece en su ficha pública del QR, para que quien la encuentre pueda avisarte.</p>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> Apenas la recuperes, toca <strong>Marcar como encontrada</strong> — tu contacto deja de mostrarse en el QR.</p>
     </section>
 
     <section id="refugios" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="heart-outline"></ion-icon></div>
-      <h2>5. Publicá adopciones y recibí postulaciones</h2>
-      <p>Si tenés cuenta de refugio, desde <strong>Mis Publicaciones</strong> compartís adopciones, campañas de recolección o pedidos de donación. Aparecen en el feed del Home para que cualquier usuario las vea, con foto grande y toda la información al tocarlas.</p>
-      <p>En una publicación de <strong>adopción</strong>, cualquier persona puede postular contándote por qué le interesa. Vos ves todas las postulaciones desde la publicación y elegís con quién avanzar: al aceptar una, se abre un <strong>chat directo</strong> entre vos y quien postuló para coordinar todo.</p>
-      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> El traspaso de la mascota no es automático: una vez que se pusieron de acuerdo en el chat, tocás <strong>Enviar traspaso</strong> ahí mismo para iniciar la transferencia oficial de dueño.</p>
+      <h2>5. Publica adopciones y recibe postulaciones</h2>
+      <p>Si tienes cuenta de refugio, desde <strong>Mis Publicaciones</strong> compartes adopciones, campañas de recolección o pedidos de donación. Aparecen en el feed del Home para que cualquier usuario las vea, con foto grande y toda la información al tocarlas.</p>
+      <p>En una publicación de <strong>adopción</strong>, cualquier persona puede postular contándote por qué le interesa. Ves todas las postulaciones desde la publicación y eliges con quién avanzar: al aceptar una, se abre un <strong>chat directo</strong> con quien postuló para coordinar todo.</p>
+      <p class="tip"><ion-icon name="checkmark-circle-outline"></ion-icon> El traspaso de la mascota no es automático: una vez que se pusieron de acuerdo en el chat, tocas <strong>Enviar traspaso</strong> ahí mismo para iniciar la transferencia oficial de dueño.</p>
     </section>
 
     <section id="hogar-temporal" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="home-outline"></ion-icon></div>
       <h2>6. Hogar temporal y transferencias</h2>
-      <p>Desde el perfil de una mascota podés <strong>transferirla a un nuevo dueño</strong> (adopción) o compartir el acceso sin cambiar de dueño (<strong>hogar temporal</strong>) — la otra persona recibe una notificación y, al aceptarla, la mascota (o el acceso) pasa a su cuenta.</p>
-      <p>Como refugio, podés <strong>revocar un hogar temporal</strong> en cualquier momento desde la ficha de la mascota. Y una mascota nunca puede estar en dos estados a la vez: si se concreta una adopción, cualquier hogar temporal activo para esa mascota se cierra solo.</p>
+      <p>Desde el perfil de una mascota puedes <strong>transferirla a un nuevo dueño</strong> (adopción) o compartir el acceso sin cambiar de dueño (<strong>hogar temporal</strong>) — la otra persona recibe una notificación y, al aceptarla, la mascota (o el acceso) pasa a su cuenta.</p>
+      <p>Como refugio, puedes <strong>revocar un hogar temporal</strong> en cualquier momento desde la ficha de la mascota. Y una mascota nunca puede estar en dos estados a la vez: si se concreta una adopción, cualquier hogar temporal activo para esa mascota se cierra solo.</p>
     </section>
 
     <section id="panel-refugio" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="people-outline"></ion-icon></div>
       <h2>7. Panel, equipo y verificación del refugio</h2>
-      <p>Desde la pestaña <strong>Refugio</strong> tenés un panel con estadísticas, tus mascotas, publicaciones, veterinarias asociadas y tu equipo — invitá a otras personas como admin o staff para operar la cuenta entre varios, y hablá con ellas en el <strong>chat de equipo</strong>. El ícono de chat (junto a la campanita) te lleva directo a esa conversación, o a <strong>Mis chats</strong> si además tenés chats directos de adopción abiertos.</p>
-      <p>También podés cargar tus <strong>ingresos y gastos</strong> en Finanzas, y subir un documento legal para que Ashbis <strong>verifique tu cuenta</strong>. Una vez confirmado, tus publicaciones muestran una insignia de refugio verificado; si declaraste donaciones recibidas en Finanzas, el total también se muestra de forma transparente en tus publicaciones de donación.</p>
+      <p>Desde la pestaña <strong>Refugio</strong> tienes un panel con estadísticas, tus mascotas, publicaciones, veterinarias asociadas y tu equipo — invita a otras personas como admin o staff para operar la cuenta entre varios, y habla con ellas en el <strong>chat de equipo</strong>. El ícono de chat (junto a la campanita) te lleva directo a esa conversación, o a <strong>Mis chats</strong> si además tienes chats directos de adopción abiertos.</p>
+      <p>También puedes cargar tus <strong>ingresos y gastos</strong> en Finanzas, y subir un documento legal para que Ashbis <strong>verifique tu cuenta</strong>. Una vez confirmado, tus publicaciones muestran una insignia de refugio verificado; si declaraste donaciones recibidas en Finanzas, el total también se muestra de forma transparente en tus publicaciones de donación.</p>
     </section>
 
     <section id="chat" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="chatbubbles-outline"></ion-icon></div>
       <h2>8. Asistente de IA</h2>
-      <p>Estamos afinando el asistente de IA antes de reactivarlo — por ahora está <strong>temporalmente desactivado</strong> durante la beta. Ante cualquier duda de salud de tu mascota, consultá directamente con un veterinario.</p>
+      <p>Estamos afinando el asistente de IA antes de reactivarlo — por ahora está <strong>temporalmente desactivado</strong> durante la beta. Ante cualquier duda de salud de tu mascota, consulta directamente con un veterinario.</p>
     </section>
 
     <section id="notificaciones" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="notifications-outline"></ion-icon></div>
       <h2>9. Notificaciones</h2>
-      <p>El ícono de campanita (arriba a la derecha en el Home) te avisa cuando tenés invitaciones de equipo o solicitudes de transferencia/adopción pendientes, con un punto rojo si hay algo sin leer.</p>
-      <p>Si activás las notificaciones push en Configuración, también te van a llegar directo a la barra de notificaciones de tu celular (o de Safari/Chrome si instalaste Ashbis como app), aunque tengas la app cerrada.</p>
+      <p>El ícono de campanita (arriba a la derecha en el Home) te avisa cuando tienes invitaciones de equipo o solicitudes de transferencia/adopción pendientes, con un punto rojo si hay algo sin leer.</p>
+      <p>Si activas las notificaciones push en Configuración, también te van a llegar directo a la barra de notificaciones de tu celular (o de Safari/Chrome si instalaste Ashbis como app), aunque tengas la app cerrada.</p>
     </section>
 
     <section id="configuracion" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="settings-outline"></ion-icon></div>
       <h2>10. Configuración</h2>
-      <p>Desde el ícono de engranaje en Perfil accedés a Configuración, donde podés:</p>
+      <p>Desde el ícono de engranaje en Perfil accedes a Configuración, donde puedes:</p>
       <ul>
         <li>Elegir tema <strong>claro u oscuro</strong> y el tamaño de letra.</li>
         <li>Activar o desactivar las <strong>notificaciones push</strong>.</li>
@@ -103,13 +106,13 @@
     <section id="privacidad" class="tarjeta">
       <div class="tarjeta-icono"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
       <h2>11. Privacidad y tus datos</h2>
-      <p>Tu número de teléfono y los de tus contactos de emergencia solo se muestran públicamente si marcás a una mascota como perdida — nunca antes. Podés leer el detalle completo en la Política de Privacidad y los Términos y Condiciones, disponibles desde el registro y desde Configuración.</p>
+      <p>Tu número de teléfono y los de tus contactos de emergencia solo se muestran públicamente si marcas a una mascota como perdida — nunca antes. Puedes leer el detalle completo en la Política de Privacidad y los Términos y Condiciones, disponibles desde el registro y desde Configuración.</p>
     </section>
 
     <section id="ayuda" class="tarjeta tarjeta-final">
       <div class="tarjeta-icono"><ion-icon name="paw-outline"></ion-icon></div>
-      <h2>¿Necesitás ayuda?</h2>
-      <p>Escribinos a <a href="mailto:ashbis.oficial@gmail.com">ashbis.oficial&#64;gmail.com</a> y te respondemos a la brevedad.</p>
+      <h2>¿Necesitas ayuda?</h2>
+      <p>Escríbenos a <a href="mailto:ashbis.oficial@gmail.com">ashbis.oficial&#64;gmail.com</a> y te respondemos a la brevedad.</p>
     </section>
 
   </div>

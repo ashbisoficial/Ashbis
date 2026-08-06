@@ -29,6 +29,11 @@
   padding: 16px;
   gap: 10px;
   min-height: 100%;
+  // Sin overflow propio, scrollToBottom() (que fija scrollTop sobre este
+  // div) no hacía nada: el que de verdad scrolleaba era el shadow DOM
+  // interno de ion-content, no este contenedor.
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
 }
 
 .vacio {

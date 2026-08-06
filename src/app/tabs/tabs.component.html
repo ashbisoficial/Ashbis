@@ -8,18 +8,20 @@
       <ion-label>{{ 'tabs.home' | translate }}</ion-label> <!-- 'ion-label' también se importa -->
     </ion-tab-button>
 
-    <!-- 2. Pestaña Listar Mascotas -->
-    <ion-tab-button tab="listar-mascotas" href="/tabs/listar-mascotas">
+    <!-- 2. Pestaña Listar Mascotas: oculta para veterinario — esa cuenta
+         accede a pacientes ajenos por PIN (pestaña Veterinario), no tiene
+         mascotas propias. -->
+    <ion-tab-button *ngIf="!esVeterinario" tab="listar-mascotas" href="/tabs/listar-mascotas">
       <ion-icon name="list-outline"></ion-icon>
       <ion-label>{{ 'tabs.misMascotas' | translate }}</ion-label>
     </ion-tab-button>
 
-    <!-- 3. Pestaña Buscar: directorio de veterinarios/servicios registrados
-         en Ashbis (no confundir con el buscador de Google Places del Home,
-         que sigue igual). -->
-    <ion-tab-button tab="buscar" href="/tabs/buscar">
+    <!-- 3. Buscador: directorio público de veterinarios y servicios
+         registrados en Ashbis. Fijo para todos, igual que Home/Mis
+         Mascotas/Perfil — cualquier rol puede necesitar buscar. -->
+    <ion-tab-button tab="buscador" href="/tabs/buscador">
       <ion-icon name="search-outline"></ion-icon>
-      <ion-label>{{ 'tabs.buscar' | translate }}</ion-label>
+      <ion-label>Buscador</ion-label>
     </ion-tab-button>
 
     <!-- 4. Pestaña Refugio (dueño y colaboradores): hub único de todo lo
@@ -42,6 +44,13 @@
     <ion-tab-button *ngIf="esServicio" tab="servicio-panel" href="/tabs/servicio-panel">
       <ion-icon name="storefront-outline"></ion-icon>
       <ion-label>{{ 'tabs.servicio' | translate }}</ion-label>
+    </ion-tab-button>
+
+    <!-- 4.7. Pestaña Pyme (solo cuentas rol 'pyme': marcas/emprendimientos
+         que venden productos para mascotas): panel con los datos de la marca. -->
+    <ion-tab-button *ngIf="esPyme" tab="pyme-panel" href="/tabs/pyme-panel">
+      <ion-icon name="bag-handle-outline"></ion-icon>
+      <ion-label>Pyme</ion-label>
     </ion-tab-button>
 
     <!-- 5. Pestaña Perfil -->

@@ -1,0 +1,111 @@
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="container">
+
+    <div class="portada ion-text-center">
+      <ion-thumbnail style="--size: clamp(70px, 20vw, 100px); margin: 8px auto;">
+        <ion-img src="assets/img/logo_ashbis.jpeg" alt="ASHBIS" loading="lazy"></ion-img>
+      </ion-thumbnail>
+      <h1>¡Todo listo!</h1>
+      <p class="subtitulo">Antes de entrar, elige cómo quieres usar Ashbis — siempre puedes cambiarlo después desde Configuración.</p>
+    </div>
+
+    <!-- ═══════════ APARIENCIA ═══════════ -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="color-palette-outline"></ion-icon>
+          Apariencia
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="campo-label">Tema</p>
+        <ion-segment [value]="tema" (ionChange)="cambiarTema($event.detail.value)">
+          <ion-segment-button value="oscuro">
+            <ion-icon name="moon-outline"></ion-icon>
+            <ion-label>Oscuro</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="claro">
+            <ion-icon name="sunny-outline"></ion-icon>
+            <ion-label>Claro</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+
+        <p class="campo-label campo-label-mt">
+          <ion-icon name="text-outline"></ion-icon>
+          Tamaño de letra
+        </p>
+        <ion-segment [value]="tamanoTexto" (ionChange)="cambiarTamanoTexto($event.detail.value)">
+          <ion-segment-button value="pequeno">
+            <ion-label>A</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="normal">
+            <ion-label>A</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="grande">
+            <ion-label>A</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="muy-grande">
+            <ion-label>A</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- ═══════════ NOTIFICACIONES ═══════════ -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="notifications-outline"></ion-icon>
+          Notificaciones
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" class="item-toggle">
+          <ion-label>
+            Notificaciones push
+            <p>Invitaciones de equipo, solicitudes de transferencia/adopción.</p>
+          </ion-label>
+          <ion-spinner *ngIf="cargandoNotificaciones" name="crescent" slot="end"></ion-spinner>
+          <ion-toggle
+            *ngIf="!cargandoNotificaciones"
+            slot="end"
+            [checked]="estadoNotificaciones === 'concedido'"
+            [disabled]="estadoNotificaciones === 'no-soportado' || estadoNotificaciones === 'denegado'"
+            (ionChange)="alternarNotificaciones($event.detail.checked)"
+          ></ion-toggle>
+        </ion-item>
+        <p class="campo-nota" *ngIf="estadoNotificaciones === 'denegado'">
+          Las bloqueaste desde el navegador/sistema. Puedes reactivarlas más tarde desde la configuración de tu dispositivo.
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- ═══════════ PERMISOS ═══════════ -->
+    <ion-card class="seccion-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+          Cámara y ubicación
+        </ion-card-title>
+        <p class="seccion-subtitulo">Se usan para fotos de tus mascotas y para mostrarte contenido cercano.</p>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" class="item-toggle">
+          <ion-icon name="camera-outline" slot="start"></ion-icon>
+          <ion-label>Usar la cámara en la app</ion-label>
+          <ion-toggle slot="end" [checked]="camaraHabilitada" (ionChange)="alternarCamara($event.detail.checked)"></ion-toggle>
+        </ion-item>
+        <ion-item lines="none" class="item-toggle">
+          <ion-icon name="location-outline" slot="start"></ion-icon>
+          <ion-label>Usar mi ubicación en la app</ion-label>
+          <ion-toggle slot="end" [checked]="ubicacionHabilitada" (ionChange)="alternarUbicacion($event.detail.checked)"></ion-toggle>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-button expand="block" color="danger" (click)="continuar()">
+      Continuar
+    </ion-button>
+
+  </div>
+</ion-content>

@@ -111,7 +111,12 @@ export class RefugioFinanzasComponent implements AfterViewInit, OnDestroy {
       .subscribe(movs => {
         this.movimientos.set(movs ?? []);
         this.cargando.set(false);
-        this.actualizarGrafico();
+        // El <canvas> está detrás de *ngIf="!cargando()": en esta primera
+        // emisión el ViewChild todavía es undefined porque Angular no corrió
+        // el change detection que recién ahora lo inserta en el DOM.
+        // setTimeout lo difiere al siguiente tick, cuando el canvas ya existe
+        // — si no, el gráfico queda en blanco hasta que llegue otra emisión.
+        setTimeout(() => this.actualizarGrafico());
       });
   }
 

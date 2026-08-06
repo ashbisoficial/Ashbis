@@ -62,18 +62,6 @@
           </ion-segment-button>
         </ion-segment>
 
-        <p class="campo-label campo-label-mt">
-          <ion-icon name="language-outline"></ion-icon>
-          {{ 'config.apariencia.idioma' | translate }}
-        </p>
-        <ion-segment [value]="idioma" (ionChange)="cambiarIdioma($event.detail.value)">
-          <ion-segment-button value="es">
-            <ion-label>Español</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="en">
-            <ion-label>English</ion-label>
-          </ion-segment-button>
-        </ion-segment>
       </ion-card-content>
     </ion-card>
 
@@ -109,11 +97,11 @@
              nativo de instalación como Android, así que sin esto la persona
              nunca se entera de por qué el toggle está deshabilitado. -->
         <div class="aviso-ios" *ngIf="estadoNotificaciones === 'no-soportado' && esIOSWeb && !instaladoComoApp">
-          <p><strong>{{ 'config.notificaciones.iosAviso' | translate }}</strong></p>
+          <p><strong>En iPhone/iPad, las notificaciones solo funcionan si agregas Ashbis a tu pantalla de inicio:</strong></p>
           <ol>
-            <li>{{ 'config.notificaciones.iosPaso1' | translate }}</li>
-            <li>{{ 'config.notificaciones.iosPaso2' | translate }}</li>
-            <li>{{ 'config.notificaciones.iosPaso3' | translate }}</li>
+            <li>Toca el botón Compartir <span class="icono-compartir">⬆️</span> en la barra de Safari.</li>
+            <li>Elige <strong>"Agregar a pantalla de inicio"</strong>.</li>
+            <li>Abre Ashbis desde el ícono que se creó (no desde Safari) y vuelve a activar el toggle aquí.</li>
           </ol>
         </div>
         <p class="campo-nota" *ngIf="estadoNotificaciones === 'no-soportado' && !(esIOSWeb && !instaladoComoApp)">
@@ -130,7 +118,8 @@
           {{ 'config.permisos.titulo' | translate }}
         </ion-card-title>
         <p class="seccion-subtitulo">
-          {{ 'config.permisos.subtitulo' | translate }}
+          El permiso real del navegador/sistema no lo podemos cambiar nosotros — pero puedes decirle a Ashbis
+          que no use la cámara o tu ubicación aunque el permiso siga concedido.
         </p>
       </ion-card-header>
       <ion-card-content>
@@ -185,7 +174,7 @@
           <ion-icon *ngIf="!enviandoResetPassword" name="chevron-forward-outline" slot="end"></ion-icon>
         </ion-item>
         <p class="campo-nota" *ngIf="esCuentaGoogle">
-          {{ 'config.cuenta.cuentaGoogle' | translate }}
+          Inicias sesión con Google — la contraseña la administras desde tu cuenta de Google.
         </p>
 
         <ion-item lines="none" button (click)="cerrarSesion()">
@@ -211,7 +200,7 @@
           </ion-button>
         </ion-item>
         <p class="campo-nota">
-          {{ 'config.equipos.nota' | translate }}
+          Para ver el trabajo del refugio (mascotas, publicaciones, finanzas), usa la pestaña "Refugio" del menú.
         </p>
       </ion-card-content>
     </ion-card>

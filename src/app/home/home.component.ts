@@ -414,7 +414,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   getCurrentLocation() {
     if (!this.preferencias.ubicacionHabilitada) {
-      this.presentToast('Activá la ubicación en Configuración → Permisos para usar esto.', 'warning');
+      this.presentToast('Activa la ubicación en Configuración → Permisos para usar esto.', 'warning');
       return;
     }
     if (!navigator.geolocation) {

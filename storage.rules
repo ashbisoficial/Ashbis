@@ -26,6 +26,33 @@ service firebase.storage {
       return request.resource.size <= mb * 1024 * 1024;
     }
 
+    // Mismo criterio que puedeOperarComoRefugio()/puedeAccederMascota()/
+    // tieneAccesoVeterinario() en firestore.rules, pero repetido acá porque
+    // Storage Rules no puede "importar" las de Firestore — solo puede
+    // consultarlas cruzado con firestore.get()/exists(). Necesario para que
+    // un veterinario con acceso por PIN pueda subir el archivo de un examen
+    // (antes esto solo miraba si el uid del archivo coincidía con el del
+    // dueño, y un veterinario nunca es ese uid).
+    function puedeOperarComoRefugioStorage(duenoUid) {
+      return isUser(duenoUid) ||
+        firestore.exists(/databases/(default)/documents/usuarios/$(duenoUid)/miembros/$(request.auth.uid));
+    }
+
+    function esColaboradorMascotaStorage(petId) {
+      return isAuth() &&
+        firestore.exists(/databases/(default)/documents/mascotas/$(petId)/colaboradores/$(request.auth.uid));
+    }
+
+    function puedeAccederMascotaStorage(petId) {
+      let pet = firestore.get(/databases/(default)/documents/mascotas/$(petId)).data;
+      return puedeOperarComoRefugioStorage(pet.uidUsuario) || esColaboradorMascotaStorage(petId);
+    }
+
+    function tieneAccesoVeterinarioStorage(petId) {
+      return isAuth() &&
+        firestore.exists(/databases/(default)/documents/mascotas/$(petId)/accesosVeterinario/$(request.auth.uid));
+    }
+
     match /mascotas/{uid}/{petId}/foto/{filename} {
       allow read:          if true;
       allow create, update: if isUser(uid) && isImage() && maxSize(10);
@@ -39,9 +66,24 @@ service firebase.storage {
     }
 
     match /mascotas/{uid}/{petId}/examenes/{examenId}/{filename} {
-      allow read:          if isUser(uid);
-      allow create, update: if isUser(uid) && isImageOrPDF() && maxSize(20);
-      allow delete:        if isUser(uid);
+      allow read:          if puedeAccederMascotaStorage(petId) || tieneAccesoVeterinarioStorage(petId);
+      allow create, update: if (puedeAccederMascotaStorage(petId) || tieneAccesoVeterinarioStorage(petId))
+                            && isImageOrPDF() && maxSize(20);
+      // Sin tieneAccesoVeterinarioStorage a propósito: un veterinario puede
+      // subir/reemplazar el archivo de un examen, pero no borrarlo — mismo
+      // criterio que en firestore.rules.
+      allow delete:        if puedeAccederMascotaStorage(petId);
+    }
+
+    // PDF de una orden clínica del historial médico (ver
+    // Models.HistorialMedico.Entrada.pdfUrl) — mismo criterio de acceso que
+    // examenes: lo puede subir el dueño/equipo o un veterinario con acceso
+    // por PIN, pero solo el dueño/equipo puede borrarlo.
+    match /mascotas/{uid}/{petId}/historialMedico/{entradaId}/{filename} {
+      allow read:          if puedeAccederMascotaStorage(petId) || tieneAccesoVeterinarioStorage(petId);
+      allow create, update: if (puedeAccederMascotaStorage(petId) || tieneAccesoVeterinarioStorage(petId))
+                            && isPDF() && maxSize(10);
+      allow delete:        if puedeAccederMascotaStorage(petId);
     }
 
     match /mascotas/{uid}/{petId}/documentos/{filename} {

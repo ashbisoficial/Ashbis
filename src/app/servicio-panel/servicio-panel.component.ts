@@ -29,6 +29,7 @@ import {
   globeOutline, logoInstagram, logoFacebook, logoWhatsapp,
 } from 'ionicons/icons';
 import { Subject, takeUntil } from 'rxjs';
+import { deleteField } from 'firebase/firestore';
 import { AuthenticationService } from '../firebase/authentication';
 import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
@@ -40,6 +41,8 @@ const ETIQUETAS_TIPO_SERVICIO: Record<Models.Auth.TipoServicio, string> = {
   peluqueria: 'Peluquería o servicios estéticos',
   guarderia: 'Guardería o pensión',
   funeraria: 'Servicios funerarios',
+  hotel: 'Hotel para mascotas',
+  transporte: 'Transporte de mascotas',
 };
 
 interface FormPerfilServicio {
@@ -183,16 +186,20 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
 
     this.guardando = true;
     try {
+      // deleteField() para los campos opcionales: mandar '' u omitir la
+      // clave no borra el valor anterior en Firestore, solo un delete
+      // explícito lo hace — si no, la persona no puede vaciar un campo que
+      // ya había completado (ej. borrar el WhatsApp o la descripción vieja).
       await this.fs.updateDocument(`usuarios/${this.miUid}`, {
         nombreNegocio: this.security.sanitizeText(this.form.nombreNegocio, 120),
         tipoServicio: this.form.tipoServicio,
-        ...(this.form.direccionNegocio.trim() ? { direccionNegocio: this.security.sanitizeText(this.form.direccionNegocio, 200) } : {}),
-        ...(this.form.telefonoNegocio.trim() ? { telefonoNegocio: this.security.sanitizeText(this.form.telefonoNegocio, 30) } : {}),
-        ...(this.form.descripcion.trim() ? { descripcion: this.security.sanitizeText(this.form.descripcion, 500) } : {}),
-        ...(sitioWeb ? { sitioWeb } : {}),
-        ...(instagram ? { instagram } : {}),
-        ...(facebook ? { facebook } : {}),
-        ...(this.form.whatsappNegocio.trim() ? { whatsappNegocio: this.security.sanitizeText(this.form.whatsappNegocio, 30).replace(/\D/g, '') } : {}),
+        direccionNegocio: this.form.direccionNegocio.trim() ? this.security.sanitizeText(this.form.direccionNegocio, 200) : deleteField(),
+        telefonoNegocio: this.form.telefonoNegocio.trim() ? this.security.sanitizeText(this.form.telefonoNegocio, 30) : deleteField(),
+        descripcion: this.form.descripcion.trim() ? this.security.sanitizeText(this.form.descripcion, 500) : deleteField(),
+        sitioWeb: sitioWeb || deleteField(),
+        instagram: instagram || deleteField(),
+        facebook: facebook || deleteField(),
+        whatsappNegocio: this.form.whatsappNegocio.trim() ? this.security.sanitizeText(this.form.whatsappNegocio, 30).replace(/\D/g, '') : deleteField(),
         ...(this.form.latNegocio != null && this.form.lngNegocio != null
           ? { latNegocio: this.form.latNegocio, lngNegocio: this.form.lngNegocio }
           : {}),
@@ -208,7 +215,7 @@ export class ServicioPanelComponent implements OnInit, OnDestroy {
 
   abrirSelectorLogo(): void {
     if (!this.preferencias.camaraHabilitada) {
-      this.mostrarToast('Activá la cámara en Configuración → Permisos para subir archivos.', 'danger');
+      this.mostrarToast('Activa la cámara en Configuración → Permisos para subir archivos.', 'danger');
       return;
     }
     this.logoInputRef?.nativeElement.click();
