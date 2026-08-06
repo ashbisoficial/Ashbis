@@ -165,6 +165,20 @@
 
                 <ion-col size="12" sizeMd="6">
                   <ion-item>
+                    <ion-icon name="card-outline" slot="start"></ion-icon>
+                    <ion-label position="stacked">RUT</ion-label>
+                    <ion-input
+                      formControlName="rut"
+                      [readonly]="!editMode"
+                      placeholder="12.345.678-9"
+                      (ionBlur)="profileForm.get('rut')?.markAsTouched()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="getError('rut')">{{ getError('rut') }}</ion-note>
+                </ion-col>
+
+                <ion-col size="12" sizeMd="6">
+                  <ion-item>
                     <ion-icon name="calendar-outline" slot="start"></ion-icon>
                     <ion-label position="stacked">Fecha de nacimiento</ion-label>
                     <ion-input
@@ -188,45 +202,16 @@
           <ion-card-content>
             <ion-grid>
               <ion-row>
-                <ion-col size="12" sizeMd="6">
-                  <ion-item>
-                    <ion-icon name="location-outline" slot="start"></ion-icon>
-                    <ion-label position="stacked">Región</ion-label>
-                    <ion-select
-                      formControlName="region"
-                      interface="popover"
-                      placeholder="Selecciona una región"
-                      [disabled]="!editMode"
-                    >
-                      <ion-select-option value="I">Tarapacá</ion-select-option>
-                      <ion-select-option value="II">Antofagasta</ion-select-option>
-                      <ion-select-option value="III">Atacama</ion-select-option>
-                      <ion-select-option value="IV">Coquimbo</ion-select-option>
-                      <ion-select-option value="V">Valparaíso</ion-select-option>
-                      <ion-select-option value="RM">Región Metropolitana</ion-select-option>
-                      <ion-select-option value="VI">O'Higgins</ion-select-option>
-                      <ion-select-option value="VII">Maule</ion-select-option>
-                      <ion-select-option value="XVI">Ñuble</ion-select-option>
-                      <ion-select-option value="VIII">Biobío</ion-select-option>
-                      <ion-select-option value="IX">La Araucanía</ion-select-option>
-                      <ion-select-option value="X">Los Lagos</ion-select-option>
-                      <ion-select-option value="XI">Aysén</ion-select-option>
-                      <ion-select-option value="XII">Magallanes y Antártica Chilena</ion-select-option>
-                      <ion-select-option value="XV">Arica y Parinacota</ion-select-option>
-                    </ion-select>
-                  </ion-item>
-                </ion-col>
-
-                <ion-col size="12" sizeMd="6">
-                  <ion-item>
-                    <ion-icon name="location-outline" slot="start"></ion-icon>
-                    <ion-label position="stacked">Comuna</ion-label>
-                    <ion-input
-                      formControlName="comuna"
-                      [readonly]="!editMode"
-                      (ionBlur)="profileForm.get('comuna')?.markAsTouched()"
-                    ></ion-input>
-                  </ion-item>
+                <ion-col size="12">
+                  <app-region-comuna-select
+                    [form]="profileForm"
+                    regionControlName="region"
+                    comunaControlName="comuna"
+                    [required]="false"
+                    [disabled]="!editMode"
+                    icon="location-outline"
+                    variant="plain">
+                  </app-region-comuna-select>
                   <ion-note color="danger" *ngIf="getError('comuna')">{{ getError('comuna') }}</ion-note>
                 </ion-col>
 
@@ -387,10 +372,18 @@
         </ion-card-header>
         <ion-card-content>
           <ion-item lines="none" *ngFor="let refugioUid of refugiosEnLosQueColaboro">
-            <ion-label>Formás parte del equipo de {{ nombresRefugios[refugioUid] || 'Refugio' }}</ion-label>
+            <ion-label>Formas parte del equipo de {{ nombresRefugios[refugioUid] || 'Refugio' }}</ion-label>
           </ion-item>
         </ion-card-content>
       </ion-card>
+
+      <!-- Soporte: canal directo con el equipo de Ashbis para dudas,
+           preguntas o problemas con la app. -->
+      <ion-button expand="block" fill="outline" color="medium" class="ion-margin-top"
+        href="https://discord.gg/gawtUbxWKt" target="_blank" rel="noopener">
+        <ion-icon name="logo-discord" slot="start"></ion-icon>
+        ¿Dudas o problemas? Únete a nuestro Discord
+      </ion-button>
 
     </ng-container>
   </div>
@@ -417,7 +410,7 @@
       <div class="qr-cuenta-wrap" *ngIf="!cargandoQr && miQrToken">
         <qrcode [qrdata]="miQrToken" [width]="240" errorCorrectionLevel="M"></qrcode>
         <p class="qr-cuenta-ayuda">
-          Mostrale este código a un refugio para que te mande la solicitud de adopción u hogar temporal
+          Muéstrale este código a un refugio para que te mande la solicitud de adopción u hogar temporal
           sin tener que escribir tu email a mano.
         </p>
       </div>

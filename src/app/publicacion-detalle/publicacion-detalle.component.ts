@@ -161,9 +161,9 @@ export class PublicacionDetalleComponent implements OnDestroy {
     if (!pub?.id || this.enviandoPostulacion) return;
     const alert = await this.alertCtrl.create({
       header: `Postular a adoptar a ${pub.titulo}`,
-      message: 'El refugio va a ver tu postulación y, si le interesa, se abre un chat directo con vos para coordinar.',
+      message: 'El refugio va a ver tu postulación y, si le interesa, se abre un chat directo contigo para coordinar.',
       inputs: [
-        { name: 'mensaje', type: 'textarea', placeholder: 'Contale al refugio por qué querés adoptarla (opcional)' },
+        { name: 'mensaje', type: 'textarea', placeholder: 'Cuéntale al refugio por qué quieres adoptarla (opcional)' },
       ],
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
@@ -202,7 +202,7 @@ export class PublicacionDetalleComponent implements OnDestroy {
   async aceptarPostulacion(p: Models.Postulaciones.Postulacion): Promise<void> {
     const alert = await this.alertCtrl.create({
       header: 'Aceptar postulación',
-      message: `Se abre un chat directo con ${p.postulanteNombre} para coordinar la adopción. Todavía no transfiere la mascota — eso lo hacés después, ya charlando.`,
+      message: `Se abre un chat directo con ${p.postulanteNombre} para coordinar la adopción. Todavía no transfiere la mascota — eso lo haces después, ya charlando.`,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {

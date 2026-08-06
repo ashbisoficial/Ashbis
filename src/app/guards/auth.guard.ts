@@ -72,6 +72,33 @@ export const adminGuard: CanActivateFn = () => {
 };
 
 /**
+ * Guard para listar-mascotas/crear-mascotas: una cuenta veterinario no
+ * tiene mascotas propias, accede a pacientes ajenos por PIN (pestaña
+ * Veterinario) — si entra por URL directa a alguna de estas dos rutas
+ * (la pestaña "Mis Mascotas" ya está oculta para ese rol en tabs.component),
+ * la redirige a su panel en vez de dejarla actuar como dueña de mascotas.
+ * Igual que adminGuard: es solo comodidad de UI, no reemplaza que las
+ * Firestore Rules validen el acceso real.
+ */
+export const noVeterinarioGuard: CanActivateFn = () => {
+  const auth = inject(Auth);
+  const firestore = inject(Firestore);
+  const router = inject(Router);
+
+  return authState(auth).pipe(
+    take(1),
+    switchMap((user) => {
+      if (!user) return of(router.createUrlTree(['/login']));
+      return getDoc(doc(firestore, `usuarios/${user.uid}`)).then((snap) =>
+        snap.data()?.['rol'] === 'veterinario'
+          ? router.createUrlTree(['/tabs/veterinario-panel'])
+          : true
+      );
+    })
+  );
+};
+
+/**
  * Guard inverso: redirige a /tabs/home si el usuario YA está autenticado.
  * Úsalo en las rutas de login y registro para evitar que vuelvan atrás.
  */

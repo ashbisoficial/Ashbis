@@ -15,7 +15,7 @@
     </div>
 
     <p class="vacio" *ngIf="!cargando() && !mensajes().length">
-      Todavía no hay mensajes. Escribí el primero para avisarle algo al equipo.
+      Todavía no hay mensajes. Escribe el primero para avisarle algo al equipo.
     </p>
 
     <div class="message-bubble" *ngFor="let m of mensajes(); trackBy: trackById"

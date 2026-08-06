@@ -7,7 +7,6 @@
     "rules": "storage.rules"
   },
   "hosting": {
-    "site": "ashbis-web",
     "public": "www",
     "ignore": [
       "firebase.json",

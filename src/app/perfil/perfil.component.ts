@@ -30,8 +30,6 @@ import {
   IonModal,
   IonNote,
   IonRow,
-  IonSelect,
-  IonSelectOption,
   IonSkeletonText,
   IonSpinner,
   IonTextarea,
@@ -45,7 +43,7 @@ import {
   checkmarkOutline, personCircleOutline, alertCircleOutline,
   personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
   documentTextOutline, refreshOutline, addOutline, medkitOutline, settingsOutline,
-  qrCodeOutline, shieldCheckmarkOutline,
+  qrCodeOutline, shieldCheckmarkOutline, logoDiscord, cardOutline,
 } from 'ionicons/icons';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { Subject, takeUntil } from 'rxjs';
@@ -54,6 +52,7 @@ import { FirestoreService } from '../firebase/firestore';
 import { Models } from '../models/models';
 import { SecurityService } from '../services/security.service';
 import { PreferenciasService } from '../services/preferencias.service';
+import { RegionComunaSelectComponent } from '../shared/components/region-comuna-select/region-comuna-select.component';
 
 interface UsuarioActual {
   uid: string;
@@ -86,8 +85,6 @@ interface UsuarioActual {
     IonLabel,
     IonInput,
     IonTextarea,
-    IonSelect,
-    IonSelectOption,
     IonButton,
     IonGrid,
     IonRow,
@@ -97,7 +94,8 @@ interface UsuarioActual {
     IonBadge,
     IonNote,
     IonModal,
-    QRCodeComponent
+    QRCodeComponent,
+    RegionComunaSelectComponent
   ],
   providers: [DatePipe]
 })
@@ -149,12 +147,16 @@ export class PerfilComponent implements OnDestroy {
 
   private readonly nombreRegex = /^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s'-]+$/;
   private readonly telefonoRegex = /^[+\d\s\-()]{6,20}$/;
+  /** Acepta RUT chileno con o sin puntos, con guión y dígito verificador
+   *  (0-9 o k/K) — ej. "12.345.678-9" o "12345678-9". */
+  private readonly rutRegex = /^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/;
 
   profileForm = this.fb.group({
     nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60), Validators.pattern(this.nombreRegex)]],
     apellido: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60), Validators.pattern(this.nombreRegex)]],
     email: [{ value: '', disabled: true }, [Validators.required, Validators.email]],
     telefono: ['', [Validators.pattern(this.telefonoRegex)]],
+    rut: ['', [Validators.pattern(this.rutRegex)]],
     fechaNacimiento: ['', [this.validarFechaNoFutura()]],
     region: ['', [Validators.maxLength(60)]],
     comuna: ['', [Validators.maxLength(60)]],
@@ -205,7 +207,7 @@ export class PerfilComponent implements OnDestroy {
       checkmarkOutline, personCircleOutline, alertCircleOutline,
       personOutline, mailOutline, callOutline, calendarOutline, locationOutline,
       documentTextOutline, refreshOutline, trashOutline, addOutline, medkitOutline,
-      settingsOutline, qrCodeOutline, shieldCheckmarkOutline,
+      settingsOutline, qrCodeOutline, shieldCheckmarkOutline, logoDiscord, cardOutline,
     });
 
     this.cargando = true;
@@ -304,6 +306,7 @@ export class PerfilComponent implements OnDestroy {
       apellido: perfil.apellido ?? '',
       email: perfil.email ?? this.user?.email ?? '',
       telefono: perfil.telefono ?? '',
+      rut: perfil.rut ?? '',
       fechaNacimiento: perfil.fechaNacimiento ?? '',
       region: perfil.region ?? '',
       comuna: perfil.comuna ?? '',
@@ -356,7 +359,7 @@ export class PerfilComponent implements OnDestroy {
   abrirSelectorFoto(): void {
     if (this.subiendoFoto) return;
     if (!this.preferencias.camaraHabilitada) {
-      this.showToast('Activá la cámara en Configuración → Permisos para subir fotos.', 'danger');
+      this.showToast('Activa la cámara en Configuración → Permisos para subir fotos.', 'danger');
       return;
     }
     this.fotoInputRef?.nativeElement.click();
@@ -376,6 +379,7 @@ export class PerfilComponent implements OnDestroy {
     if (errors['fechaFutura']) return 'La fecha no puede ser futura.';
     if (errors['pattern']) {
       if (campo === 'telefono') return 'Formato de teléfono inválido. Ej: +56 9 1234 5678';
+      if (campo === 'rut') return 'Formato de RUT inválido. Ej: 12.345.678-9';
       return 'Solo se permiten letras y espacios.';
     }
     return 'Valor inválido.';
@@ -421,6 +425,7 @@ export class PerfilComponent implements OnDestroy {
       nombre: this.security.sanitizeText(valores.nombre?.trim() ?? ''),
       apellido: this.security.sanitizeText(valores.apellido?.trim() ?? ''),
       telefono: this.security.sanitizeText(valores.telefono ?? ''),
+      rut: this.security.sanitizeText(valores.rut ?? ''),
       fechaNacimiento: this.security.sanitizeText(valores.fechaNacimiento ?? ''),
       region: this.security.sanitizeText(valores.region ?? ''),
       comuna: this.security.sanitizeText(valores.comuna ?? ''),

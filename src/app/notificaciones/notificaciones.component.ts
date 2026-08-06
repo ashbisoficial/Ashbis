@@ -72,7 +72,7 @@ export class NotificacionesComponent implements OnDestroy {
   /** Mensaje de error crudo de Firestore si alguna de las dos consultas
    *  falla (permission-denied, índice faltante, etc.) — sin esto, un error
    *  simplemente dejaba la lista vacía para siempre sin ninguna pista de
-   *  qué pasó, indistinguible de "no tenés notificaciones". */
+   *  qué pasó, indistinguible de "no tienes notificaciones". */
   errorCarga: string | null = null;
 
   constructor() {
@@ -162,7 +162,7 @@ export class NotificacionesComponent implements OnDestroy {
               await this.firestoreService.aceptarTransferencia(t.id);
               this.confetti.lanzar();
               await this.showToast(
-                esAdopcion ? `¡${t.mascotaNombre} ahora es tuya! 🐾` : `Ya tenés acceso a ${t.mascotaNombre}. 🐾`,
+                esAdopcion ? `¡${t.mascotaNombre} ahora es tuya! 🐾` : `Ya tienes acceso a ${t.mascotaNombre}. 🐾`,
                 'success'
               );
             } catch (error: any) {
@@ -197,7 +197,7 @@ export class NotificacionesComponent implements OnDestroy {
             if (!inv.id) return;
             try {
               await this.firestoreService.aceptarInvitacionEquipo(inv.id);
-              await this.showToast(`Ahora formás parte del equipo de ${inv.refugioNombre}.`, 'success');
+              await this.showToast(`Ahora formas parte del equipo de ${inv.refugioNombre}.`, 'success');
             } catch (error: any) {
               await this.showToast(error?.message || 'No se pudo aceptar la invitación.', 'danger');
             }
@@ -221,7 +221,7 @@ export class NotificacionesComponent implements OnDestroy {
   async aceptarPostulacion(p: Models.Postulaciones.Postulacion): Promise<void> {
     const alert = await this.alertCtrl.create({
       header: 'Aceptar postulación',
-      message: `Se abre un chat directo con ${p.postulanteNombre} para coordinar la adopción de ${p.mascotaNombre}. Todavía no transfiere la mascota — eso lo hacés después, ya charlando.`,
+      message: `Se abre un chat directo con ${p.postulanteNombre} para coordinar la adopción de ${p.mascotaNombre}. Todavía no transfiere la mascota — eso lo haces después, ya charlando.`,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {

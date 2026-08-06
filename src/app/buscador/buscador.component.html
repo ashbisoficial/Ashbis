@@ -1,0 +1,103 @@
+<ion-header translucent="true">
+  <ion-toolbar>
+    <ion-title>Buscador</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      [(ngModel)]="filtroTexto"
+      placeholder="Nombre, especialidad, comuna..."
+      debounce="150">
+    </ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <div class="filtro-rol">
+    <button
+      type="button"
+      *ngFor="let c of categorias"
+      class="categoria-boton"
+      [class.activo]="filtroRol() === c.valor"
+      (click)="cambiarFiltroRol(c.valor)">
+      <ion-icon [name]="c.icono"></ion-icon>
+      <span>{{ c.label }}</span>
+    </button>
+  </div>
+
+  <div class="filtro-subtipo" *ngIf="subopciones().length">
+    <button
+      type="button"
+      *ngFor="let s of subopciones()"
+      class="chip-subtipo"
+      [class.activo]="filtroSubtipo() === s || (!filtroSubtipo() && s === 'General')"
+      (click)="cambiarSubtipo(s)">
+      {{ etiquetaSubopcion(s) }}
+    </button>
+  </div>
+
+  <div *ngIf="cargando()" class="ion-text-center ion-padding">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ng-container *ngIf="!cargando()">
+    <p class="vacio" *ngIf="resultados().length === 0">
+      No encontramos resultados{{ filtroTexto ? ' para "' + filtroTexto + '"' : '' }}.
+    </p>
+
+    <ion-card class="tarjeta-directorio" *ngFor="let e of resultados()">
+      <ion-card-content>
+        <div class="directorio-header">
+          <img *ngIf="e.logoUrl" [src]="e.logoUrl" alt="logo" class="directorio-logo" />
+          <ion-icon *ngIf="!e.logoUrl" [name]="iconoPara(e.rol)" class="directorio-icono"></ion-icon>
+          <div class="directorio-titulo">
+            <h2>{{ e.nombre }}</h2>
+            <p *ngIf="e.tipo">{{ etiquetasTipo[e.tipo] || e.tipo }}</p>
+          </div>
+          <div class="badges-directorio">
+            <ion-badge *ngIf="esRecomendado(e)" color="tertiary">
+              <ion-icon name="sparkles-outline"></ion-icon> Recomendado
+            </ion-badge>
+            <ion-badge *ngIf="e.rol === 'veterinario' && e.verificado" color="success">
+              <ion-icon name="shield-checkmark-outline"></ion-icon> Verificado
+            </ion-badge>
+          </div>
+        </div>
+
+        <p *ngIf="e.modalidadAtencion" class="directorio-dato">{{ etiquetasModalidad[e.modalidadAtencion] || e.modalidadAtencion }}</p>
+        <p *ngIf="e.descripcion" class="directorio-dato">{{ e.descripcion }}</p>
+
+        <div class="chips-especialidades" *ngIf="e.especialidades?.length">
+          <span class="chip" *ngFor="let esp of e.especialidades">{{ esp }}</span>
+        </div>
+        <div class="chips-especialidades" *ngIf="e.especiesAtendidas?.length">
+          <span class="chip chip-especie" *ngFor="let esp of e.especiesAtendidas">{{ esp }}</span>
+        </div>
+
+        <p *ngIf="e.direccionNegocio" class="directorio-dato">
+          <ion-icon name="location-outline"></ion-icon> {{ e.direccionNegocio }}
+          <ng-container *ngIf="e.comuna">· {{ e.comuna }}</ng-container>
+        </p>
+        <p *ngIf="e.telefonoNegocio" class="directorio-dato">
+          <ion-icon name="call-outline"></ion-icon> {{ e.telefonoNegocio }}
+        </p>
+
+        <div class="directorio-links" *ngIf="e.sitioWeb || e.instagram || e.facebook || e.whatsappNegocio">
+          <ion-button *ngIf="e.sitioWeb" fill="clear" size="small" (click)="abrirLink(e.sitioWeb!)">
+            <ion-icon name="globe-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+          <ion-button *ngIf="e.instagram" fill="clear" size="small" (click)="abrirLink(e.instagram!)">
+            <ion-icon name="logo-instagram" slot="icon-only"></ion-icon>
+          </ion-button>
+          <ion-button *ngIf="e.facebook" fill="clear" size="small" (click)="abrirLink(e.facebook!)">
+            <ion-icon name="logo-facebook" slot="icon-only"></ion-icon>
+          </ion-button>
+          <ion-button *ngIf="e.whatsappNegocio" fill="clear" size="small" (click)="abrirLink('https://wa.me/' + e.whatsappNegocio)">
+            <ion-icon name="logo-whatsapp" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </ng-container>
+
+</ion-content>

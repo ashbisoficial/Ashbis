@@ -30,7 +30,7 @@
     </div>
 
     <p class="vacio" *ngIf="!cargando() && !mensajes().length">
-      Todavía no hay mensajes. Escribí el primero para coordinar la adopción.
+      Todavía no hay mensajes. Escribe el primero para coordinar la adopción.
     </p>
 
     <div class="message-bubble" *ngFor="let m of mensajes(); trackBy: trackById"

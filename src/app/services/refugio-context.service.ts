@@ -74,7 +74,7 @@ export class RefugioContextService {
       }))
     );
     const alert = await this.alertCtrl.create({
-      header: 'Elegí un refugio',
+      header: 'Elige un refugio',
       inputs: opciones,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },

@@ -3,11 +3,20 @@
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/tabs/perfil"></ion-back-button>
     </ion-buttons>
-    <ion-title>Verificar veterinarios</ion-title>
+    <ion-title>Verificaciones pendientes</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
+
+  <ion-segment [value]="vista()" (ionChange)="cambiarVista($event.detail.value)" class="ion-margin-bottom">
+    <ion-segment-button value="veterinario">
+      <ion-label>Veterinarios</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="refugio">
+      <ion-label>Refugios</ion-label>
+    </ion-segment-button>
+  </ion-segment>
 
   <div *ngIf="cargando()" class="ion-text-center ion-padding">
     <ion-spinner name="crescent"></ion-spinner>
@@ -15,36 +24,44 @@
 
   <ng-container *ngIf="!cargando()">
     <p class="vacio" *ngIf="pendientes().length === 0">
-      No hay veterinarios esperando revisión.
+      {{ vista() === 'veterinario' ? 'No hay veterinarios esperando revisión.' : 'No hay refugios esperando revisión.' }}
     </p>
 
     <ion-card class="tarjeta-vet" *ngFor="let v of pendientes()">
       <ion-card-content>
         <div class="vet-header">
           <div>
-            <h2>{{ nombreCompleto(v) }}</h2>
+            <h2>{{ nombreMostrado(v) }}</h2>
             <p class="vet-email">{{ v.email }}</p>
           </div>
-          <span class="badge-sin-titulo" *ngIf="!v.tituloUrl">Sin título subido</span>
+          <span class="badge-sin-titulo" *ngIf="!documentoUrl(v)">
+            {{ vista() === 'veterinario' ? 'Sin título subido' : 'Sin documento subido' }}
+          </span>
         </div>
 
-        <div class="vet-datos">
+        <div class="vet-datos" *ngIf="vista() === 'veterinario'">
           <p *ngIf="etiquetaTipo(v)"><strong>Tipo:</strong> {{ etiquetaTipo(v) }}</p>
           <p *ngIf="v.nombreClinica"><strong>Clínica/consulta:</strong> {{ v.nombreClinica }}</p>
           <p *ngIf="v.nombreDoctor"><strong>Director/a técnico:</strong> {{ v.nombreDoctor }}</p>
           <p *ngIf="v.numeroRegistroProfesional"><strong>Registro profesional:</strong> {{ v.numeroRegistroProfesional }}</p>
+          <p *ngIf="v.rut"><strong>RUT:</strong> {{ v.rut }}</p>
           <p *ngIf="v.telefonoNegocio"><strong>Teléfono:</strong> {{ v.telefonoNegocio }}</p>
           <p *ngIf="v.direccionNegocio"><strong>Dirección:</strong> {{ v.direccionNegocio }}</p>
         </div>
 
-        <ion-button *ngIf="v.tituloUrl" expand="block" fill="outline" color="medium" (click)="abrirTitulo(v.tituloUrl!)">
+        <div class="vet-datos" *ngIf="vista() === 'refugio'">
+          <p *ngIf="v.telefonoNegocio"><strong>Teléfono:</strong> {{ v.telefonoNegocio }}</p>
+          <p *ngIf="v.direccionNegocio"><strong>Dirección:</strong> {{ v.direccionNegocio }}</p>
+        </div>
+
+        <ion-button *ngIf="documentoUrl(v)" expand="block" fill="outline" color="medium" (click)="abrirDocumento(documentoUrl(v)!)">
           <ion-icon name="document-text-outline" slot="start"></ion-icon>
-          Ver título/certificado
+          {{ vista() === 'veterinario' ? 'Ver título/certificado' : 'Ver documento legal' }}
         </ion-button>
 
         <div class="vet-acciones">
           <ion-button
-            [disabled]="!v.tituloUrl || procesando() === v.uid"
+            [disabled]="!documentoUrl(v) || procesando() === v.uid"
             color="success"
             (click)="aprobar(v)">
             <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>

@@ -32,6 +32,7 @@
         <p class="dato-perfil" *ngIf="telefonoNegocio()">{{ telefonoNegocio() }}</p>
         <p class="dato-perfil" *ngIf="nombreDoctor()">Director/a técnico: {{ nombreDoctor() }}</p>
         <p class="dato-perfil" *ngIf="numeroRegistroProfesional()">Registro profesional: {{ numeroRegistroProfesional() }}</p>
+        <p class="dato-perfil" *ngIf="rut()">RUT: {{ rut() }}</p>
         <p class="dato-perfil" *ngIf="lugarEstudios()"><ion-icon name="ribbon-outline"></ion-icon> {{ lugarEstudios() }}</p>
         <p class="dato-perfil" *ngIf="etiquetaModalidad()">{{ etiquetaModalidad() }}</p>
         <div class="chips-especialidades" *ngIf="especialidades().length">
@@ -40,8 +41,8 @@
         <div class="chips-especialidades" *ngIf="especiesAtendidas().length">
           <span class="chip chip-especie" *ngFor="let e of especiesAtendidas()">{{ e }}</span>
         </div>
-        <p class="vacio" *ngIf="!nombreClinica() && !etiquetaTipoNegocio() && !lugarEstudios() && !especiesAtendidas().length">
-          Todavía no completaste tu perfil profesional — tocá el lápiz para agregar tus datos.
+        <p class="vacio" *ngIf="!nombreClinica() && !etiquetaTipoNegocio() && !lugarEstudios() && !especiesAtendidas().length && !nombreDoctor() && !numeroRegistroProfesional() && !rut() && !direccionNegocio() && !telefonoNegocio() && !etiquetaModalidad() && !especialidades().length">
+          Todavía no completaste tu perfil profesional — toca el lápiz para agregar tus datos.
         </p>
       </ion-card-content>
 
@@ -54,13 +55,13 @@
         </ion-item>
         <ion-item lines="full">
           <ion-label position="stacked">Tipo de profesional</ion-label>
-          <ion-select [(ngModel)]="formPerfil.tipoNegocioVeterinario" interface="popover" placeholder="Elegí una opción">
+          <ion-select [(ngModel)]="formPerfil.tipoNegocioVeterinario" interface="popover" placeholder="Elige una opción">
             <ion-select-option *ngFor="let opt of opcionesTipoNegocio" [value]="opt[0]">{{ opt[1] }}</ion-select-option>
           </ion-select>
         </ion-item>
         <ion-item lines="full">
           <ion-label position="stacked">Modalidad de atención</ion-label>
-          <ion-select [(ngModel)]="formPerfil.modalidadAtencion" interface="popover" placeholder="Elegí una opción">
+          <ion-select [(ngModel)]="formPerfil.modalidadAtencion" interface="popover" placeholder="Elige una opción">
             <ion-select-option *ngFor="let opt of opcionesModalidad" [value]="opt[0]">{{ opt[1] }}</ion-select-option>
           </ion-select>
         </ion-item>
@@ -73,13 +74,17 @@
           <ion-input type="tel" [(ngModel)]="formPerfil.telefonoNegocio"></ion-input>
         </ion-item>
         <p class="nota-campo">Estos datos son de la clínica/consulta, distintos de tu teléfono/dirección personal de la cuenta — y hace falta el teléfono para poder pedir la verificación.</p>
-        <ion-item lines="full">
-          <ion-label position="stacked">Director/a técnico (si es clínica)</ion-label>
+        <ion-item lines="full" *ngIf="esClinicaConEquipo">
+          <ion-label position="stacked">Director/a técnico</ion-label>
           <ion-input [(ngModel)]="formPerfil.nombreDoctor"></ion-input>
         </ion-item>
         <ion-item lines="full">
           <ion-label position="stacked">Registro profesional</ion-label>
           <ion-input [(ngModel)]="formPerfil.numeroRegistroProfesional"></ion-input>
+        </ion-item>
+        <ion-item lines="full">
+          <ion-label position="stacked">RUT</ion-label>
+          <ion-input [(ngModel)]="formPerfil.rut" placeholder="12.345.678-9"></ion-input>
         </ion-item>
         <ion-item lines="full">
           <ion-label position="stacked">Lugar de estudios</ion-label>
@@ -90,7 +95,7 @@
           <ion-input [(ngModel)]="formPerfil.especialidadesTexto" placeholder="Separadas por coma: cirugía, dermatología..."></ion-input>
         </ion-item>
 
-        <ion-label class="label-especies">Especies que atendés</ion-label>
+        <ion-label class="label-especies">Especies que atiendes</ion-label>
         <div class="grid-especies">
           <ion-item lines="none" *ngFor="let especie of especiesDisponibles">
             <ion-checkbox slot="start"
@@ -123,10 +128,10 @@
             <p *ngIf="verificado()">El equipo de Ashbis confirmó tu título/registro profesional.</p>
             <p *ngIf="!verificado() && tituloUrl()">Documento enviado, en revisión por el equipo de Ashbis.</p>
             <p *ngIf="!verificado() && !tituloUrl()">
-              Subí tu título o certificado profesional para que Ashbis pueda verificar tu cuenta.
+              Sube tu título o certificado profesional para que Ashbis pueda verificar tu cuenta.
             </p>
             <p *ngIf="!verificado() && !telefonoNegocio()" class="aviso-telefono-requerido">
-              Primero agregá el teléfono de tu clínica/consulta (arriba, con el lápiz) — lo pedimos para evitar cuentas falsas.
+              Primero agrega el teléfono de tu clínica/consulta (arriba, con el lápiz) — lo pedimos para evitar cuentas falsas.
             </p>
           </div>
         </div>
@@ -168,7 +173,7 @@
           </ion-item>
         </ion-list>
         <p class="vacio" *ngIf="!notasPredisenadas().length">
-          Todavía no tenés notas guardadas. Agregá frases que uses seguido en el historial.
+          Todavía no tienes notas guardadas. Agrega frases que uses seguido en el historial.
         </p>
         <div class="fila-nota">
           <ion-input [(ngModel)]="nuevaNotaPredisenada" placeholder="Ej: Control anual sin novedad" (keyup.enter)="agregarNotaPredisenada()"></ion-input>
@@ -220,7 +225,7 @@
               pacientes apenas te verifiquemos — no hace falta que hagas nada más.
             </p>
             <p *ngIf="!tituloUrl()">
-              Subí tu título o certificado profesional (arriba) para que el equipo de Ashbis
+              Sube tu título o certificado profesional (arriba) para que el equipo de Ashbis
               pueda verificar tu cuenta y puedas empezar a atender pacientes.
             </p>
           </div>

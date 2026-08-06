@@ -28,6 +28,7 @@ import {
   IonList,
   IonModal,
   IonNote,
+  IonProgressBar,
   IonRow,
   IonSelect,
   IonSelectOption,
@@ -38,13 +39,17 @@ import {
   IonButtons
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { closeOutline } from 'ionicons/icons';
+import {
+  closeOutline,
+  personOutline, homeOutline, medkitOutline, storefrontOutline, bagHandleOutline,
+} from 'ionicons/icons';
 import { AuthenticationService } from 'src/app/firebase/authentication';
 import { FirestoreService } from 'src/app/firebase/firestore';
 import { Models } from 'src/app/models/models';
 import { SecurityService } from 'src/app/services/security.service';
 import { TerminosContenidoComponent } from 'src/app/terminos/terminos-contenido.component';
 import { PrivacidadContenidoComponent } from 'src/app/privacidad/privacidad-contenido.component';
+import { RegionComunaSelectComponent } from 'src/app/shared/components/region-comuna-select/region-comuna-select.component';
 
 /**
  * Paso extra SOLO para el primer login con Google: a diferencia del registro
@@ -86,8 +91,10 @@ import { PrivacidadContenidoComponent } from 'src/app/privacidad/privacidad-cont
     IonHeader,
     IonToolbar,
     IonTitle,
+    IonProgressBar,
     TerminosContenidoComponent,
-    PrivacidadContenidoComponent
+    PrivacidadContenidoComponent,
+    RegionComunaSelectComponent
   ],
   templateUrl: './completar-perfil.component.html',
   styleUrls: ['./completar-perfil.component.scss']
@@ -110,8 +117,8 @@ export class CompletarPerfilComponent implements OnInit {
   form = this.fb.group(
     {
       telefono: ['', [Validators.required, Validators.pattern(this.telefonoRegex)]],
-      direccion: ['', [Validators.required, Validators.minLength(10)]],
       region: ['', Validators.required],
+      comuna: ['', Validators.required],
       rol: ['usuario' as Models.Auth.Rol, Validators.required],
       nombreRefugio: [''],
       nombreClinica: [''],
@@ -122,6 +129,7 @@ export class CompletarPerfilComponent implements OnInit {
       modalidadAtencion: ['' as Models.Auth.ModalidadAtencion | ''],
       nombreNegocio: [''],
       tipoServicio: ['' as Models.Auth.TipoServicio | ''],
+      tipoPyme: ['' as Models.Auth.TipoPyme | ''],
       consentimiento: [false, [Validators.requiredTrue]]
     },
     { validators: [this.rolExtraValidator()] }
@@ -141,13 +149,35 @@ export class CompletarPerfilComponent implements OnInit {
     { value: 'peluqueria', label: 'Peluquería o servicios estéticos' },
     { value: 'guarderia', label: 'Guardería o pensión' },
     { value: 'funeraria', label: 'Servicios funerarios' },
+    { value: 'hotel', label: 'Hotel para mascotas' },
+    { value: 'transporte', label: 'Transporte de mascotas' },
+  ];
+
+  readonly tiposPyme: { value: Models.Auth.TipoPyme; label: string }[] = [
+    { value: 'ropa', label: 'Ropa y accesorios de vestir' },
+    { value: 'juguetes', label: 'Juguetes' },
+    { value: 'accesorios', label: 'Accesorios (correas, comederos, camas...)' },
+    { value: 'comida', label: 'Alimento para mascotas' },
+    { value: 'snacks', label: 'Snacks y premios' },
+    { value: 'otro', label: 'Otro' },
   ];
 
   private uid = '';
   nombreGoogle = '';
 
+  readonly tiposCuenta: { valor: Models.Auth.Rol; label: string; icono: string }[] = [
+    { valor: 'usuario', label: 'Dueño', icono: 'person-outline' },
+    { valor: 'refugio', label: 'Refugio', icono: 'home-outline' },
+    { valor: 'veterinario', label: 'Veterinario', icono: 'medkit-outline' },
+    { valor: 'servicio', label: 'Servicio', icono: 'storefront-outline' },
+    { valor: 'pyme', label: 'Pyme', icono: 'bag-handle-outline' },
+  ];
+
   constructor() {
-    addIcons({ closeOutline });
+    addIcons({
+      closeOutline,
+      personOutline, homeOutline, medkitOutline, storefrontOutline, bagHandleOutline,
+    });
   }
 
   async ngOnInit(): Promise<void> {
@@ -171,6 +201,86 @@ export class CompletarPerfilComponent implements OnInit {
 
   get f() {
     return this.form.controls;
+  }
+
+  // ── Pasos del formulario ─────────────────────────────────────────────────
+  // Mismo FormGroup de siempre, solo se muestra un paso a la vez. El paso 1
+  // ("Datos del rol") se salta para 'usuario', que no tiene campos propios.
+  readonly ULTIMO_PASO = 2;
+  pasoActual = 0;
+
+  private readonly titulosPaso: Record<number, string> = {
+    0: 'Tipo de cuenta',
+    1: 'Datos de tu cuenta',
+    2: 'Datos personales',
+  };
+
+  get tituloPasoActual(): string {
+    return this.titulosPaso[this.pasoActual] || '';
+  }
+
+  get pasosVisibles(): number[] {
+    const base = [0, 1, 2];
+    return this.f.rol.value === 'usuario' ? base.filter(p => p !== 1) : base;
+  }
+
+  get posicionPaso(): number {
+    return this.pasosVisibles.indexOf(this.pasoActual) + 1;
+  }
+
+  get totalPasosVisibles(): number {
+    return this.pasosVisibles.length;
+  }
+
+  get progresoPaso(): number {
+    return this.posicionPaso / this.totalPasosVisibles;
+  }
+
+  siguiente(): void {
+    if (!this.validarPaso(this.pasoActual)) return;
+    const visibles = this.pasosVisibles;
+    const posicionActual = visibles.indexOf(this.pasoActual);
+    this.pasoActual = visibles[posicionActual + 1] ?? this.pasoActual;
+  }
+
+  atras(): void {
+    const visibles = this.pasosVisibles;
+    const posicionActual = visibles.indexOf(this.pasoActual);
+    this.pasoActual = visibles[posicionActual - 1] ?? this.pasoActual;
+  }
+
+  private controlesPaso(paso: number): string[] {
+    switch (paso) {
+      case 2: return ['telefono', 'region', 'comuna', 'consentimiento'];
+      default: return [];
+    }
+  }
+
+  private validarPaso(paso: number): boolean {
+    const nombres = this.controlesPaso(paso);
+    nombres.forEach(n => this.form.get(n)?.markAsTouched());
+    if (nombres.some(n => this.form.get(n)?.invalid)) return false;
+
+    if (paso === 1) {
+      const camposPorRol: Record<string, string[]> = {
+        refugio: ['nombreRefugio'],
+        veterinario: ['tipoNegocioVeterinario', 'nombreDoctor', 'numeroRegistroProfesional', 'modalidadAtencion'],
+        servicio: ['tipoServicio', 'nombreNegocio'],
+        pyme: ['tipoPyme', 'nombreNegocio'],
+      };
+      (camposPorRol[this.f.rol.value as string] || []).forEach(n => this.form.get(n)?.markAsTouched());
+      const erroresPaso1 = [
+        'nombreRefugioRequerido', 'tipoNegocioRequerido', 'nombreDoctorRequerido',
+        'numeroRegistroRequerido', 'modalidadRequerida', 'tipoServicioRequerido', 'tipoPymeRequerido', 'nombreNegocioRequerido',
+      ];
+      if (erroresPaso1.some(e => this.form.hasError(e))) return false;
+      if (this.esVeterinarioMedico && !this.tituloFile) {
+        this.errorTitulo = 'Sube tu título o certificado profesional.';
+        return false;
+      }
+    }
+
+    return true;
   }
 
   get esVeterinarioMedico(): boolean {
@@ -200,6 +310,7 @@ export class CompletarPerfilComponent implements OnInit {
       modalidadAtencion: '',
       nombreNegocio: '',
       tipoServicio: '',
+      tipoPyme: '',
     });
     this.tituloFile = null;
     this.tituloNombre = null;
@@ -229,6 +340,14 @@ export class CompletarPerfilComponent implements OnInit {
       if (rol === 'servicio') {
         if (!form.get('tipoServicio')?.value) {
           return { tipoServicioRequerido: true };
+        }
+        if (!form.get('nombreNegocio')?.value?.trim()) {
+          return { nombreNegocioRequerido: true };
+        }
+      }
+      if (rol === 'pyme') {
+        if (!form.get('tipoPyme')?.value) {
+          return { tipoPymeRequerido: true };
         }
         if (!form.get('nombreNegocio')?.value?.trim()) {
           return { nombreNegocioRequerido: true };
@@ -309,8 +428,8 @@ export class CompletarPerfilComponent implements OnInit {
         nombre,
         apellido,
         telefono: this.security.sanitizeText(data.telefono!),
-        direccion: this.security.sanitizeText(data.direccion!),
         region: this.security.sanitizeText(data.region!),
+        comuna: this.security.sanitizeText(data.comuna!),
         email: this.security.sanitizeText(user.email || ''),
         foto: this.security.sanitizeText(user.photoURL || ''),
         fotoOrigen: 'google',
@@ -340,6 +459,10 @@ export class CompletarPerfilComponent implements OnInit {
           tipoServicio: data.tipoServicio as Models.Auth.TipoServicio,
           ...(data.nombreNegocio?.trim() ? { nombreNegocio: this.security.sanitizeText(data.nombreNegocio) } : {}),
         } : {}),
+        ...(rol === 'pyme' ? {
+          tipoPyme: data.tipoPyme as Models.Auth.TipoPyme,
+          ...(data.nombreNegocio?.trim() ? { nombreNegocio: this.security.sanitizeText(data.nombreNegocio) } : {}),
+        } : {}),
         consentGiven: true,
         consentDate: new Date().toISOString(),
         consentVersion: '2.0'
@@ -351,7 +474,7 @@ export class CompletarPerfilComponent implements OnInit {
         apellido: datosUser.apellido,
         telefono: datosUser.telefono
       });
-      await this.router.navigate(['/tabs/home'], { replaceUrl: true });
+      await this.router.navigate(['/bienvenida'], { replaceUrl: true });
     } catch (error) {
       console.error('Error completando perfil', error);
       this.errorGuardado = 'No se pudo guardar tu perfil. Intenta nuevamente.';

@@ -167,16 +167,19 @@ export class ChatDirectoComponent implements OnInit, OnDestroy, AfterViewChecked
   async enviarTraspaso(): Promise<void> {
     const chat = this.chat();
     if (!chat?.mascotaId || this.enviandoTraspaso) return;
+    // Se marca ANTES de abrir el alert (no recién al confirmar): si no, dos
+    // toques rápidos en el botón antes de que aparezca el diálogo abrían dos
+    // alerts apilados.
+    this.enviandoTraspaso = true;
 
     const alert = await this.alertCtrl.create({
       header: 'Enviar traspaso de la mascota',
       message: `${chat.postulanteNombre} va a recibir una solicitud para pasar a ser dueño/a de ${chat.mascotaNombre}. Recién se transfiere cuando la acepte desde sus notificaciones.`,
       buttons: [
-        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Cancelar', role: 'cancel', handler: () => { this.enviandoTraspaso = false; } },
         {
           text: 'Enviar traspaso',
           handler: async () => {
-            this.enviandoTraspaso = true;
             try {
               await this.fs.crearTransferencia(
                 'adopcion', chat.mascotaId!, chat.mascotaNombre,

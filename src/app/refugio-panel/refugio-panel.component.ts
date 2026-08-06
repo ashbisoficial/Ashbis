@@ -67,6 +67,24 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   refugioUid = '';
   /** true si quien mira el panel es la cuenta dueña del refugio (no un colaborador). */
   esDueno = false;
+  private miUid: string | null = null;
+  /** Dueño o CUALQUIER miembro del equipo (admin o staff) — mismo criterio
+   *  que puedeOperarComoRefugio() en firestore.rules. Antes varias acciones
+   *  del panel (transferencias, invitar/quitar del equipo) solo miraban
+   *  esDueno, así que un admin invitado no dueño no podía usarlas desde acá
+   *  aunque las reglas se lo permitieran. */
+  esMiembroDelEquipo = computed(() => {
+    if (this.esDueno) return true;
+    return this.miembros().some(m => m.uid === this.miUid);
+  });
+  /** Dueño o miembro con rolEquipo === 'admin' — mismo criterio que
+   *  esAdminDelRefugio() en firestore.rules (invitar/quitar gente del
+   *  equipo, cancelar invitaciones). Un "staff" puede operar la cuenta pero
+   *  no gestionar el equipo. */
+  esAdminEquipo = computed(() => {
+    if (this.esDueno) return true;
+    return this.miembros().some(m => m.uid === this.miUid && m.rolEquipo === 'admin');
+  });
   nombreRefugio = signal('Refugio');
   cargando = signal(true);
   /** Si alguna consulta falló por permisos (típico de un deploy a medio
@@ -146,7 +164,8 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
 
   private cargarPanel(uid: string): void {
     this.refugioUid = uid;
-    this.esDueno = this.auth.getCurrentUser()?.uid === uid;
+    this.miUid = this.auth.getCurrentUser()?.uid ?? null;
+    this.esDueno = this.miUid === uid;
 
     this.fs.getDocument(`usuarios/${uid}`)
       .then(perfil => {
@@ -201,7 +220,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
    *  permiso real del navegador). */
   abrirSelectorArchivo(input: HTMLInputElement): void {
     if (!this.preferencias.camaraHabilitada) {
-      this.mostrarToast('Activá la cámara en Configuración → Permisos para subir archivos.', 'danger');
+      this.mostrarToast('Activa la cámara en Configuración → Permisos para subir archivos.', 'danger');
       return;
     }
     input.click();
@@ -301,7 +320,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   // ── Equipo del refugio (invitar/quitar): solo la cuenta dueña ────────────
 
   async invitarAlEquipo(): Promise<void> {
-    if (!this.esDueno) return;
+    if (!this.esAdminEquipo()) return;
     const alert = await this.alertCtrl.create({
       header: 'Invitar al equipo',
       message: 'La persona va a poder crear/editar mascotas y publicaciones en nombre de tu cuenta de refugio.',
@@ -332,7 +351,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   }
 
   async cancelarInvitacionEquipo(inv: Models.Equipo.InvitacionEquipo): Promise<void> {
-    if (!inv.id || !this.esDueno) return;
+    if (!inv.id || !this.esAdminEquipo()) return;
     try {
       await this.fs.cancelarInvitacionEquipo(inv.id);
       await this.mostrarToast('Invitación cancelada.', 'success');
@@ -342,7 +361,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   }
 
   async quitarMiembro(m: Models.Equipo.MiembroEquipo): Promise<void> {
-    if (!this.esDueno) return;
+    if (!this.esAdminEquipo()) return;
     const alert = await this.alertCtrl.create({
       header: 'Quitar del equipo',
       message: `¿Sacar a ${m.nombre} del equipo? Ya no va a poder operar tu cuenta.`,
@@ -366,7 +385,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   }
 
   async cancelarTransferenciaEnviada(t: Models.Transferencias.Transferencia): Promise<void> {
-    if (!t.id || !this.esDueno) return;
+    if (!t.id || !this.esMiembroDelEquipo()) return;
     try {
       await this.fs.cancelarTransferencia(t.id);
       await this.mostrarToast('Transferencia cancelada.', 'success');
@@ -376,7 +395,7 @@ export class RefugioPanelComponent implements OnInit, OnDestroy {
   }
 
   async reenviarTransferencia(t: Models.Transferencias.Transferencia): Promise<void> {
-    if (!t.id || this.reenviando()) return;
+    if (!t.id || !this.esMiembroDelEquipo() || this.reenviando()) return;
     this.reenviando.set(t.id);
     try {
       await this.fs.reenviarNotificacionTransferencia(t.id);

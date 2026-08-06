@@ -9,266 +9,260 @@
             </ion-thumbnail>
             <ion-card-title>¡Ya casi!</ion-card-title>
             <p class="subtitulo">
-              Hola{{ nombreGoogle ? ', ' + nombreGoogle : '' }} — nos falta saber qué tipo de cuenta querés usar en Ashbis.
+              Hola{{ nombreGoogle ? ', ' + nombreGoogle : '' }} — nos falta saber qué tipo de cuenta quieres usar en Ashbis.
             </p>
           </ion-card-header>
           <ion-card-content class="si">
+            <div class="wizard-progreso">
+              <p class="wizard-paso-label">Paso {{ posicionPaso }} de {{ totalPasosVisibles }} — {{ tituloPasoActual }}</p>
+              <ion-progress-bar [value]="progresoPaso" color="danger"></ion-progress-bar>
+            </div>
+
             <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
               <ion-list class="list" lines="inset">
-                <div class="tipo-cuenta-selector" role="radiogroup" aria-label="Tipo de cuenta">
-                  <button
-                    type="button"
-                    class="tipo-cuenta-tab"
-                    role="radio"
-                    [class.activo]="f.rol.value === 'usuario'"
-                    [attr.aria-checked]="f.rol.value === 'usuario'"
-                    (click)="elegirTipoCuenta('usuario')"
-                  >Dueño</button>
-                  <button
-                    type="button"
-                    class="tipo-cuenta-tab"
-                    role="radio"
-                    [class.activo]="f.rol.value === 'refugio'"
-                    [attr.aria-checked]="f.rol.value === 'refugio'"
-                    (click)="elegirTipoCuenta('refugio')"
-                  >Refugio</button>
-                  <button
-                    type="button"
-                    class="tipo-cuenta-tab"
-                    role="radio"
-                    [class.activo]="f.rol.value === 'veterinario'"
-                    [attr.aria-checked]="f.rol.value === 'veterinario'"
-                    (click)="elegirTipoCuenta('veterinario')"
-                  >Veterinario</button>
-                  <button
-                    type="button"
-                    class="tipo-cuenta-tab"
-                    role="radio"
-                    [class.activo]="f.rol.value === 'servicio'"
-                    [attr.aria-checked]="f.rol.value === 'servicio'"
-                    (click)="elegirTipoCuenta('servicio')"
-                  >Servicio</button>
-                </div>
 
-                <ion-item *ngIf="f.rol.value === 'refugio'">
-                  <ion-label position="stacked">
-                    Nombre del refugio/organización <span class="required">*</span>
-                  </ion-label>
-                  <ion-input
-                    formControlName="nombreRefugio"
-                    (ionBlur)="form.get('nombreRefugio')?.markAsTouched()">
-                  </ion-input>
-                </ion-item>
-                <ion-note color="danger" *ngIf="form.touched && form.hasError('nombreRefugioRequerido')">
-                  Ingresa el nombre del refugio u organización
-                </ion-note>
-
-                <ng-container *ngIf="f.rol.value === 'veterinario'">
-                  <ion-item>
-                    <ion-label position="stacked">
-                      Tipo de cuenta veterinaria <span class="required">*</span>
-                    </ion-label>
-                    <ion-select
-                      interface="popover"
-                      placeholder="Selecciona"
-                      formControlName="tipoNegocioVeterinario"
-                      (ionBlur)="form.get('tipoNegocioVeterinario')?.markAsTouched()">
-                      <ion-select-option *ngFor="let t of tiposNegocioVeterinario" [value]="t.value">{{ t.label }}</ion-select-option>
-                    </ion-select>
-                  </ion-item>
-                  <ion-note color="danger" *ngIf="form.touched && form.hasError('tipoNegocioRequerido')">
-                    Selecciona el tipo de cuenta veterinaria
-                  </ion-note>
-
-                  <ion-item>
-                    <ion-label position="stacked">
-                      {{ esClinicaConEquipo ? 'Nombre de la veterinaria/clínica' : 'Nombre de tu consulta o local (opcional)' }}
-                    </ion-label>
-                    <ion-input formControlName="nombreClinica"></ion-input>
-                  </ion-item>
-
-                  <ion-item *ngIf="esClinicaConEquipo">
-                    <ion-label position="stacked">
-                      Nombre del veterinario/a responsable <span class="required">*</span>
-                    </ion-label>
-                    <ion-input formControlName="nombreDoctor"
-                      (ionBlur)="form.get('nombreDoctor')?.markAsTouched()"></ion-input>
-                  </ion-item>
-                  <ion-note color="danger" *ngIf="form.touched && form.hasError('nombreDoctorRequerido')">
-                    Indica el nombre del veterinario/a a cargo
-                  </ion-note>
-
-                  <ion-item *ngIf="esVeterinarioMedico">
-                    <ion-label position="stacked">
-                      Número de registro/colegio profesional <span class="required">*</span>
-                    </ion-label>
-                    <ion-input formControlName="numeroRegistroProfesional"
-                      (ionBlur)="form.get('numeroRegistroProfesional')?.markAsTouched()"></ion-input>
-                  </ion-item>
-                  <ion-note color="danger" *ngIf="form.touched && form.hasError('numeroRegistroRequerido')">
-                    Ingresa tu número de registro profesional
-                  </ion-note>
-
-                  <ion-item *ngIf="esClinicaGrande">
-                    <ion-label position="stacked">Especialidades (separadas por coma)</ion-label>
-                    <ion-input formControlName="especialidadesInput" placeholder="Ej: Cirugía, Dermatología, Cardiología"></ion-input>
-                  </ion-item>
-
-                  <ion-item>
-                    <ion-label position="stacked">
-                      Modalidad de atención <span class="required">*</span>
-                    </ion-label>
-                    <ion-select
-                      interface="popover"
-                      placeholder="Selecciona"
-                      formControlName="modalidadAtencion"
-                      (ionBlur)="form.get('modalidadAtencion')?.markAsTouched()">
-                      <ion-select-option value="presencial">En el local</ion-select-option>
-                      <ion-select-option value="a_domicilio">A domicilio</ion-select-option>
-                      <ion-select-option value="ambas">Ambas</ion-select-option>
-                    </ion-select>
-                  </ion-item>
-                  <ion-note color="danger" *ngIf="form.touched && form.hasError('modalidadRequerida')">
-                    Selecciona la modalidad de atención
-                  </ion-note>
-
-                  <ion-item *ngIf="esVeterinarioMedico" lines="none" class="titulo-picker">
-                    <ion-label position="stacked">
-                      Título o certificado profesional <span class="required">*</span>
-                    </ion-label>
-                    <input #tituloInput type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden (change)="onTituloSelected($event)" />
-                    <ion-button type="button" fill="outline" size="small" (click)="tituloInput.click()">
-                      {{ tituloNombre ? 'Cambiar archivo' : 'Subir archivo' }}
-                    </ion-button>
-                    <p class="titulo-archivo" *ngIf="tituloNombre">{{ tituloNombre }}
-                      <a (click)="quitarTitulo()">Quitar</a>
-                    </p>
-                    <p class="titulo-ayuda">Un miembro del equipo de Ashbis revisa el título antes de que puedas atender pacientes — se usa solo para verificar tu cuenta, no se muestra públicamente.</p>
-                  </ion-item>
-                  <ion-note color="danger" *ngIf="errorTitulo">{{ errorTitulo }}</ion-note>
-                </ng-container>
-
-                <ng-container *ngIf="f.rol.value === 'servicio'">
-                  <ion-item>
-                    <ion-label position="stacked">
-                      Tipo de servicio <span class="required">*</span>
-                    </ion-label>
-                    <ion-select
-                      interface="popover"
-                      placeholder="Selecciona"
-                      formControlName="tipoServicio"
-                      (ionBlur)="form.get('tipoServicio')?.markAsTouched()">
-                      <ion-select-option *ngFor="let t of tiposServicio" [value]="t.value">{{ t.label }}</ion-select-option>
-                    </ion-select>
-                  </ion-item>
-                  <ion-note color="danger" *ngIf="form.touched && form.hasError('tipoServicioRequerido')">
-                    Selecciona el tipo de servicio
-                  </ion-note>
-
-                  <ion-item>
-                    <ion-label position="stacked">
-                      Nombre del negocio <span class="required">*</span>
-                    </ion-label>
-                    <ion-input formControlName="nombreNegocio"
-                      (ionBlur)="form.get('nombreNegocio')?.markAsTouched()"></ion-input>
-                  </ion-item>
-                  <ion-note color="danger" *ngIf="form.touched && form.hasError('nombreNegocioRequerido')">
-                    Ingresa el nombre del negocio
-                  </ion-note>
-                </ng-container>
-
-                <ion-item>
-                  <ion-label position="stacked">
-                    Teléfono <span class="required">*</span>
-                  </ion-label>
-                  <ion-input
-                    type="tel"
-                    inputmode="tel"
-                    placeholder="+569XXXXXXXX"
-                    formControlName="telefono"
-                    (ionBlur)="form.get('telefono')?.markAsTouched()">
-                  </ion-input>
-                </ion-item>
-                <ion-note color="danger" *ngIf="f.telefono.touched && f.telefono.hasError('required')">El teléfono es obligatorio</ion-note>
-                <ion-note color="danger" *ngIf="f.telefono.touched && f.telefono.hasError('pattern')">Formato inválido. Ej: +569XXXXXXXX</ion-note>
-
-                <ion-item>
-                  <ion-label position="stacked">
-                    Dirección <span class="required">*</span>
-                  </ion-label>
-                  <ion-input
-                    formControlName="direccion"
-                    (ionBlur)="form.get('direccion')?.markAsTouched()">
-                  </ion-input>
-                </ion-item>
-                <ion-note color="danger" *ngIf="f.direccion.touched && f.direccion.hasError('required')">La dirección es obligatoria</ion-note>
-                <ion-note color="danger" *ngIf="f.direccion.touched && f.direccion.hasError('minlength')">La dirección debe tener al menos 10 caracteres</ion-note>
-
-                <ion-item>
-                  <ion-label position="stacked">Región <span class="required">*</span></ion-label>
-                  <ion-select
-                    interface="popover"
-                    placeholder="Selecciona una región"
-                    formControlName="region"
-                    (ionBlur)="form.get('region')?.markAsTouched()">
-                      <ion-select-option value="I">Tarapacá</ion-select-option>
-                      <ion-select-option value="II">Antofagasta</ion-select-option>
-                      <ion-select-option value="III">Atacama</ion-select-option>
-                      <ion-select-option value="IV">Coquimbo</ion-select-option>
-                      <ion-select-option value="V">Valparaíso</ion-select-option>
-                      <ion-select-option value="RM">Región Metropolitana</ion-select-option>
-                      <ion-select-option value="VI">O'Higgins</ion-select-option>
-                      <ion-select-option value="VII">Maule</ion-select-option>
-                      <ion-select-option value="XVI">Ñuble</ion-select-option>
-                      <ion-select-option value="VIII">Biobío</ion-select-option>
-                      <ion-select-option value="IX">La Araucanía</ion-select-option>
-                      <ion-select-option value="X">Los Lagos</ion-select-option>
-                      <ion-select-option value="XI">Aysén</ion-select-option>
-                      <ion-select-option value="XII">Magallanes y Antártica Chilena</ion-select-option>
-                      <ion-select-option value="XV">Arica y Parinacota</ion-select-option>
-                  </ion-select>
-                </ion-item>
-                <ion-note color="danger" *ngIf="f.region.touched && f.region.hasError('required')">
-                  La región es obligatoria
-                </ion-note>
-
-                <ion-item class="item-consentimiento" lines="none" style="--padding-start: 0; --inner-padding-end: 0; margin: 8px 0;">
-                  <div style="display: flex; justify-content: center; align-items: center;
-                              gap: 4px; width: 100%; padding: 4px 16px;">
-                    <ion-checkbox formControlName="consentimiento" style="flex-shrink: 0; margin-right: 6px;"></ion-checkbox>
-                    <p style="font-size: 12px; color: var(--ion-color-medium);
-                              margin: 0; line-height: 1.6;">
-                      Acepto los
-                      <a href="/terminos" (click)="abrirTerminos($event)"
-                         style="color: #8b0808; text-decoration: underline; font-weight: 500;">
-                        Términos y Condiciones
-                      </a>
-                      y la
-                      <a href="/privacidad" (click)="abrirPrivacidad($event)"
-                         style="color: #8b0808; text-decoration: underline; font-weight: 500;">
-                        Política de Privacidad
-                      </a>
-                      de Ashbis.
-                    </p>
+                <!-- Paso 0: Tipo de cuenta -->
+                <ng-container *ngIf="pasoActual === 0">
+                  <p class="paso0-ayuda">Elige el tipo de cuenta que mejor te describe.</p>
+                  <div class="tipo-cuenta-selector" role="radiogroup" aria-label="Tipo de cuenta">
+                    <button
+                      type="button"
+                      *ngFor="let t of tiposCuenta"
+                      class="tipo-cuenta-tarjeta"
+                      role="radio"
+                      [class.activo]="f.rol.value === t.valor"
+                      [attr.aria-checked]="f.rol.value === t.valor"
+                      (click)="elegirTipoCuenta(t.valor)"
+                    >
+                      <ion-icon [name]="t.icono"></ion-icon>
+                      <span>{{ t.label }}</span>
+                    </button>
                   </div>
-                </ion-item>
+                </ng-container>
+
+                <!-- Paso 1: Datos del rol (se salta para 'usuario') -->
+                <ng-container *ngIf="pasoActual === 1">
+                  <ion-item *ngIf="f.rol.value === 'refugio'">
+                    <ion-label position="stacked">
+                      Nombre del refugio/organización <span class="required">*</span>
+                    </ion-label>
+                    <ion-input
+                      formControlName="nombreRefugio"
+                      (ionBlur)="form.get('nombreRefugio')?.markAsTouched()">
+                    </ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="form.touched && form.hasError('nombreRefugioRequerido')">
+                    Ingresa el nombre del refugio u organización
+                  </ion-note>
+
+                  <ng-container *ngIf="f.rol.value === 'veterinario'">
+                    <ion-item>
+                      <ion-label position="stacked">
+                        Tipo de cuenta veterinaria <span class="required">*</span>
+                      </ion-label>
+                      <ion-select
+                        interface="popover"
+                        placeholder="Selecciona"
+                        formControlName="tipoNegocioVeterinario"
+                        (ionBlur)="form.get('tipoNegocioVeterinario')?.markAsTouched()">
+                        <ion-select-option *ngFor="let t of tiposNegocioVeterinario" [value]="t.value">{{ t.label }}</ion-select-option>
+                      </ion-select>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="form.touched && form.hasError('tipoNegocioRequerido')">
+                      Selecciona el tipo de cuenta veterinaria
+                    </ion-note>
+
+                    <ion-item>
+                      <ion-label position="stacked">
+                        {{ esClinicaConEquipo ? 'Nombre de la veterinaria/clínica' : 'Nombre de tu consulta o local (opcional)' }}
+                      </ion-label>
+                      <ion-input formControlName="nombreClinica"></ion-input>
+                    </ion-item>
+
+                    <ion-item *ngIf="esClinicaConEquipo">
+                      <ion-label position="stacked">
+                        Nombre del veterinario/a responsable <span class="required">*</span>
+                      </ion-label>
+                      <ion-input formControlName="nombreDoctor"
+                        (ionBlur)="form.get('nombreDoctor')?.markAsTouched()"></ion-input>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="form.touched && form.hasError('nombreDoctorRequerido')">
+                      Indica el nombre del veterinario/a a cargo
+                    </ion-note>
+
+                    <ion-item *ngIf="esVeterinarioMedico">
+                      <ion-label position="stacked">
+                        Número de registro/colegio profesional <span class="required">*</span>
+                      </ion-label>
+                      <ion-input formControlName="numeroRegistroProfesional"
+                        (ionBlur)="form.get('numeroRegistroProfesional')?.markAsTouched()"></ion-input>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="form.touched && form.hasError('numeroRegistroRequerido')">
+                      Ingresa tu número de registro profesional
+                    </ion-note>
+
+                    <ion-item *ngIf="esClinicaGrande">
+                      <ion-label position="stacked">Especialidades (separadas por coma)</ion-label>
+                      <ion-input formControlName="especialidadesInput" placeholder="Ej: Cirugía, Dermatología, Cardiología"></ion-input>
+                    </ion-item>
+
+                    <ion-item>
+                      <ion-label position="stacked">
+                        Modalidad de atención <span class="required">*</span>
+                      </ion-label>
+                      <ion-select
+                        interface="popover"
+                        placeholder="Selecciona"
+                        formControlName="modalidadAtencion"
+                        (ionBlur)="form.get('modalidadAtencion')?.markAsTouched()">
+                        <ion-select-option value="presencial">En el local</ion-select-option>
+                        <ion-select-option value="a_domicilio">A domicilio</ion-select-option>
+                        <ion-select-option value="ambas">Ambas</ion-select-option>
+                      </ion-select>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="form.touched && form.hasError('modalidadRequerida')">
+                      Selecciona la modalidad de atención
+                    </ion-note>
+
+                    <ion-item *ngIf="esVeterinarioMedico" lines="none" class="titulo-picker">
+                      <ion-label position="stacked">
+                        Título o certificado profesional <span class="required">*</span>
+                      </ion-label>
+                      <input #tituloInput type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden (change)="onTituloSelected($event)" />
+                      <ion-button type="button" fill="outline" size="small" (click)="tituloInput.click()">
+                        {{ tituloNombre ? 'Cambiar archivo' : 'Subir archivo' }}
+                      </ion-button>
+                      <p class="titulo-archivo" *ngIf="tituloNombre">{{ tituloNombre }}
+                        <a (click)="quitarTitulo()">Quitar</a>
+                      </p>
+                      <p class="titulo-ayuda">Un miembro del equipo de Ashbis revisa el título antes de que puedas atender pacientes — se usa solo para verificar tu cuenta, no se muestra públicamente.</p>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="errorTitulo">{{ errorTitulo }}</ion-note>
+                  </ng-container>
+
+                  <ng-container *ngIf="f.rol.value === 'servicio'">
+                    <ion-item>
+                      <ion-label position="stacked">
+                        Tipo de servicio <span class="required">*</span>
+                      </ion-label>
+                      <ion-select
+                        interface="popover"
+                        placeholder="Selecciona"
+                        formControlName="tipoServicio"
+                        (ionBlur)="form.get('tipoServicio')?.markAsTouched()">
+                        <ion-select-option *ngFor="let t of tiposServicio" [value]="t.value">{{ t.label }}</ion-select-option>
+                      </ion-select>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="form.touched && form.hasError('tipoServicioRequerido')">
+                      Selecciona el tipo de servicio
+                    </ion-note>
+
+                    <ion-item>
+                      <ion-label position="stacked">
+                        Nombre del negocio <span class="required">*</span>
+                      </ion-label>
+                      <ion-input formControlName="nombreNegocio"
+                        (ionBlur)="form.get('nombreNegocio')?.markAsTouched()"></ion-input>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="form.touched && form.hasError('nombreNegocioRequerido')">
+                      Ingresa el nombre del negocio
+                    </ion-note>
+                  </ng-container>
+
+                  <ng-container *ngIf="f.rol.value === 'pyme'">
+                    <ion-item>
+                      <ion-label position="stacked">
+                        Qué vendes <span class="required">*</span>
+                      </ion-label>
+                      <ion-select
+                        interface="popover"
+                        placeholder="Selecciona"
+                        formControlName="tipoPyme"
+                        (ionBlur)="form.get('tipoPyme')?.markAsTouched()">
+                        <ion-select-option *ngFor="let t of tiposPyme" [value]="t.value">{{ t.label }}</ion-select-option>
+                      </ion-select>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="form.touched && form.hasError('tipoPymeRequerido')">
+                      Selecciona qué vendes
+                    </ion-note>
+
+                    <ion-item>
+                      <ion-label position="stacked">
+                        Nombre de tu marca o emprendimiento <span class="required">*</span>
+                      </ion-label>
+                      <ion-input formControlName="nombreNegocio"
+                        (ionBlur)="form.get('nombreNegocio')?.markAsTouched()"></ion-input>
+                    </ion-item>
+                    <ion-note color="danger" *ngIf="form.touched && form.hasError('nombreNegocioRequerido')">
+                      Ingresa el nombre de tu marca o emprendimiento
+                    </ion-note>
+                  </ng-container>
+                </ng-container>
+
+                <!-- Paso 2: Datos personales + consentimiento -->
+                <ng-container *ngIf="pasoActual === 2">
+                  <ion-item>
+                    <ion-label position="stacked">
+                      Teléfono <span class="required">*</span>
+                    </ion-label>
+                    <ion-input
+                      type="tel"
+                      inputmode="tel"
+                      placeholder="+569XXXXXXXX"
+                      formControlName="telefono"
+                      (ionBlur)="form.get('telefono')?.markAsTouched()">
+                    </ion-input>
+                  </ion-item>
+                  <ion-note color="danger" *ngIf="f.telefono.touched && f.telefono.hasError('required')">El teléfono es obligatorio</ion-note>
+                  <ion-note color="danger" *ngIf="f.telefono.touched && f.telefono.hasError('pattern')">Formato inválido. Ej: +569XXXXXXXX</ion-note>
+
+                  <app-region-comuna-select [form]="form" regionControlName="region" comunaControlName="comuna"></app-region-comuna-select>
+
+                  <ion-item class="item-consentimiento" lines="none" style="--padding-start: 0; --inner-padding-end: 0; margin: 8px 0;">
+                    <div style="display: flex; justify-content: center; align-items: center;
+                                gap: 4px; width: 100%; padding: 4px 16px;">
+                      <ion-checkbox formControlName="consentimiento" style="flex-shrink: 0; margin-right: 6px;"></ion-checkbox>
+                      <p style="font-size: 12px; color: var(--ion-color-medium);
+                                margin: 0; line-height: 1.6;">
+                        Acepto los
+                        <a href="/terminos" (click)="abrirTerminos($event)"
+                           style="color: #8b0808; text-decoration: underline; font-weight: 500;">
+                          Términos y Condiciones
+                        </a>
+                        y la
+                        <a href="/privacidad" (click)="abrirPrivacidad($event)"
+                           style="color: #8b0808; text-decoration: underline; font-weight: 500;">
+                          Política de Privacidad
+                        </a>
+                        de Ashbis.
+                      </p>
+                    </div>
+                  </ion-item>
+                </ng-container>
               </ion-list>
 
               <ion-note color="danger" *ngIf="errorGuardado" class="error-registro">
                 {{ errorGuardado }}
               </ion-note>
 
-              <ion-button
-                type="submit"
-                expand="block"
-                class="ion-margin-top"
-                [disabled]="cargando || form.invalid"
-                color="danger">
-                <ng-container *ngIf="!cargando; else loadingTpl">Continuar</ng-container>
-              </ion-button>
-              <ng-template #loadingTpl>
-                <ion-spinner name="crescent"></ion-spinner>
-              </ng-template>
+              <div class="wizard-nav">
+                <ion-button type="button" color="medium" *ngIf="pasoActual > 0" (click)="atras()">
+                  Atrás
+                </ion-button>
+                <ion-button type="button" color="danger" *ngIf="pasoActual < ULTIMO_PASO" (click)="siguiente()">
+                  Siguiente
+                </ion-button>
+                <ion-button
+                  *ngIf="pasoActual === ULTIMO_PASO"
+                  type="submit"
+                  [disabled]="cargando || form.invalid"
+                  color="danger">
+                  <ng-container *ngIf="!cargando; else loadingTpl">Continuar</ng-container>
+                </ion-button>
+                <ng-template #loadingTpl>
+                  <ion-spinner name="crescent"></ion-spinner>
+                </ng-template>
+              </div>
             </form>
           </ion-card-content>
         </ion-card>

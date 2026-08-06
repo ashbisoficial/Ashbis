@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { adminGuard, authGuard, perfilCompletoGuard, publicGuard } from './guards/auth.guard';
+import { adminGuard, authGuard, noVeterinarioGuard, perfilCompletoGuard, publicGuard } from './guards/auth.guard';
 import { TabsComponent } from './tabs/tabs.component';
 
 export const routes: Routes = [
@@ -32,6 +32,19 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./auth/pages/completar-perfil/completar-perfil.component').then(
         (m) => m.CompletarPerfilComponent
+      ),
+  },
+  // Preferencias (tema, tamaño de letra, notificaciones, cámara/ubicación)
+  // mostradas una vez, justo después de crear la cuenta (desde /registro o
+  // /completar-perfil) y antes de entrar a /tabs/home. El perfil ya existe
+  // en este punto, por eso alcanza con authGuard (perfilCompletoGuard solo
+  // protege /tabs).
+  {
+    path: 'bienvenida',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./auth/pages/bienvenida/bienvenida.component').then(
+        (m) => m.BienvenidaComponent
       ),
   },
 
@@ -74,13 +87,20 @@ export const routes: Routes = [
       },
       {
         path: 'listar-mascotas',
+        canActivate: [noVeterinarioGuard],
         loadComponent: () =>
           import('./listar-mascotas/listar-mascotas.component').then(
             (m) => m.ListarMascotasComponent
           ),
       },
       {
+        path: 'buscador',
+        loadComponent: () =>
+          import('./buscador/buscador.component').then((m) => m.BuscadorComponent),
+      },
+      {
         path: 'crear-mascotas',
+        canActivate: [noVeterinarioGuard],
         loadComponent: () =>
           import('./crear-mascotas/crear-mascotas.component').then(
             (m) => m.CrearMascotasComponent
@@ -200,6 +220,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./servicio-panel/servicio-panel.component')
             .then(m => m.ServicioPanelComponent),
+      },
+      {
+        path: 'pyme-panel',
+        loadComponent: () =>
+          import('./pyme-panel/pyme-panel.component')
+            .then(m => m.PymePanelComponent),
       },
       // ── Chat IA dentro de tabs (mantiene navbar) ─────────────────────────
       {

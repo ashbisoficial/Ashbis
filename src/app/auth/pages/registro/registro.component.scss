@@ -26,81 +26,91 @@ ion-card::part(native) {
   border-radius: 18px !important;
 }
 
-/* ====== SELECTOR "TIPO DE CUENTA" (tabs, no ion-item) ====== */
+/* ====== SELECTOR "TIPO DE CUENTA" (tarjetas con ícono, no tabs de texto) ====== */
+.paso0-ayuda {
+  width: 90%;
+  margin: 0 auto 16px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
 .tipo-cuenta-selector {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 10px;
   width: 90%;
   margin: 4px auto 22px;
-  border-bottom: 1px solid var(--ashbis-surface-border);
 }
 
-.tipo-cuenta-tab {
-  position: relative;
-  background: none;
-  border: none;
-  padding: 6px 2px 12px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+.tipo-cuenta-tarjeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background: var(--ashbis-surface);
+  border: 1px solid var(--ashbis-surface-border);
+  border-radius: 14px;
   color: var(--ion-color-medium);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
   -webkit-tap-highlight-color: transparent;
-}
 
-.tipo-cuenta-tab:hover {
-  color: var(--ion-text-color);
-}
+  ion-icon {
+    font-size: 24px;
+    color: var(--ashbis-red, #8b0808);
+    transition: color .15s ease;
+  }
 
-.tipo-cuenta-tab.activo {
-  color: #ff3b3b;
-}
+  &:hover {
+    border-color: var(--ashbis-red, #8b0808);
+  }
 
-.tipo-cuenta-tab.activo::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background: #ff3b3b;
-  border-radius: 2px;
-}
+  &.activo {
+    background: var(--ashbis-red, #8b0808);
+    border-color: var(--ashbis-red, #8b0808);
+    color: #fff;
 
-.tipo-cuenta-tab:focus-visible {
-  outline: 2px solid #ff3b3b;
-  outline-offset: 2px;
-  border-radius: 2px;
+    ion-icon { color: #fff; }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ashbis-red, #8b0808);
+    outline-offset: 2px;
+  }
 }
 
 /* ====== INPUTS Y LABELS ====== */
+/* Tarjetas "surface" con borde sutil (mismo lenguaje que veterinario-panel/
+   mascota-detalle) en vez del subrayado rojo forzado de antes. */
 ion-item {
-  --background:transparent !important;
+  --background: var(--ion-background-color) !important;
   --color: var(--ion-text-color) !important;
-  --highlight-color-focused: #d30000 !important;
-  --highlight-color-valid: #d30000 !important;
-  --highlight-color-invalid: #d30000 !important;
-  padding-left: 0;
-  padding-right: 0;
+  --highlight-color-focused: var(--ashbis-red, #8b0808) !important;
+  --highlight-color-valid: var(--ashbis-red, #8b0808) !important;
+  --highlight-color-invalid: #ff5b5b !important;
+  --border-color: transparent;
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
 }
 
-/* Borde rojo inferior */
 ion-item::part(native) {
-  border-bottom: 2px solid #d30000 !important;
   width: 90%;
-  margin: 16px auto 6px;
-  padding-left: 8px;
-  padding-right: 8px;
+  margin: 8px auto;
+  padding: 4px 8px;
+  border: 1px solid var(--ashbis-surface-border);
+  border-radius: 12px;
 }
 
 /* El ion-item del checkbox de consentimiento no es un campo de formulario:
-   la regla de arriba le agregaba la misma línea roja que a los inputs. */
+   la regla de arriba le agregaba el mismo estilo de tarjeta que a los inputs. */
 ion-item.item-consentimiento::part(native) {
-  border-bottom: none !important;
+  border: none !important;
   width: 100%;
   margin: 0;
   padding-left: 0;
@@ -109,11 +119,9 @@ ion-item.item-consentimiento::part(native) {
 
 /* Selector de título/certificado: tampoco es un input de texto. */
 ion-item.titulo-picker::part(native) {
-  border-bottom: none !important;
   width: 90%;
-  margin: 16px auto 6px;
-  padding-left: 8px;
-  padding-right: 8px;
+  margin: 8px auto;
+  padding: 10px 8px;
   flex-wrap: wrap;
 }
 
@@ -124,7 +132,7 @@ ion-item.titulo-picker::part(native) {
   color: var(--ion-text-color);
 
   a {
-    color: #d30000;
+    color: var(--ashbis-red, #8b0808);
     text-decoration: underline;
     margin-left: 8px;
     cursor: pointer;
@@ -160,7 +168,7 @@ ion-select::part(text) {
 
 /* Asteriscos */
 .required {
-  color: #ff0000;
+  color: var(--ashbis-red, #8b0808);
 }
 
 /* ====== MENSAJES DE ERROR ====== */
@@ -207,7 +215,7 @@ ion-note[color="danger"] {
 .pw-meter-fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, #ffffff, #ff5b5b, #ff0000);
+  background: linear-gradient(90deg, #ffffff, #ff5b5b, var(--ashbis-red, #8b0808));
   transition: width 0.3s ease;
 }
 
@@ -238,8 +246,12 @@ ion-button[slot="end"] ion-icon {
 }
 
 /* ====== BOTONES ====== */
+/* color="danger" = acción principal (Siguiente/Crear cuenta); color="medium"
+   = acción secundaria (Atrás/Volver a Ingresar) — antes "medium" también
+   salía rojo sólido, igual al primario, sin ninguna jerarquía visual entre
+   ambos. */
 ion-button[color="danger"] {
-  --background: #8b0808;
+  --background: var(--ashbis-red, #8b0808);
   --background-hover: #b91c1c;
   --border-radius: 24px !important;
   height: 46px;
@@ -250,8 +262,11 @@ ion-button[color="danger"] {
 }
 
 ion-button[color="medium"] {
-  --background: #8b0808;
-  --color: #ffffff;
+  --background: transparent;
+  --border-color: var(--ashbis-surface-border, rgba(255, 255, 255, .16));
+  --border-width: 1px;
+  --border-style: solid;
+  --color: var(--ion-text-color);
   --border-radius: 24px !important;
   height: 46px;
   font-weight: bold;
@@ -273,4 +288,38 @@ ion-button[fill="clear"] {
    contenido, que ya traen su propio encapsulamiento). */
 .legal-content {
   --background: var(--ion-background-color);
+}
+
+/* ====== REGISTRO EN PASOS ====== */
+.wizard-progreso {
+  width: 90%;
+  margin: 4px auto 18px;
+
+  ion-progress-bar {
+    height: 6px;
+    border-radius: 3px;
+  }
+}
+
+.wizard-paso-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--ion-color-medium);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.wizard-nav {
+  display: flex;
+  gap: 12px;
+  width: 90%;
+  max-width: 360px;
+  margin: 20px auto 0;
+
+  ion-button {
+    flex: 1;
+    width: auto;
+    margin: 0;
+  }
 }

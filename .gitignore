@@ -74,3 +74,10 @@ functions/.env
 functions/node_modules/
 functions/lib/
 .firebase/
+
+# APK de distribución beta (se copia a www/descargas en el deploy de Hosting)
+/releases
+
+# Keystores de firma (nunca deben subirse a git)
+*.jks
+*.keystore

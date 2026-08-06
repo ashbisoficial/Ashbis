@@ -35,7 +35,7 @@
         <ion-item>
           <ion-label position="stacked">Descripción</ion-label>
           <ion-textarea formControlName="descripcion" [autoGrow]="true" rows="3"
-            placeholder="Contanos la historia, edad, temperamento, qué necesita..."></ion-textarea>
+            placeholder="Cuéntanos la historia, edad, temperamento, qué necesita..."></ion-textarea>
         </ion-item>
 
         <ion-item *ngIf="misMascotas.length">
@@ -127,7 +127,7 @@
   </ion-card>
 
   <div *ngIf="!cargando && !publicaciones.length" class="ion-text-center ion-padding" style="color: var(--ion-color-medium);">
-    <p>Todavía no tienes publicaciones. Tocá el "+" para crear la primera.</p>
+    <p>Todavía no tienes publicaciones. Toca el "+" para crear la primera.</p>
   </div>
 
 </ion-content>

@@ -46,7 +46,7 @@
           <a *ngIf="whatsappNegocio()" [href]="'https://wa.me/' + whatsappNegocio()" target="_blank" rel="noopener"><ion-icon name="logo-whatsapp"></ion-icon> WhatsApp</a>
         </div>
         <p class="vacio" *ngIf="!nombreNegocio() && !etiquetaTipoServicio()">
-          Todavía no completaste los datos de tu negocio — tocá el lápiz para agregarlos.
+          Todavía no completaste los datos de tu negocio — toca el lápiz para agregarlos.
         </p>
       </ion-card-content>
 
@@ -65,7 +65,7 @@
 
         <ion-item lines="full">
           <ion-label position="stacked">Tipo de servicio</ion-label>
-          <ion-select [(ngModel)]="form.tipoServicio" interface="popover" placeholder="Elegí una opción">
+          <ion-select [(ngModel)]="form.tipoServicio" interface="popover" placeholder="Elige una opción">
             <ion-select-option *ngFor="let opt of tiposServicio" [value]="opt[0]">{{ opt[1] }}</ion-select-option>
           </ion-select>
         </ion-item>
@@ -84,7 +84,7 @@
         <p class="nota-campo">Estos datos son del negocio, distintos de tu teléfono/dirección personal de la cuenta.</p>
         <ion-item lines="full">
           <ion-label position="stacked">Descripción</ion-label>
-          <ion-textarea [(ngModel)]="form.descripcion" autoGrow="true" placeholder="Contá de qué se trata tu negocio"></ion-textarea>
+          <ion-textarea [(ngModel)]="form.descripcion" autoGrow="true" placeholder="Cuenta de qué se trata tu negocio"></ion-textarea>
         </ion-item>
         <ion-item lines="full">
           <ion-label position="stacked">Página web</ion-label>

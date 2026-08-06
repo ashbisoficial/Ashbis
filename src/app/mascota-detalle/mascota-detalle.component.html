@@ -96,10 +96,17 @@
 
       </ion-list>
 
-      <!-- RESUMEN (solo veterinario): datos clínicos de solo lectura que ya
-           cargó el dueño desde "Editar mascota" — antes de esto el
-           veterinario no veía nada más que las notas de texto libre. -->
+      <!-- RESUMEN (solo veterinario): datos clínicos que ya cargó el dueño
+           desde "Editar mascota", más el acceso para que el propio
+           veterinario cargue/actualice vacunas, exámenes y medicamentos de
+           este paciente puntual (antes solo podía leer y dejar una nota de
+           texto libre en "Historial"). -->
       <div *ngSwitchCase="'resumen'">
+
+        <ion-button expand="block" fill="outline" color="danger" (click)="irAHistorialClinico()">
+          <ion-icon name="create-outline" slot="start"></ion-icon>
+          Cargar/actualizar vacunas, exámenes y medicamentos
+        </ion-button>
 
         <ion-card *ngIf="mascota.alergias?.length || mascota.enfermedadesCronicas?.length || mascota.medicamentosPermanentes?.length || mascota.esAgresivo || mascota.senasParticulares"
           class="tarjeta-alertas">
@@ -186,6 +193,12 @@
               <p *ngIf="!e.fechaRealizado && e.fechaProgramada">Programado: {{ e.fechaProgramada | date:'dd-MM-yyyy' }}</p>
               <p *ngIf="e.notas" class="nota-texto">{{ e.notas }}</p>
             </ion-label>
+            <ion-button *ngIf="e.ordenUrl" slot="end" size="small" fill="clear" (click)="abrirArchivoExamen(e.ordenUrl)">
+              Ver orden
+            </ion-button>
+            <ion-button *ngIf="e.resultadoUrl" slot="end" size="small" fill="clear" (click)="abrirArchivoExamen(e.resultadoUrl)">
+              Ver resultado
+            </ion-button>
           </ion-item>
         </ion-list>
         <ng-template #sinExamenes>
@@ -237,31 +250,65 @@
           </ion-card-content>
         </ion-card>
 
-        <!-- Notas de consulta -->
-        <ion-list>
-          <ion-item *ngFor="let nota of entradasHistorial" lines="full">
-            <ion-label class="ion-text-wrap">
-              <h2>{{ nota.autorNombre }}</h2>
-              <p class="nota-texto">{{ nota.texto }}</p>
-              <p class="nota-fecha">{{ fechaNota(nota) }}</p>
-            </ion-label>
-          </ion-item>
+        <!-- Notas de consulta: cada una se lee como una orden clínica
+             (tipo + campos según CONFIG_TIPO_ORDEN), no como una nota suelta. -->
+        <div class="lista-ordenes">
+          <div class="orden-card" *ngFor="let nota of entradasHistorial" [attr.data-color]="configTipo(nota.tipo).color">
+            <div class="orden-header">
+              <span class="orden-tipo-badge">
+                <ion-icon [name]="configTipo(nota.tipo).icono"></ion-icon>
+                {{ configTipo(nota.tipo).label }}
+              </span>
+              <span class="orden-fecha">{{ fechaNota(nota) }}</span>
+            </div>
+            <p class="orden-autor">{{ nota.autorNombre }}</p>
+            <p *ngIf="nota.motivo" class="nota-campo"><strong>{{ configTipo(nota.tipo).motivoLabel }}:</strong> {{ nota.motivo }}</p>
+            <p *ngIf="nota.diagnostico" class="nota-campo"><strong>{{ configTipo(nota.tipo).diagnosticoLabel }}:</strong> {{ nota.diagnostico }}</p>
+            <p *ngIf="nota.tratamiento" class="nota-campo"><strong>{{ configTipo(nota.tipo).tratamientoLabel }}:</strong> {{ nota.tratamiento }}</p>
+            <p *ngIf="nota.texto" class="nota-texto"><strong>{{ configTipo(nota.tipo).textoLabel }}:</strong> {{ nota.texto }}</p>
+            <ion-button *ngIf="nota.pdfUrl" size="small" fill="outline" color="medium" class="btn-ver-pdf" (click)="abrirArchivoExamen(nota.pdfUrl)">
+              <ion-icon name="document-text-outline" slot="start"></ion-icon>
+              Ver PDF de la orden
+            </ion-button>
+          </div>
           <ion-card *ngIf="entradasHistorial.length === 0">
             <ion-card-content class="ion-text-center">
               Aún no hay notas en el historial médico.
             </ion-card-content>
           </ion-card>
-        </ion-list>
+        </div>
 
-        <div class="nueva-nota">
-          <ion-textarea
-            [(ngModel)]="nuevaNota"
-            placeholder="Agregar una nota al historial (diagnóstico, tratamiento, indicaciones...)"
-            autoGrow="true"
-            [rows]="2">
-          </ion-textarea>
-          <ion-button [disabled]="!nuevaNota.trim() || enviandoNota" (click)="agregarNota()">
-            <ion-icon name="send-outline" slot="icon-only"></ion-icon>
+        <div class="nueva-nota nueva-nota-estructurada">
+          <p class="label-tipo-orden">Tipo de orden</p>
+          <div class="selector-tipo-orden">
+            <button type="button" *ngFor="let t of tiposOrden"
+              class="chip-tipo-orden" [class.activo]="nuevaEntrada.tipo === t.valor"
+              [attr.data-color]="t.config.color"
+              (click)="nuevaEntrada.tipo = t.valor">
+              <ion-icon [name]="t.config.icono"></ion-icon>
+              {{ t.config.label }}
+            </button>
+          </div>
+
+          <ion-item lines="full">
+            <ion-label position="stacked">{{ configTipo(nuevaEntrada.tipo).motivoLabel }}</ion-label>
+            <ion-input [(ngModel)]="nuevaEntrada.motivo" [placeholder]="configTipo(nuevaEntrada.tipo).motivoPlaceholder"></ion-input>
+          </ion-item>
+          <ion-item lines="full">
+            <ion-label position="stacked">{{ configTipo(nuevaEntrada.tipo).diagnosticoLabel }}</ion-label>
+            <ion-input [(ngModel)]="nuevaEntrada.diagnostico" [placeholder]="configTipo(nuevaEntrada.tipo).diagnosticoPlaceholder"></ion-input>
+          </ion-item>
+          <ion-item lines="full">
+            <ion-label position="stacked">{{ configTipo(nuevaEntrada.tipo).tratamientoLabel }}</ion-label>
+            <ion-textarea [(ngModel)]="nuevaEntrada.tratamiento" autoGrow="true" [rows]="2" [placeholder]="configTipo(nuevaEntrada.tipo).tratamientoPlaceholder"></ion-textarea>
+          </ion-item>
+          <ion-item lines="none">
+            <ion-label position="stacked">{{ configTipo(nuevaEntrada.tipo).textoLabel }}</ion-label>
+            <ion-textarea [(ngModel)]="nuevaEntrada.texto" autoGrow="true" [rows]="2"></ion-textarea>
+          </ion-item>
+          <ion-button expand="block" [disabled]="!puedeAgregarNota || enviandoNota" (click)="agregarNota()">
+            <ion-icon name="send-outline" slot="start"></ion-icon>
+            Agregar al historial
           </ion-button>
         </div>
 

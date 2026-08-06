@@ -18,7 +18,9 @@ import {
   pawOutline,
   personOutline,
   medkitOutline,
-  storefrontOutline
+  storefrontOutline,
+  searchOutline,
+  bagHandleOutline
 } from 'ionicons/icons';
 import { take } from 'rxjs';
 import { RefugioContextService } from '../services/refugio-context.service';
@@ -60,6 +62,8 @@ export class TabsComponent {
   esVeterinario = false;
   /** Solo cuentas rol 'servicio' (peluquería/guardería/funeraria). */
   esServicio = false;
+  /** Solo cuentas rol 'pyme' (marca/emprendimiento de productos para mascotas). */
+  esPyme = false;
 
   constructor() {
     addIcons({
@@ -68,7 +72,9 @@ export class TabsComponent {
       pawOutline,
       personOutline,
       medkitOutline,
-      storefrontOutline
+      storefrontOutline,
+      searchOutline,
+      bagHandleOutline
     });
 
     this.refugioCtx.contexto$()
@@ -82,6 +88,7 @@ export class TabsComponent {
       this.fs.getDocument(`usuarios/${uid}`).then(perfil => {
         this.esVeterinario = perfil?.rol === 'veterinario';
         this.esServicio = perfil?.rol === 'servicio';
+        this.esPyme = perfil?.rol === 'pyme';
       });
     }
 

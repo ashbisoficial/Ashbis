@@ -199,7 +199,7 @@ editarPerfil() {
     // del QR, así que se pide confirmación antes.
     const alert = await this.alertCtrl.create({
       header: 'Reportar como perdida',
-      message: 'A partir de ahora, quien escanee el QR de "mascota perdida" va a poder ver tu nombre y teléfono de contacto para ayudarte a encontrarla. Podés desactivarlo cuando quieras.',
+      message: 'A partir de ahora, quien escanee el QR de "mascota perdida" va a poder ver tu nombre y teléfono de contacto para ayudarte a encontrarla. Puedes desactivarlo cuando quieras.',
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {
@@ -241,9 +241,9 @@ editarPerfil() {
 
     const alert = await this.alertCtrl.create({
       header: `Publicar a ${m.nombre} en adopción`,
-      message: 'Va a aparecer públicamente en el feed del Home para que cualquier persona la vea y pueda postular a adoptarla. Confirmás que la información es real.',
+      message: 'Va a aparecer públicamente en el feed del Home para que cualquier persona la vea y pueda postular a adoptarla. Confirmas que la información es real.',
       inputs: [
-        { name: 'descripcion', type: 'textarea', placeholder: `Contá algo de ${m.nombre}: personalidad, por qué la das en adopción, etc.` },
+        { name: 'descripcion', type: 'textarea', placeholder: `Cuenta algo de ${m.nombre}: personalidad, por qué la das en adopción, etc.` },
       ],
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
@@ -252,7 +252,7 @@ editarPerfil() {
           handler: async (data) => {
             const descripcion = this.security.sanitizeText(data.descripcion || '', 1000);
             if (descripcion.length < 10) {
-              await this.presentToast('Contanos un poco más antes de publicar (mínimo 10 caracteres).', 'danger');
+              await this.presentToast('Cuéntanos un poco más antes de publicar (mínimo 10 caracteres).', 'danger');
               return false;
             }
             this.publicandoAdopcion = true;
@@ -279,7 +279,7 @@ editarPerfil() {
                 // Info pública de la mascota: mascotas/{id} no es legible por
                 // cualquiera, así que esto es lo único que va a poder ver
                 // alguien que no sea el dueño/equipo. La Cloud Function
-                // onMascotaActualizada la mantiene al día si después editás
+                // onMascotaActualizada la mantiene al día si después editas
                 // la ficha (nueva foto, edad, etc.).
                 ...(m.especie ? { especie: m.especie } : {}),
                 ...(m.raza ? { raza: m.raza } : {}),
@@ -332,7 +332,7 @@ editarPerfil() {
     const esAdopcion = tipo === 'adopcion';
     const alert = await this.alertCtrl.create({
       header: esAdopcion ? `Adopción de ${m.nombre}` : `Hogar temporal para ${m.nombre}`,
-      message: '¿Cómo querés identificar a la persona? Las dos formas hacen lo mismo.',
+      message: '¿Cómo quieres identificar a la persona? Las dos formas hacen lo mismo.',
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         { text: 'Escribir su email', handler: () => this.pedirDatosTransferencia(m, tipo) },
@@ -351,7 +351,7 @@ editarPerfil() {
       header: esAdopcion ? `Adopción de ${m.nombre}` : `Hogar temporal para ${m.nombre}`,
       message: esAdopcion
         ? 'El nuevo dueño recibirá una solicitud en su perfil. La mascota (con todo su historial) solo pasa a su cuenta cuando la acepte.'
-        : 'La persona recibirá una solicitud en su perfil. Al aceptar, comparte acceso al perfil e historial de la mascota, pero vos seguís como dueño/a.',
+        : 'La persona recibirá una solicitud en su perfil. Al aceptar, comparte acceso al perfil e historial de la mascota, pero tú sigues como dueño/a.',
       inputs: [
         { name: 'email', type: 'email', placeholder: `Email de ${esAdopcion ? 'quien la adopta' : 'quien la va a cuidar'}` },
         { name: 'mensaje', type: 'textarea', placeholder: 'Mensaje (opcional)' },
@@ -411,7 +411,7 @@ editarPerfil() {
       return;
     }
     if (!this.preferencias.camaraHabilitada) {
-      await this.presentToast('Activá la cámara en Configuración → Permisos para escanear un QR.', 'danger');
+      await this.presentToast('Activa la cámara en Configuración → Permisos para escanear un QR.', 'danger');
       return;
     }
     this.tipoEscaneoPendiente = tipo;
@@ -434,7 +434,7 @@ editarPerfil() {
     try {
       const token = await this.qrDecodeSvc.decodificarArchivo(file);
       if (!token) {
-        await this.presentToast('No se detectó ningún código QR en la foto. Probá con más luz y de más cerca.', 'danger');
+        await this.presentToast('No se detectó ningún código QR en la foto. Prueba con más luz y de más cerca.', 'danger');
         return;
       }
       const info = await this.fs.resolverQrCuenta(token);

@@ -12,8 +12,11 @@ export namespace Models {
      * además el PIN de cada mascota para tocar su historial médico.
      * 'servicio' agrupa negocios que no requieren título profesional
      * (peluquería/estética, guardería/pensión, funeraria) — ver TipoServicio.
+     * 'pyme' agrupa marcas o mini-emprendimientos que venden productos para
+     * mascotas (ropa, juguetes, accesorios, comida, snacks) — ver TipoPyme.
+     * Ninguno de los dos pasa por verificación, a diferencia de refugio/veterinario.
      */
-    export type Rol = 'usuario' | 'refugio' | 'veterinario' | 'servicio';
+    export type Rol = 'usuario' | 'refugio' | 'veterinario' | 'servicio' | 'pyme';
 
     /**
      * Sub-tipo de negocio dentro del rol 'veterinario'. Los tres implican
@@ -30,7 +33,14 @@ export namespace Models {
      * Sub-tipo de negocio dentro del rol 'servicio'. Ninguno pide título
      * profesional ni pasa por verificación — a diferencia de 'veterinario'.
      */
-    export type TipoServicio = 'peluqueria' | 'guarderia' | 'funeraria';
+    export type TipoServicio = 'peluqueria' | 'guarderia' | 'funeraria' | 'hotel' | 'transporte';
+
+    /**
+     * Sub-tipo de negocio dentro del rol 'pyme'. Tampoco pide título ni
+     * pasa por verificación — es una marca/mini-emprendimiento que vende
+     * productos para mascotas, no un servicio de atención.
+     */
+    export type TipoPyme = 'ropa' | 'juguetes' | 'accesorios' | 'comida' | 'snacks' | 'otro';
 
     export type ModalidadAtencion = 'presencial' | 'a_domicilio' | 'ambas';
 
@@ -44,6 +54,10 @@ export namespace Models {
        *  telefonoNegocio/direccionNegocio: quien crea la cuenta a veces no es
        *  quien atiende en el local. */
       telefono?: string;
+      /** RUT de la persona dueña de la cuenta (o del veterinario, si
+       *  rol === 'veterinario') — lo necesitan los documentos/plantillas de
+       *  atención veterinaria (ej. formularios de reembolso de seguros). */
+      rut?: string;
       fechaNacimiento?: string;
       region?: string;
       comuna?: string;
@@ -63,11 +77,14 @@ export namespace Models {
       nombreClinica?: string;
       /** Solo si rol === 'veterinario'. Ver TipoNegocioVeterinario. */
       tipoNegocioVeterinario?: TipoNegocioVeterinario;
-      /** Solo si rol === 'servicio'. Nombre del negocio (peluquería, guardería, funeraria). */
+      /** Solo si rol === 'servicio' o 'pyme'. Nombre del negocio (peluquería,
+       *  guardería, funeraria, o marca/emprendimiento de productos). */
       nombreNegocio?: string;
       /** Solo si rol === 'servicio'. Ver TipoServicio. */
       tipoServicio?: TipoServicio;
-      /** Veterinario o servicio: teléfono/dirección DEL NEGOCIO, mostrados
+      /** Solo si rol === 'pyme'. Ver TipoPyme. */
+      tipoPyme?: TipoPyme;
+      /** Veterinario, servicio o pyme: teléfono/dirección DEL NEGOCIO, mostrados
        *  públicamente en el buscador de Ashbis — separados del
        *  teléfono/dirección personal de arriba a propósito (ver ese campo).
        *  Se exige teléfono acá antes de poder pedir la verificación de la
@@ -97,12 +114,12 @@ export namespace Models {
        *  historial médico de un paciente. */
       notasPredisenadas?: string[];
       /** Veterinario: logo/timbre/firma para personalizar la atención (por
-       *  ejemplo, al imprimir o compartir una ficha). Servicio: solo logoUrl,
-       *  para mostrarse en el buscador de Ashbis. */
+       *  ejemplo, al imprimir o compartir una ficha). Servicio/pyme: solo
+       *  logoUrl, para mostrarse en el buscador de Ashbis. */
       logoUrl?: string;
       timbreUrl?: string;
       firmaUrl?: string;
-      /** Veterinario o servicio: sitio web y redes del negocio, mostrados en
+      /** Veterinario, servicio o pyme: sitio web y redes del negocio, mostrados en
        *  el buscador de Ashbis — Ashbis conecta al dueño con el negocio, el
        *  contacto/agenda se maneja fuera de la app. */
       sitioWeb?: string;
@@ -320,9 +337,33 @@ export namespace Models {
      * el dueño ni el veterinario pueden alterar el registro después de
      * escrito.
      */
+    /** Clasifica la entrada para mostrarla como una orden clínica (ver
+     *  mascota-detalle) — puramente de presentación, no cambia qué campos
+     *  se guardan ni la validación en firestore.rules (ya acepta 'tipo'
+     *  como string genérico). */
+    export type TipoEntrada = 'consulta' | 'receta' | 'vacunacion' | 'examen' | 'cirugia' | 'otro';
+
     export interface Entrada {
       id?: string;
-      texto: string;
+      /** Default 'consulta' para las entradas viejas que no lo tenían. */
+      tipo?: TipoEntrada;
+      /** Motivo de la consulta (ej. "control anual", "vómitos hace 2 días"). */
+      motivo?: string;
+      /** Diagnóstico del profesional que atendió. */
+      diagnostico?: string;
+      /** Tratamiento indicado: procedimientos, exámenes solicitados, medicación, etc. */
+      tratamiento?: string;
+      /** Observación libre adicional — antes era el único campo de esta
+       *  entrada; se mantiene para notas rápidas o info que no encaja en
+       *  motivo/diagnóstico/tratamiento. Al menos uno de los 4 campos debe
+       *  venir completo (ver validación en firestore.rules). */
+      texto?: string;
+      /** Orden clínica en PDF (datos de la mascota + del veterinario/clínica
+       *  + su logo/timbre/firma) generada al cargar la entrada — solo cuando
+       *  la carga un veterinario (ver mascota-detalle). Va SIEMPRE en el
+       *  create original: la entrada es append-only, así que no hay forma
+       *  de agregarlo después con un update. */
+      pdfUrl?: string;
       autorUid: string;
       autorNombre: string;
       autorRol: Auth.Rol;
@@ -587,6 +628,43 @@ export namespace Models {
        *  refugio, no verificado por Ashbis; se muestra igual con esa
        *  salvedad para dar transparencia antes de donar. */
       totalDonacionesDeclaradas: number;
+    }
+  }
+
+  // ─── BUSCADOR (directorio público de veterinarios y servicios) ─────────────
+  export namespace DirectorioPublico {
+    /** Colección top-level, id de documento = uid de la cuenta. Mismo
+     *  criterio que RefugiosPublico (la mantiene al día únicamente
+     *  onUsuarioActualizado con Admin SDK, nunca el cliente): solo trae
+     *  datos "de negocio" ya pensados como públicos desde antes (ver
+     *  comentarios de telefonoNegocio/direccionNegocio/logoUrl en
+     *  Auth.UserProfile) — nunca email, teléfono/dirección personal, ni
+     *  documentos de verificación (tituloUrl/documentoLegalUrl). Cubre
+     *  'veterinario', 'servicio' y 'pyme' — refugio sigue usando RefugiosPublico,
+     *  que ya existía antes y no hacía falta migrar. */
+    export const PathDirectorioPublico = 'directorioPublico';
+
+    export interface EntradaDirectorio {
+      uid: string;
+      rol: 'veterinario' | 'servicio' | 'pyme';
+      nombre: string; // nombreClinica o nombreNegocio
+      tipo?: string; // tipoNegocioVeterinario, tipoServicio o tipoPyme
+      modalidadAtencion?: Auth.ModalidadAtencion;
+      especialidades?: string[];
+      especiesAtendidas?: string[];
+      lugarEstudios?: string;
+      direccionNegocio?: string;
+      telefonoNegocio?: string;
+      descripcion?: string;
+      sitioWeb?: string;
+      instagram?: string;
+      facebook?: string;
+      whatsappNegocio?: string;
+      logoUrl?: string;
+      /** Solo aplica a veterinario — servicio no pasa por verificación. */
+      verificado?: boolean;
+      region?: string;
+      comuna?: string;
     }
   }
 
