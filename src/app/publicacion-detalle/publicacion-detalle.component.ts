@@ -161,9 +161,9 @@ export class PublicacionDetalleComponent implements OnDestroy {
     if (!pub?.id || this.enviandoPostulacion) return;
     const alert = await this.alertCtrl.create({
       header: `Postular a adoptar a ${pub.titulo}`,
-      message: 'El refugio va a ver tu postulación y, si le interesa, se abre un chat directo contigo para coordinar.',
+      message: `${this.infoRefugio ? 'El refugio' : 'El dueño o dueña'} va a ver tu postulación y, si le interesa, se abre un chat directo contigo para coordinar.`,
       inputs: [
-        { name: 'mensaje', type: 'textarea', placeholder: 'Cuéntale al refugio por qué quieres adoptarla (opcional)' },
+        { name: 'mensaje', type: 'textarea', placeholder: `Cuéntale ${this.infoRefugio ? 'al refugio' : 'al dueño o dueña'} por qué quieres adoptarla (opcional)` },
       ],
       buttons: [
         { text: 'Cancelar', role: 'cancel' },

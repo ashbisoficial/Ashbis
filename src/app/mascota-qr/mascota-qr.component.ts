@@ -364,6 +364,16 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
     veterinario: '#qr-veterinario canvas',
   };
 
+  /** Safari (iOS y macOS) no soporta descargar un data: URL con el atributo
+   *  "download" del link — en vez de guardar el archivo, abre la imagen en
+   *  una pestaña nueva (o directamente no hace nada), que es exactamente el
+   *  "no se puede descargar la ficha" reportado en iOS. Para ese caso se
+   *  abre la imagen aparte para que la guarden con "mantener presionado". */
+  private esSafari(): boolean {
+    const ua = navigator.userAgent;
+    return /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(ua);
+  }
+
   async descargarQR() {
     const mascota = this.mascotaSeleccionada();
     if (!mascota || this.camposFaltantes.length) return;
@@ -385,12 +395,26 @@ export class MascotaQrComponent implements OnInit, OnDestroy {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(qrCanvas, padding, padding);
 
-      const tipoArchivo = this.tipoQR === 'medico' ? 'ficha-medica'
-        : this.tipoQR === 'emergencia' ? 'emergencia' : 'veterinario';
-      const link = document.createElement('a');
-      link.download = `QR-${tipoArchivo}-${mascota.nombre || 'mascota'}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.95);
-      link.click();
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+
+      if (this.esSafari()) {
+        const ventana = window.open(dataUrl, '_blank');
+        if (!ventana) throw new Error('El navegador bloqueó la ventana nueva');
+        const toast = await this.toastCtrl.create({
+          message: 'Mantén presionada la imagen y elige "Guardar imagen" para descargarla.',
+          duration: 4000,
+        });
+        await toast.present();
+      } else {
+        const tipoArchivo = this.tipoQR === 'medico' ? 'ficha-medica'
+          : this.tipoQR === 'emergencia' ? 'emergencia' : 'veterinario';
+        const link = document.createElement('a');
+        link.download = `QR-${tipoArchivo}-${mascota.nombre || 'mascota'}.jpg`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (error) {
       console.error('Error descargando QR:', error);
       const toast = await this.toastCtrl.create({

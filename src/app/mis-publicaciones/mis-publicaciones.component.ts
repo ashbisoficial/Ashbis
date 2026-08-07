@@ -78,7 +78,13 @@ export class MisPublicacionesComponent implements OnDestroy {
   private readonly fb = inject(FormBuilder);
 
   private uid: string | null = null;
-  private nombreRefugio = 'Refugio';
+  /** Nombre a mostrar como autor de la publicación: nombre del refugio si la
+   *  cuenta es de ese rol, si no el nombre de pila (cualquier cuenta puede
+   *  publicar en adopción una mascota propia, no solo refugios — ver
+   *  firestore.rules match /publicaciones). Vacío hasta que carga el
+   *  perfil; publicar() espera a que tenga un valor real en vez de guardar
+   *  un texto genérico. */
+  private nombreAutor = '';
   private miRegion?: string;
   private miComuna?: string;
 
@@ -132,9 +138,9 @@ export class MisPublicacionesComponent implements OnDestroy {
             // Solo el primer nombre (o el nombre del refugio): nunca el
             // apellido completo ni la dirección, para no exponer datos
             // personales en un feed público.
-            this.nombreRefugio = perfil?.nombreRefugio?.trim()
+            this.nombreAutor = perfil?.nombreRefugio?.trim()
               || perfil?.nombre?.trim()
-              || 'Refugio';
+              || '';
             this.miRegion = perfil?.region;
             this.miComuna = perfil?.comuna;
           });
@@ -211,6 +217,19 @@ export class MisPublicacionesComponent implements OnDestroy {
       return;
     }
 
+    // El perfil (nombre a mostrar como autor) carga async al entrar a la
+    // pantalla — si todavía no llegó, mejor avisar que dejar guardar la
+    // publicación sin nombre real de autor.
+    if (!this.nombreAutor) {
+      const toast = await this.toastCtrl.create({
+        message: 'Tu perfil todavía está cargando. Intenta de nuevo en un momento.',
+        duration: 2500,
+        color: 'warning',
+      });
+      await toast.present();
+      return;
+    }
+
     this.guardando = true;
     try {
       const data = this.form.value;
@@ -224,7 +243,7 @@ export class MisPublicacionesComponent implements OnDestroy {
 
       await this.firestoreService.crearPublicacion({
         uidAutor: this.uid,
-        nombreAutor: this.nombreRefugio,
+        nombreAutor: this.nombreAutor,
         ...(this.miRegion ? { region: this.miRegion } : {}),
         ...(this.miComuna ? { comuna: this.miComuna } : {}),
         tipo: data.tipo!,

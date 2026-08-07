@@ -132,7 +132,7 @@
               <!-- Peso -->
               <ion-item class="ion-margin-top" fill="solid" [class.is-invalid]="isInvalid('peso')">
                 <ion-label position="stacked">Peso (kg) <span class="req">*</span></ion-label>
-                <ion-input type="number" inputmode="decimal" formControlName="peso" placeholder="Ej: 10.5" clearInput></ion-input>
+                <ion-input type="text" inputmode="decimal" formControlName="peso" placeholder="Ej: 10.5 o 10,5" clearInput></ion-input>
                 <ion-note color="danger" *ngIf="isInvalid('peso')">Ingresa el peso en kg.</ion-note>
               </ion-item>
 

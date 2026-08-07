@@ -87,7 +87,7 @@ export class ForgotPasswordComponent implements OnInit {
       setTimeout(() => this.router.navigate(['/login']), 3000);
     } catch (err) {
       console.error(err);
-      this.errorMessage = 'Si el correo existe, recibira instrucciones de recuperacion.';
+      this.errorMessage = 'Si el correo existe, recibirás instrucciones de recuperación.';
     } finally {
       this.cargando = false;
     }

@@ -89,7 +89,10 @@ export class MascotaEditarComponent implements OnDestroy {
 
   get opcionesVacuna(): string[] {
     const especie = this.mascota()?.especie ?? '';
-    return [...(this.vacunasPorEspecie[especie] ?? []), 'Otra'];
+    // "Desparasitación" no es una vacuna en sentido estricto, pero se agenda
+    // y registra igual que una — aplica a cualquier especie, por eso va
+    // aparte de las listas específicas de arriba en vez de repetirla en cada una.
+    return [...(this.vacunasPorEspecie[especie] ?? []), 'Desparasitación', 'Otra'];
   }
 
   /** "Reptil" es una categoría muy amplia (serpiente, lagarto, rana...);

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { PublicQrService } from 'src/app/services/public-qr.service';
 import { getDownloadURL, ref, Storage, uploadBytes } from '@angular/fire/storage';
@@ -35,6 +35,20 @@ import { Models } from 'src/app/models/models';
 import { SecurityService } from 'src/app/services/security.service';
 import { PreferenciasService } from 'src/app/services/preferencias.service';
 import { getFriendlyErrorMessage } from 'src/app/services/firebase-error.util';
+
+/** Acepta coma o punto como separador decimal (el campo es type="text" en vez
+ *  de type="number" justo por esto: Safari/iOS rechaza la coma en inputs
+ *  type="number" incluso con teclado en español, dejando el campo vacío sin
+ *  forma de corregirlo). Normaliza a punto antes de validar el rango. */
+function pesoValidator(control: AbstractControl): ValidationErrors | null {
+  const crudo = (control.value ?? '').toString().trim();
+  if (!crudo) return null; // Validators.required se encarga de esto
+  const normalizado = crudo.replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalizado)) return { pesoInvalido: true };
+  const valor = parseFloat(normalizado);
+  if (valor < 0.1 || valor > 200) return { pesoInvalido: true };
+  return null;
+}
 
 @Component({
   selector: 'app-crear-mascota',
@@ -114,7 +128,7 @@ export class CrearMascotasComponent implements OnInit {
       fechaNacimiento: ['', Validators.required],
       especie: ['', Validators.required],
       tamano: ['', Validators.required],
-      peso: ['', [Validators.required, Validators.min(0.1), Validators.max(200)]],
+      peso: ['', [Validators.required, pesoValidator]],
       color: ['', [Validators.required, Validators.minLength(3)]],
       raza: ['', [Validators.required, Validators.minLength(2)]],
       castrado: ['', Validators.required],
@@ -319,7 +333,7 @@ export class CrearMascotasComponent implements OnInit {
       sexo: data.sexo ?? '',
       especie: data.especie ?? '',
       tamano: data.tamano ?? '',
-      peso: data.peso ?? null,
+      peso: data.peso ? parseFloat(String(data.peso).replace(',', '.')) : null,
       color: data.color ?? '',
       raza: data.raza ?? '',
       castrado: data.castrado ?? '',

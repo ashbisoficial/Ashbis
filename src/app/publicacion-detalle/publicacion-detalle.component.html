@@ -93,7 +93,7 @@
           Postular a esta adopción
         </ion-button>
         <div class="postulacion-propia" *ngIf="miPostulacion">
-          <p>✅ Ya postulaste. Esperando respuesta del refugio.</p>
+          <p>✅ Ya postulaste. Esperando respuesta {{ infoRefugio ? 'del refugio' : 'del dueño o dueña' }}.</p>
           <ion-button fill="clear" color="medium" (click)="cancelarMiPostulacion()">
             <ion-icon name="close-circle-outline" slot="start"></ion-icon>
             Cancelar postulación
