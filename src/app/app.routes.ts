@@ -24,6 +24,18 @@ export const routes: Routes = [
         (m) => m.ForgotPasswordComponent
       ),
   },
+  // Adonde apunta el link del correo de recuperación (ver
+  // AuthenticationService.resetPassword) — sin guard, a propósito: alguien
+  // puede abrir este link desde otro dispositivo/sesión donde ya esté
+  // logueado con OTRA cuenta, y publicGuard lo mandaría directo a Home en
+  // vez de dejarlo cambiar la contraseña.
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./auth/pages/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent
+      ),
+  },
   // Paso extra tras el primer login con Google (elegir tipo de cuenta) — ya
   // está autenticado, por eso usa authGuard y no publicGuard.
   {

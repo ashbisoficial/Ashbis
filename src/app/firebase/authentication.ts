@@ -9,6 +9,8 @@ import {
   signInWithRedirect,
   getRedirectResult,
   sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
   user
 } from '@angular/fire/auth';
 import { Observable } from 'rxjs';
@@ -131,11 +133,24 @@ export class AuthenticationService {
   }
 
   // 🔐 RESET PASSWORD
+  /** El link del correo apunta a nuestra propia pantalla /reset-password (con
+   *  las mismas validaciones que el registro) en vez de la página genérica
+   *  que Firebase aloja por defecto en *.firebaseapp.com/__/auth/action. */
   async resetPassword(email: string) {
-    return await sendPasswordResetEmail(
-      this.auth,
-      email
-    );
+    return await sendPasswordResetEmail(this.auth, email, {
+      url: `${window.location.origin}/reset-password`,
+      handleCodeInApp: false,
+    });
+  }
+
+  /** Valida el oobCode del link de recuperación y devuelve el email de la
+   *  cuenta — lanza si el código venció, ya se usó, o es inválido. */
+  async verificarCodigoReset(oobCode: string): Promise<string> {
+    return await verifyPasswordResetCode(this.auth, oobCode);
+  }
+
+  async confirmarNuevaContrasena(oobCode: string, nuevaContrasena: string): Promise<void> {
+    return await confirmPasswordReset(this.auth, oobCode, nuevaContrasena);
   }
 
   // 🚪 LOGOUT
