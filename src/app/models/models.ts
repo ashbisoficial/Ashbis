@@ -288,6 +288,33 @@ export namespace Models {
     }
 
     /**
+     * Subcolección: tratamientos (quimioterapia, radioterapia, kinesiología,
+     * rehabilitación, etc.) — un proceso de varias sesiones, a diferencia de
+     * un medicamento (dosis) o un examen (un solo evento). Cada tratamiento
+     * agrupa sus propias sesiones en la subcolección de abajo.
+     */
+    export interface Tratamiento {
+      id?: string;
+      tipo: string;
+      lugarHabitual?: string;
+      notas?: string;
+      creadoPor: string;
+    }
+
+    // Subcoleción: mascotas/{id}/tratamientos/{id}/sesiones
+    export interface SesionTratamiento {
+      id?: string;
+      /** Fecha y hora de la sesión, ISO completo (a diferencia de las fechas
+       *  "solo día" de vacunas/exámenes, acá importa la hora agendada). */
+      fecha: string;
+      lugar?: string;
+      costo?: number;
+      realizada?: boolean;
+      observaciones?: string;
+      creadoPor: string;
+    }
+
+    /**
      * Subcolección mascotas/{id}/colaboradores: acceso compartido al perfil
      * de una mascota puntual. Se crea al aceptar una Transferencia.
      * - 'hogar_temporal': NO cambia de dueño, acceso limitado (ver

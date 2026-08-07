@@ -302,6 +302,23 @@ service cloud.firestore {
         allow update: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
         allow delete: if puedeAccederMascota(petId);
       }
+      // Tratamientos (quimioterapia, radioterapia, kinesiología, etc.): mismo
+      // criterio que medicamentos/exámenes — un veterinario con acceso por
+      // PIN puede indicar un tratamiento y cargar sus sesiones, pero no
+      // editar ni borrar lo cargado por otro (append-only en la práctica).
+      match /tratamientos/{tratId} {
+        allow read: if puedeVerHistorialMedico(petId);
+        allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
+        allow update: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
+        allow delete: if puedeAccederMascota(petId);
+
+        match /sesiones/{sesionId} {
+          allow read: if puedeVerHistorialMedico(petId);
+          allow create: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
+          allow update: if (puedeAccederMascota(petId) || tieneAccesoVeterinario(petId)) && noLongStrings(request.resource.data);
+          allow delete: if puedeAccederMascota(petId);
+        }
+      }
       match /documentos/{docId} {
         allow read: if puedeVerHistorialMedico(petId);
         allow create: if puedeAccederMascota(petId) && noLongStrings(request.resource.data);

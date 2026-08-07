@@ -54,7 +54,13 @@
               <ion-button expand="block" [fill]="section()==='medicamentos' ? 'solid' : 'outline'" color="medium" (click)="setSection('medicamentos')">
                 Medicamentos
               </ion-button>
-            </ion-item>            
+            </ion-item>
+
+            <ion-item lines="none">
+              <ion-button expand="block" [fill]="section()==='tratamientos' ? 'solid' : 'outline'" color="medium" (click)="setSection('tratamientos')">
+                Tratamientos
+              </ion-button>
+            </ion-item>
           </ion-list>
         </ion-col>
 
@@ -243,133 +249,24 @@
             </div>
           </div>
 
-          <!-- PLACEHOLDERS -->
-          <!-- CALENDARIO / AGENDA -->
-          <!-- CALENDARIO / AGENDA -->
+          <!-- CALENDARIO: vista mensual tipo Google con todo lo agendado
+               (vacunas, exámenes, medicamentos, citas y sesiones de
+               tratamiento). Las citas se siguen creando/editando/borrando
+               acá mismo; el resto se administra desde su propia sección. -->
           <ion-list *ngIf="section()==='calendario'" inset="true">
             <ion-item lines="full">
               <ion-label>
-                <h3>Calendario de Citas</h3>
-                <p class="ion-text-wrap">Selecciona fecha o mes para gestionar y ver citas.</p>
+                <h3>Calendario</h3>
+                <p class="ion-text-wrap">Todo lo agendado para {{ m.nombre }}, mes a mes.</p>
               </ion-label>
-            </ion-item>
-
-            <ion-item lines="full">
-              <!-- Botón crear -->
               <ion-button slot="end" color="danger" (click)="abrirNuevaCita()">
                 <ion-icon name="add-outline" slot="start"></ion-icon>
                 Nueva cita
               </ion-button>
-
-              <!-- Toggle Día / Mes -->
-              <ion-segment [value]="viewMode()" (ionChange)="onViewModeChange($event)">
-                <ion-segment-button value="dia"><ion-label>Día</ion-label></ion-segment-button>
-                <ion-segment-button value="mes"><ion-label>Mes</ion-label></ion-segment-button>
-              </ion-segment>
             </ion-item>
-
-            <!-- Controles según modo -->
-            <ion-item lines="none" *ngIf="viewMode()==='dia'">
-              <ion-label>
-                <strong>Seleccionado:</strong>
-                {{ fechaSeleccionada() | date:"EEEE d 'de' MMMM 'de' y":"":"es-CL" }}
-              </ion-label>
-
-              <ion-datetime-button datetime="dt-cal" slot="end" class="ion-margin-start"></ion-datetime-button>
-              <ion-modal [keepContentsMounted]="true" cssClass="calendar-modal">
-                <ng-template>
-                  <ion-datetime
-                    id="dt-cal"
-                    presentation="date"
-                    [value]="fechaSeleccionada()"
-                    (ionChange)="onCalendarioChange($event)"
-                    locale="es-ES">
-                  </ion-datetime>
-                </ng-template>
-              </ion-modal>
-            </ion-item>
-
-            <ion-item lines="none" *ngIf="viewMode()==='mes'">
-              <ion-label>
-                <strong>Mes:</strong>
-                {{ mesSeleccionado() | date:"MMMM 'de' y":"":"es-CL" }}
-              </ion-label>
-
-              <!-- Selector de mes -->
-              <ion-datetime-button datetime="dt-cal-month" slot="end" class="ion-margin-start"></ion-datetime-button>
-              <ion-modal [keepContentsMounted]="true" cssClass="calendar-modal">
-                <ng-template>
-                  <ion-datetime
-                    id="dt-cal-month"
-                    presentation="month-year"
-                    [value]="mesSeleccionado()"
-                    (ionChange)="onMesChange($event)"
-                    locale="es-ES">
-                  </ion-datetime>
-                </ng-template>
-              </ion-modal>
-            </ion-item>
-
-            <!-- LISTADO DÍA -->
-            <ng-container *ngIf="viewMode()==='dia'">
-              <ng-container *ngIf="citasDelDia.length; else sinCitasDia">
-                <ion-item *ngFor="let c of citasDelDia">
-                  <ion-label>
-                    <h3>{{ c.titulo }}</h3>
-                    <p>
-                      {{ c.fechaInicio | date:'HH:mm' }}–{{ c.fechaFin ? (c.fechaFin | date:'HH:mm') : '—' }}
-                      <span *ngIf="c.lugar"> • {{ c.lugar }}</span>
-                    </p>
-                    <p *ngIf="c.notas" class="ion-text-wrap">{{ c.notas }}</p>
-                  </ion-label>
-                  <ion-button fill="outline" color="medium" (click)="abrirEditarCita(c)">
-                    <ion-icon name="create-outline" slot="icon-only"></ion-icon>
-                  </ion-button>
-                  <ion-button color="danger" (click)="borrarCita(c)">
-                    <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
-                  </ion-button>
-                </ion-item>
-              </ng-container>
-              <ng-template #sinCitasDia>
-                <ion-item><ion-label color="medium">No hay citas para este día.</ion-label></ion-item>
-              </ng-template>
-            </ng-container>
-
-            <!-- LISTADO MES (agrupado por día) -->
-            <!-- LISTADO MES (agrupado por día) -->
-            <ng-container *ngIf="viewMode()==='mes'">
-              <ng-container *ngIf="citasDelMes.length; else sinCitasMes">
-                <ng-container *ngFor="let g of citasMesAgrupadas; trackBy: trackByDia">
-                  <ion-item lines="full" class="dia-header">
-                    <!-- usamos diaKey y lo formateamos con DatePipe -->
-                    <ion-label><strong>{{ (g.diaKey + 'T00:00:00') | date:"EEEE d 'de' MMMM":"":"es-CL" }}</strong></ion-label>
-                  </ion-item>
-
-                  <ion-item *ngFor="let c of g.items; trackBy: trackByCita">
-                    <ion-label>
-                      <h3>{{ c.titulo }}</h3>
-                      <p>
-                        {{ c.fechaInicio | date:'HH:mm' }}–{{ c.fechaFin ? (c.fechaFin | date:'HH:mm') : '—' }}
-                        <span *ngIf="c.lugar"> • {{ c.lugar }}</span>
-                      </p>
-                      <p *ngIf="c.notas" class="ion-text-wrap">{{ c.notas }}</p>
-                    </ion-label>
-                    <ion-button fill="outline" color="medium" (click)="abrirEditarCita(c)">
-                      <ion-icon name="create-outline" slot="icon-only"></ion-icon>
-                    </ion-button>
-                    <ion-button color="danger" (click)="borrarCita(c)">
-                      <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
-                    </ion-button>
-                  </ion-item>
-                </ng-container>
-              </ng-container>
-              <ng-template #sinCitasMes>
-                <ion-item><ion-label color="medium">No hay citas en este mes.</ion-label></ion-item>
-              </ng-template>
-            </ng-container>
-
           </ion-list>
 
+          <app-mascota-calendario *ngIf="section()==='calendario'" [petId]="m.id"></app-mascota-calendario>
 
           <!-- MODAL crear/editar cita -->
           <ion-modal
@@ -867,6 +764,188 @@
             </ng-template>
           </ion-modal>
 
+          <!-- TRATAMIENTOS -->
+          <ion-list *ngIf="section()==='tratamientos'" inset="true">
+            <ion-item lines="full">
+              <ion-label>
+                <h3>Tratamientos</h3>
+                <p class="ion-text-wrap">Procesos de varias sesiones: quimioterapia, radioterapia, kinesiología, rehabilitación, etc.</p>
+              </ion-label>
+              <ion-button slot="end" color="danger" (click)="abrirNuevoTratamiento()">
+                <ion-icon name="add-outline" slot="start"></ion-icon>
+                Nuevo tratamiento
+              </ion-button>
+            </ion-item>
+
+            <ng-container *ngIf="tratamientos().length; else sinTratamientos">
+              <ng-container *ngFor="let t of tratamientos()">
+                <ion-item>
+                  <ion-label>
+                    <h3>{{ t.tipo }}</h3>
+                    <p *ngIf="t.lugarHabitual">Lugar habitual: {{ t.lugarHabitual }}</p>
+                    <p *ngIf="t.notas" class="ion-text-wrap">{{ t.notas }}</p>
+                    <p><ion-note color="medium">{{ t.sesiones.length }} sesión(es) registrada(s)</ion-note></p>
+                  </ion-label>
+
+                  <ion-button fill="outline" color="medium" (click)="abrirEditarTratamiento(t)">
+                    <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+                  </ion-button>
+                  <ion-button color="danger" (click)="borrarTratamiento(t)">
+                    <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+                  </ion-button>
+                </ion-item>
+
+                <!-- Sesiones de este tratamiento -->
+                <ion-item lines="none" class="sesion-item" *ngFor="let s of t.sesiones">
+                  <ion-label class="ion-text-wrap">
+                    <h4>{{ s.fecha | date:"dd-MM-yyyy HH:mm" }}</h4>
+                    <p *ngIf="s.lugar">Lugar: {{ s.lugar }}</p>
+                    <p *ngIf="s.costo !== undefined">Costo: {{ s.costo | currency:'CLP':'symbol-narrow':'1.0-0' }}</p>
+                    <p *ngIf="s.observaciones">{{ s.observaciones }}</p>
+                  </ion-label>
+
+                  <ion-badge slot="end" [color]="s.realizada ? 'success' : 'warning'">
+                    {{ s.realizada ? 'Realizada' : 'Pendiente' }}
+                  </ion-badge>
+
+                  <ion-button fill="clear" color="medium" (click)="abrirEditarSesion(t, s)">
+                    <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" color="danger" (click)="borrarSesion(t, s)">
+                    <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+                  </ion-button>
+                </ion-item>
+
+                <ion-item lines="full">
+                  <ion-button slot="end" size="small" fill="outline" color="medium" (click)="abrirNuevaSesion(t)">
+                    <ion-icon name="add-outline" slot="start"></ion-icon>
+                    Agregar sesión
+                  </ion-button>
+                </ion-item>
+              </ng-container>
+            </ng-container>
+
+            <ng-template #sinTratamientos>
+              <ion-item><ion-label color="medium">No hay tratamientos registrados.</ion-label></ion-item>
+            </ng-template>
+          </ion-list>
+
+          <!-- MODAL crear/editar tratamiento -->
+          <ion-modal
+            [isOpen]="tratamientoModalOpen()"
+            (didDismiss)="tratamientoModalOpen.set(false)"
+            [keepContentsMounted]="true">
+            <ng-template>
+              <ion-header>
+                <ion-toolbar>
+                  <ion-title>{{ editandoTratamientoId() ? 'Editar tratamiento' : 'Nuevo tratamiento' }}</ion-title>
+                  <ion-buttons slot="end">
+                    <ion-button (click)="tratamientoModalOpen.set(false)">Cerrar</ion-button>
+                  </ion-buttons>
+                </ion-toolbar>
+              </ion-header>
+
+              <ion-content class="ion-padding">
+                <form *ngIf="tratamientoForm" [formGroup]="tratamientoForm" (ngSubmit)="guardarTratamiento()">
+                  <ion-list inset="true">
+                    <ion-item>
+                      <ion-label position="stacked">Tipo de tratamiento</ion-label>
+                      <ion-select formControlName="tipo" interface="popover" placeholder="Selecciona">
+                        <ion-select-option *ngFor="let op of tiposTratamiento" [value]="op">{{ op }}</ion-select-option>
+                      </ion-select>
+                    </ion-item>
+
+                    <ion-item *ngIf="tratamientoForm.get('tipo')?.value === 'Otro'">
+                      <ion-label position="stacked">Especifica el tratamiento</ion-label>
+                      <ion-input formControlName="tipoManual" placeholder="Ej: Hidroterapia"></ion-input>
+                      <ion-note color="danger"
+                        *ngIf="tratamientoForm.get('tipoManual')?.touched && !tratamientoForm.get('tipoManual')?.value">
+                        Escribe el tipo de tratamiento.
+                      </ion-note>
+                    </ion-item>
+
+                    <ion-item>
+                      <ion-label position="stacked">Lugar habitual (opcional)</ion-label>
+                      <ion-input formControlName="lugarHabitual" clearInput></ion-input>
+                    </ion-item>
+
+                    <ion-item>
+                      <ion-label position="stacked">Notas</ion-label>
+                      <ion-textarea formControlName="notas" auto-grow="true"></ion-textarea>
+                    </ion-item>
+                  </ion-list>
+
+                  <ion-button type="submit" expand="block" color="danger">
+                    {{ editandoTratamientoId() ? 'Guardar cambios' : 'Crear tratamiento' }}
+                  </ion-button>
+                </form>
+              </ion-content>
+            </ng-template>
+          </ion-modal>
+
+          <!-- MODAL crear/editar sesión de tratamiento -->
+          <ion-modal
+            [isOpen]="sesionModalOpen()"
+            (didDismiss)="sesionModalOpen.set(false)"
+            [keepContentsMounted]="true">
+            <ng-template>
+              <ion-header>
+                <ion-toolbar>
+                  <ion-title>{{ editandoSesionId() ? 'Editar sesión' : 'Nueva sesión' }}</ion-title>
+                  <ion-buttons slot="end">
+                    <ion-button (click)="sesionModalOpen.set(false)">Cerrar</ion-button>
+                  </ion-buttons>
+                </ion-toolbar>
+              </ion-header>
+
+              <ion-content class="ion-padding">
+                <form *ngIf="sesionForm" [formGroup]="sesionForm" (ngSubmit)="guardarSesion()">
+                  <ion-list inset="true">
+                    <ion-item class="input-fecha">
+                      <ion-label position="stacked">Fecha</ion-label>
+                      <input
+                        type="date"
+                        formControlName="fecha"
+                        class="date-input-custom">
+                    </ion-item>
+
+                    <ion-item>
+                      <ion-label position="stacked">Hora</ion-label>
+                      <ion-input
+                        type="time"
+                        formControlName="hora"
+                        (ionChange)="sesionForm.get('hora')?.setValue($event.detail.value)">
+                      </ion-input>
+                    </ion-item>
+
+                    <ion-item>
+                      <ion-label position="stacked">Lugar</ion-label>
+                      <ion-input formControlName="lugar" clearInput></ion-input>
+                    </ion-item>
+
+                    <ion-item>
+                      <ion-label position="stacked">Costo (opcional)</ion-label>
+                      <ion-input type="number" inputmode="decimal" formControlName="costo"></ion-input>
+                    </ion-item>
+
+                    <ion-item>
+                      <ion-label>Realizada</ion-label>
+                      <ion-toggle formControlName="realizada"></ion-toggle>
+                    </ion-item>
+
+                    <ion-item>
+                      <ion-label position="stacked">Observaciones</ion-label>
+                      <ion-textarea formControlName="observaciones" auto-grow="true"></ion-textarea>
+                    </ion-item>
+                  </ion-list>
+
+                  <ion-button type="submit" expand="block" color="danger">
+                    {{ editandoSesionId() ? 'Guardar cambios' : 'Agendar sesión' }}
+                  </ion-button>
+                </form>
+              </ion-content>
+            </ng-template>
+          </ion-modal>
 
         </ion-col>
       </ion-row>

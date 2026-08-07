@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnDestroy, ViewChild, computed } from '@angular/core';
+import { Component, inject, signal, OnDestroy, ViewChild } from '@angular/core';
 import { NgIf, NgFor, DatePipe, CurrencyPipe } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
@@ -8,7 +8,8 @@ import {
   IonTextarea, IonSegment, IonSegmentButton, IonBadge
 } from '@ionic/angular/standalone';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FirestoreService, Mascota, Cita, Vacuna, Examen, Medicamento, TramoMedicamento } from '../firebase/firestore';
+import { FirestoreService, Mascota, Cita, Vacuna, Examen, Medicamento, TramoMedicamento, Tratamiento, SesionTratamiento } from '../firebase/firestore';
+import { MascotaCalendarioComponent } from '../mascota-calendario/mascota-calendario.component';
 import { NotificationService } from '../services/notification.service';
 import { PreferenciasService } from '../services/preferencias.service';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -30,7 +31,10 @@ type Section =
   | 'vacunas'
   | 'historial'
   | 'medicamentos'
-  | 'examenes';
+  | 'examenes'
+  | 'tratamientos';
+
+type TratamientoConSesiones = Tratamiento & { sesiones: SesionTratamiento[] };
 
 @Component({
   selector: 'app-mascota-editar',
@@ -42,8 +46,9 @@ type Section =
     IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
     IonContent, IonGrid, IonRow, IonCol, IonList, IonItem, IonLabel,
     IonButton, IonAvatar, IonInput, IonSelect, IonSelectOption,
-    IonNote, IonModal, IonDatetime, IonDatetimeButton, IonToast, IonIcon,
-    IonTextarea, IonSegment, IonSegmentButton, IonBadge, CurrencyPipe
+    IonNote, IonModal, IonToast, IonIcon,
+    IonTextarea, IonBadge, CurrencyPipe,
+    MascotaCalendarioComponent
   ],
   templateUrl: './mascota-editar.component.html',
   styleUrls: ['./mascota-editar.component.scss'],
@@ -121,12 +126,6 @@ export class MascotaEditarComponent implements OnDestroy {
   sub?: Subscription;
   subCitas?: Subscription;
 
-  //Para ver citas por mes
-  viewMode = signal<'dia'|'mes'>('dia');                     // Día o Mes
-  mesSeleccionado = signal<string>(new Date().toISOString()); // cualquier fecha dentro del mes elegido
-
-  setViewMode(m: 'dia'|'mes') { this.viewMode.set(m); }    
-
   vacunas = signal<Vacuna[]>([]);
   vacunaModalOpen = signal(false);
   editandoVacunaId = signal<string | null>(null);
@@ -153,7 +152,24 @@ export class MascotaEditarComponent implements OnDestroy {
   editandoMedicamentoId = signal<string | null>(null);
   medicamentoForm!: FormGroup;
 
-  subMedicamentos?: Subscription;  
+  subMedicamentos?: Subscription;
+
+  // --- Tratamientos (quimioterapia, radioterapia, kinesiología, etc.) ---
+  tratamientos = signal<TratamientoConSesiones[]>([]);
+  tratamientoModalOpen = signal(false);
+  editandoTratamientoId = signal<string | null>(null);
+  tratamientoForm!: FormGroup;
+
+  // Modal de sesión: siempre ligado al tratamiento que se estaba viendo
+  // cuando se tocó "+ sesión".
+  sesionModalOpen = signal(false);
+  tratamientoDeSesionId = signal<string | null>(null);
+  editandoSesionId = signal<string | null>(null);
+  sesionForm!: FormGroup;
+
+  subTratamientos?: Subscription;
+
+  readonly tiposTratamiento = ['Quimioterapia', 'Radioterapia', 'Kinesiología', 'Rehabilitación', 'Fisioterapia', 'Acupuntura', 'Hemodiálisis', 'Otro'];
 
   @ViewChild('tituloInput', { read: IonInput }) tituloInput?: IonInput;
 
@@ -230,6 +246,11 @@ export class MascotaEditarComponent implements OnDestroy {
           this.medicamentos.set(ordenadas);
           this.refrescarRecordatoriosVencidos(ordenadas);
         });
+
+        this.subTratamientos?.unsubscribe();
+        this.subTratamientos = this.fs.getTratamientosConSesiones(doc.id).subscribe(arr => {
+          this.tratamientos.set([...arr].sort((a, b) => a.tipo.localeCompare(b.tipo)));
+        });
       }
       this.loading.set(false);
     });
@@ -240,7 +261,8 @@ export class MascotaEditarComponent implements OnDestroy {
     this.subCitas?.unsubscribe();
     this.subVacunas?.unsubscribe();
     this.subExamenes?.unsubscribe();
-    this.subMedicamentos?.unsubscribe();  
+    this.subMedicamentos?.unsubscribe();
+    this.subTratamientos?.unsubscribe();
   }
 
   // En MascotaEditarComponent
@@ -250,6 +272,12 @@ export class MascotaEditarComponent implements OnDestroy {
     if (prev === 'calendario') {
       this.citaModalOpen.set(false);
       this.citaForm = undefined as any;
+    }
+    if (prev === 'tratamientos') {
+      this.tratamientoModalOpen.set(false);
+      this.sesionModalOpen.set(false);
+      this.tratamientoForm = undefined as any;
+      this.sesionForm = undefined as any;
     }
     // Si entro al calendario, uso un pequeño deferral para montar limpio
     this.section.set(s);
@@ -386,68 +414,6 @@ export class MascotaEditarComponent implements OnDestroy {
     this.fotoAmpliada.set(null);
   }
 
-  // ---------- CALENDARIO / AGENDA ----------
-  onCalendarioChange(ev: CustomEvent) {
-    const val = (ev as any).detail?.value as string | null;
-    if (!val) return;
-    this.fechaSeleccionada.set(val);
-  }
-
-  // get citasDelDia(): Cita[] {
-  //   const sel = this.fechaSeleccionada();
-  //   if (!sel) return [];
-  //   return this.citas().filter(c => this.esMismoDia(c.fechaInicio, sel));
-  // }
-
-  private esMismoDia(aISO: string, bISO: string): boolean {
-    const a = new Date(aISO);
-    const b = new Date(bISO);
-    return a.getFullYear() === b.getFullYear()
-      && a.getMonth() === b.getMonth()
-      && a.getDate() === b.getDate();
-  }
-
-  onViewModeChange(ev: Event) {
-    const val = (ev as CustomEvent).detail?.value as 'dia' | 'mes';
-    if (val === 'dia' || val === 'mes') this.viewMode.set(val);
-  }
-  onMesChange(ev: CustomEvent) {
-    const val = (ev as any).detail?.value as string | null;
-    if (!val) return;
-    this.mesSeleccionado.set(val);
-  }
-
-  // // Utilidades de rango de mes (inicio fin en ISO)
-  // private monthBounds(iso: string) {
-  //   const d = new Date(iso);
-  //   const start = new Date(d.getFullYear(), d.getMonth(), 1);
-  //   const end = new Date(d.getFullYear(), d.getMonth() + 1, 1); // exclusivo
-  //   return { start, end };
-  // }
-
-  // // Citas del MES (filtra por fechaInicio ∈ [start, end))
-  // get citasDelMes(): Cita[] {
-  //   const { start, end } = this.monthBounds(this.mesSeleccionado());
-  //   return this.citas().filter(c => {
-  //     const t = new Date(c.fechaInicio).getTime();
-  //     return t >= start.getTime() && t < end.getTime();
-  //   }).sort((a,b)=> new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
-  // }
-
-  // // (Opcional) Agrupar por día para mostrar bonito
-  // get citasMesAgrupadas(): { diaISO: string; items: Cita[] }[] {
-  //   const map = new Map<string, Cita[]>();
-  //   for (const c of this.citasDelMes) {
-  //     const d = new Date(c.fechaInicio);
-  //     const key = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
-  //     if (!map.has(key)) map.set(key, []);
-  //     map.get(key)!.push(c);
-  //   }
-  //   // ordenar por día
-  //   return Array.from(map.entries())
-  //     .sort((a,b)=> new Date(a[0]).getTime() - new Date(b[0]).getTime())
-  //     .map(([diaISO, items]) => ({ diaISO, items }));
-  // }  
 
   // ---------- MODAL: crear / editar / borrar citas ----------
   abrirNuevaCita() {
@@ -1092,6 +1058,184 @@ async onUploadResultado(ev: Event, e: Examen) {
     }
   }
 
+  // ---------- TRATAMIENTOS (quimioterapia, radioterapia, kinesiología, etc.) ----------
+
+  abrirNuevoTratamiento() {
+    this.editandoTratamientoId.set(null);
+    this.tratamientoForm = this.fb.group({
+      tipo: ['', Validators.required],
+      tipoManual: ['', Validators.maxLength(60)], // solo se usa si tipo === 'Otro'
+      lugarHabitual: [''],
+      notas: ['']
+    });
+    this.tratamientoModalOpen.set(true);
+  }
+
+  abrirEditarTratamiento(t: Tratamiento) {
+    this.editandoTratamientoId.set(t.id || null);
+    const esPreset = this.tiposTratamiento.includes(t.tipo);
+    this.tratamientoForm = this.fb.group({
+      tipo: [esPreset ? t.tipo : 'Otro', Validators.required],
+      tipoManual: [esPreset ? '' : t.tipo, Validators.maxLength(60)],
+      lugarHabitual: [t.lugarHabitual || ''],
+      notas: [t.notas || '']
+    });
+    this.tratamientoModalOpen.set(true);
+  }
+
+  async guardarTratamiento() {
+    const tipoSeleccionado = this.tratamientoForm.get('tipo')?.value;
+    const tipoManual = (this.tratamientoForm.get('tipoManual')?.value || '').trim();
+
+    if (tipoSeleccionado === 'Otro' && !tipoManual) {
+      this.tratamientoForm.get('tipoManual')?.markAsTouched();
+      return this.showToast('Escribe el tipo de tratamiento.');
+    }
+    if (this.tratamientoForm.invalid || !this.mascota()?.id || !this.auth.currentUser) {
+      this.tratamientoForm?.markAllAsTouched();
+      return this.showToast('Revisa los campos del tratamiento.');
+    }
+
+    const petId = this.mascota()!.id;
+    const { lugarHabitual, notas } = this.tratamientoForm.value;
+    const tipo = tipoSeleccionado === 'Otro' ? tipoManual : tipoSeleccionado;
+    const payload: Tratamiento = {
+      tipo,
+      lugarHabitual: lugarHabitual || undefined,
+      notas,
+      creadoPor: this.auth.currentUser.uid
+    };
+
+    try {
+      const editId = this.editandoTratamientoId();
+      if (editId) {
+        await this.fs.updateTratamiento(petId, editId, payload);
+        this.showToast('Tratamiento actualizado.');
+      } else {
+        await this.fs.addTratamiento(petId, payload);
+        this.showToast('Tratamiento creado.');
+      }
+      this.tratamientoModalOpen.set(false);
+    } catch (e) {
+      console.error(e);
+      this.showToast('No se pudo guardar el tratamiento.');
+    }
+  }
+
+  async borrarTratamiento(t: TratamientoConSesiones) {
+    if (!this.mascota()?.id || !t.id) return;
+    try {
+      for (const s of t.sesiones) {
+        if (s.id) await this.notificationService.cancel(this.notificationService.hashIdToNumber(`sesion-${s.id}`));
+      }
+      await this.fs.deleteTratamiento(this.mascota()!.id, t.id);
+      this.showToast('Tratamiento eliminado.');
+    } catch (e) {
+      console.error(e);
+      this.showToast('No se pudo eliminar el tratamiento.');
+    }
+  }
+
+  abrirNuevaSesion(t: TratamientoConSesiones) {
+    this.tratamientoDeSesionId.set(t.id || null);
+    this.editandoSesionId.set(null);
+    this.sesionForm = this.fb.group({
+      fecha: [this.hoy, Validators.required],
+      hora: ['10:00', Validators.required],
+      lugar: [t.lugarHabitual || ''],
+      costo: [null],
+      realizada: [false],
+      observaciones: ['']
+    });
+    this.sesionModalOpen.set(true);
+  }
+
+  abrirEditarSesion(t: TratamientoConSesiones, s: SesionTratamiento) {
+    this.tratamientoDeSesionId.set(t.id || null);
+    this.editandoSesionId.set(s.id || null);
+    const f = new Date(s.fecha);
+    const fechaSolo = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`;
+    const hora = `${String(f.getHours()).padStart(2, '0')}:${String(f.getMinutes()).padStart(2, '0')}`;
+    this.sesionForm = this.fb.group({
+      fecha: [fechaSolo, Validators.required],
+      hora: [hora, Validators.required],
+      lugar: [s.lugar || ''],
+      costo: [s.costo ?? null],
+      realizada: [s.realizada ?? false],
+      observaciones: [s.observaciones || '']
+    });
+    this.sesionModalOpen.set(true);
+  }
+
+  async guardarSesion() {
+    const tratId = this.tratamientoDeSesionId();
+    if (this.sesionForm.invalid || !this.mascota()?.id || !tratId || !this.auth.currentUser) {
+      this.sesionForm?.markAllAsTouched();
+      return this.showToast('Revisa los campos de la sesión.');
+    }
+
+    const petId = this.mascota()!.id;
+    const { fecha, hora, lugar, costo, realizada, observaciones } = this.sesionForm.value;
+    const payload: SesionTratamiento = {
+      fecha: this.combineFechaHora(fecha, hora),
+      lugar: lugar || undefined,
+      costo: costo != null && costo !== '' ? Number(costo) : undefined,
+      realizada: !!realizada,
+      observaciones,
+      creadoPor: this.auth.currentUser.uid
+    };
+
+    try {
+      const editId = this.editandoSesionId();
+      let sesionId: string;
+      if (editId) {
+        await this.fs.updateSesionTratamiento(petId, tratId, editId, payload);
+        sesionId = editId;
+        this.showToast('Sesión actualizada.');
+      } else {
+        const ref = await this.fs.addSesionTratamiento(petId, tratId, payload);
+        sesionId = ref.id;
+        this.showToast('Sesión agendada.');
+      }
+      if (!this.soyVeterinario()) await this.programarRecordatorioSesion(sesionId, payload);
+      this.sesionModalOpen.set(false);
+    } catch (e) {
+      console.error(e);
+      this.showToast('No se pudo guardar la sesión.');
+    }
+  }
+
+  /** Recordatorio 1h antes de la sesión, mismo criterio que las citas. */
+  private async programarRecordatorioSesion(sesionId: string, s: SesionTratamiento): Promise<void> {
+    const numId = this.notificationService.hashIdToNumber(`sesion-${sesionId}`);
+    await this.notificationService.cancel(numId);
+    if (s.realizada) return;
+
+    const tienePermiso = await this.notificationService.hasPermission()
+      || await this.notificationService.requestPermission();
+    if (!tienePermiso) return;
+
+    const recordatorio = new Date(new Date(s.fecha).getTime() - 60 * 60 * 1000);
+    await this.notificationService.schedule({
+      id: numId,
+      title: 'Sesión de tratamiento',
+      body: `${this.mascota()?.nombre || 'Tu mascota'} tiene una sesión en 1 hora${s.lugar ? ' en ' + s.lugar : ''}.`,
+      at: recordatorio
+    });
+  }
+
+  async borrarSesion(t: TratamientoConSesiones, s: SesionTratamiento) {
+    if (!this.mascota()?.id || !t.id || !s.id) return;
+    try {
+      await this.fs.deleteSesionTratamiento(this.mascota()!.id, t.id, s.id);
+      await this.notificationService.cancel(this.notificationService.hashIdToNumber(`sesion-${s.id}`));
+      this.showToast('Sesión eliminada.');
+    } catch (e) {
+      console.error(e);
+      this.showToast('No se pudo eliminar la sesión.');
+    }
+  }
+
   /** Texto legible de la pauta de dosificación para el listado. */
   resumenTramos(m: Medicamento): string {
     if (!m.tramos?.length) {
@@ -1182,73 +1326,5 @@ async onUploadResultado(ev: Event, e: Examen) {
 
 
 
-
-  //Prueba para producción
-  // 🔹 Derivados con memoización
-  private monthBounds = (iso: string) => {
-    const d = new Date(iso);
-    const start = new Date(d.getFullYear(), d.getMonth(), 1);
-    const end = new Date(d.getFullYear(), d.getMonth() + 1, 1); // exclusivo
-    return { start, end };
-  };
-
-  // Día seleccionado (derivado del signal ya existente)
-  private _citasDelDia = computed<Cita[]>(() => {
-    const sel = this.fechaSeleccionada();
-    if (!sel) return [];
-    const selDate = new Date(sel);
-    return this.citas()
-      .filter(c => {
-        const d = new Date(c.fechaInicio);
-        return d.getFullYear() === selDate.getFullYear()
-          && d.getMonth() === selDate.getMonth()
-          && d.getDate() === selDate.getDate();
-      })
-      .sort((a,b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
-  });
-
-  // Mes seleccionado
-  private _citasDelMes = computed<Cita[]>(() => {
-    const { start, end } = this.monthBounds(this.mesSeleccionado());
-    const s = start.getTime();
-    const e = end.getTime();
-    // ⚠️ no mutar: usa spread antes de sort
-    return [...this.citas()
-      .filter(c => {
-        const t = new Date(c.fechaInicio).getTime();
-        return t >= s && t < e;
-      })].sort((a,b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
-  });
-
-  // Clave de día local segura (sin zonas)
-  private dayKey(d: Date): string {
-    const y = d.getFullYear();
-    const m = (d.getMonth() + 1).toString().padStart(2,'0');
-    const dd = d.getDate().toString().padStart(2,'0');
-    return `${y}-${m}-${dd}`;
-  }
-
-  // Agrupado por día (memoizado)
-  private _citasMesAgrupadas = computed<{ diaKey: string; items: Cita[] }[]>(() => {
-    const map = new Map<string, Cita[]>();
-    for (const c of this._citasDelMes()) {
-      const d = new Date(c.fechaInicio);
-      const key = this.dayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(c);
-    }
-    return Array.from(map.entries())
-      .sort((a,b)=> a[0] < b[0] ? -1 : 1)
-      .map(([diaKey, items]) => ({ diaKey, items }));
-  });
-
-  // 🔹 Getters “fachada” para NO tocar el HTML
-  get citasDelDia(): Cita[] { return this._citasDelDia(); }
-  get citasDelMes(): Cita[] { return this._citasDelMes(); }
-  get citasMesAgrupadas(): { diaKey: string; items: Cita[] }[] { return this._citasMesAgrupadas(); }
-
-  // 🔹 trackBy para listas
-  trackByDia = (_: number, g: { diaKey: string }) => g.diaKey;
-  trackByCita = (_: number, c: Cita) => c.id ?? c.fechaInicio; // fallback
 
 }

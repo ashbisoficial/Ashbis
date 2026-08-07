@@ -1,0 +1,87 @@
+<div class="calendario-wrap">
+
+  <div *ngIf="loading()" class="ion-text-center ion-padding">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ng-container *ngIf="!loading()">
+
+    <!-- Navegación de mes -->
+    <div class="mes-nav">
+      <ion-button fill="clear" (click)="mesAnterior()" aria-label="Mes anterior">
+        <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+
+      <div class="mes-nav-centro">
+        <strong class="mes-titulo">{{ tituloMes() }}</strong>
+        <ion-button fill="clear" size="small" (click)="irAHoy()">
+          <ion-icon name="today-outline" slot="start"></ion-icon>
+          Hoy
+        </ion-button>
+      </div>
+
+      <ion-button fill="clear" (click)="mesSiguiente()" aria-label="Mes siguiente">
+        <ion-icon name="chevron-forward-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </div>
+
+    <!-- Encabezado de días de la semana -->
+    <div class="dias-semana">
+      <span *ngFor="let d of diasSemana">{{ d }}</span>
+    </div>
+
+    <!-- Grilla del mes -->
+    <div class="grilla-mes">
+      <button
+        type="button"
+        *ngFor="let c of celdas()"
+        class="celda-dia"
+        [class.fuera-de-mes]="!c.enMesActual"
+        [class.es-hoy]="c.esHoy"
+        [class.seleccionado]="c.diaKey === diaSeleccionado()"
+        (click)="seleccionarDia(c)">
+        <span class="numero-dia">{{ c.fecha.getDate() }}</span>
+        <span class="puntos-evento" *ngIf="c.eventos.length">
+          <span
+            class="punto"
+            *ngFor="let tipo of tiposDelDia(c)"
+            [ngClass]="'punto-' + colorTipo(tipo)"
+            [attr.aria-label]="etiquetaTipo(tipo)">
+          </span>
+        </span>
+      </button>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="leyenda">
+      <span class="leyenda-item" *ngFor="let l of leyenda">
+        <span class="punto" [ngClass]="'punto-' + l.color"></span>
+        {{ l.etiqueta }}
+      </span>
+    </div>
+
+    <!-- Agenda del día seleccionado -->
+    <div class="agenda-dia" *ngIf="diaSeleccionado()">
+      <h4 class="agenda-titulo">{{ fechaSeleccionadaLegible() }}</h4>
+
+      <ng-container *ngIf="eventosDelDiaSeleccionado().length; else sinEventosDia">
+        <div class="evento-item" *ngFor="let ev of eventosDelDiaSeleccionado()" [ngClass]="'borde-' + colorTipo(ev.tipo)">
+          <div class="evento-info">
+            <span class="evento-badge-tipo" [style.color]="'var(--ion-color-' + colorTipo(ev.tipo) + ')'">{{ etiquetaTipo(ev.tipo) }}</span>
+            <p class="evento-titulo">{{ ev.titulo }}</p>
+            <p class="evento-detalle" *ngIf="ev.lugar">{{ ev.lugar }}</p>
+            <p class="evento-detalle" *ngIf="ev.fecha.getHours() || ev.fecha.getMinutes()">
+              {{ ev.fecha | date:'HH:mm' }}
+            </p>
+          </div>
+          <ion-badge [color]="colorEstado(ev.estado)">{{ etiquetaEstado(ev.estado) }}</ion-badge>
+        </div>
+      </ng-container>
+
+      <ng-template #sinEventosDia>
+        <p class="sin-eventos">No hay nada agendado este día.</p>
+      </ng-template>
+    </div>
+
+  </ng-container>
+</div>

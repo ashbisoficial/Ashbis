@@ -1,0 +1,185 @@
+.calendario-wrap {
+  padding: 4px 4px 12px;
+}
+
+.mes-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.mes-nav-centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.mes-titulo {
+  text-transform: capitalize;
+  font-size: 15px;
+}
+
+.dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  margin-bottom: 4px;
+}
+
+.grilla-mes {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.celda-dia {
+  appearance: none;
+  border: 1px solid transparent;
+  background: var(--ashbis-surface, #202020);
+  border-radius: 10px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px;
+  color: var(--ion-text-color);
+  font-family: inherit;
+  cursor: pointer;
+
+  &.fuera-de-mes {
+    opacity: .35;
+  }
+
+  &.es-hoy .numero-dia {
+    color: var(--ashbis-red, #8b0808);
+    font-weight: 800;
+  }
+
+  &.seleccionado {
+    border-color: var(--ashbis-red, #8b0808);
+    background: var(--ashbis-surface-2, #2a2a2a);
+  }
+}
+
+.numero-dia {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.puntos-evento {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.punto-primary   { background: var(--ion-color-primary, #3880ff); }
+.punto-secondary { background: var(--ion-color-secondary, #3dc2ff); }
+.punto-tertiary  { background: var(--ion-color-tertiary, #5260ff); }
+.punto-success   { background: var(--ion-color-success, #2dd36f); }
+.punto-warning   { background: var(--ion-color-warning, #ffc409); }
+.punto-danger    { background: var(--ion-color-danger, #8b0808); }
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 2px 4px;
+  font-size: 11px;
+  color: var(--ion-color-medium);
+
+  .leyenda-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.agenda-dia {
+  margin-top: 14px;
+  border-top: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .06));
+  padding-top: 10px;
+}
+
+.agenda-titulo {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.evento-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--ashbis-surface, #202020);
+  border-left: 3px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+
+  &.borde-primary   { border-left-color: var(--ion-color-primary, #3880ff); }
+  &.borde-secondary { border-left-color: var(--ion-color-secondary, #3dc2ff); }
+  &.borde-tertiary  { border-left-color: var(--ion-color-tertiary, #5260ff); }
+  &.borde-success   { border-left-color: var(--ion-color-success, #2dd36f); }
+  &.borde-warning   { border-left-color: var(--ion-color-warning, #ffc409); }
+  &.borde-danger    { border-left-color: var(--ion-color-danger, #8b0808); }
+}
+
+.evento-info {
+  min-width: 0;
+}
+
+.evento-badge-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--ion-color-medium);
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+.evento-titulo {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.evento-detalle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.sin-eventos {
+  color: var(--ion-color-medium);
+  font-size: 13px;
+  margin: 0;
+}

@@ -75,6 +75,24 @@ export type Medicamento = {
   creadoPor: string;
 };
 
+export type Tratamiento = {
+  id?: string;
+  tipo: string;
+  lugarHabitual?: string;
+  notas?: string;
+  creadoPor: string;
+};
+
+export type SesionTratamiento = {
+  id?: string;
+  fecha: string;
+  lugar?: string;
+  costo?: number;
+  realizada?: boolean;
+  observaciones?: string;
+  creadoPor: string;
+};
+
 export type VeterinariaFavorita = {
   id?: string;
   placeId: string;
@@ -440,6 +458,76 @@ export class FirestoreService {
 
   async deleteMedicamento(petId: string, medId: string): Promise<void> {
     await deleteDoc(doc(this.firestore, `mascotas/${petId}/medicamentos/${medId}`));
+  }
+
+  // ── Tratamientos (quimioterapia, radioterapia, kinesiología, etc.) ──────────────
+
+  getTratamientosByMascota(petId: string): Observable<Tratamiento[]> {
+    const r = collection(this.firestore, `mascotas/${petId}/tratamientos`);
+    const q = query(r, orderBy('tipo', 'asc'));
+    return collectionData(q, { idField: 'id' }) as Observable<Tratamiento[]>;
+  }
+
+  async addTratamiento(petId: string, data: Tratamiento): Promise<any> {
+    const clean = this.security.sanitizeFirestoreObject(data as any);
+    return addDoc(collection(this.firestore, `mascotas/${petId}/tratamientos`), clean);
+  }
+
+  async updateTratamiento(petId: string, tratId: string, data: Partial<Tratamiento>): Promise<void> {
+    const clean = this.security.sanitizeFirestoreObject(data as any);
+    await updateDoc(doc(this.firestore, `mascotas/${petId}/tratamientos/${tratId}`), clean);
+  }
+
+  /** Borra el tratamiento y todas sus sesiones — Firestore no borra
+   *  subcolecciones en cascada solo. */
+  async deleteTratamiento(petId: string, tratId: string): Promise<void> {
+    const sesionesSnap = await getDocs(
+      collection(this.firestore, `mascotas/${petId}/tratamientos/${tratId}/sesiones`)
+    );
+    const batch = writeBatch(this.firestore);
+    sesionesSnap.forEach(d => batch.delete(d.ref));
+    batch.delete(doc(this.firestore, `mascotas/${petId}/tratamientos/${tratId}`));
+    await batch.commit();
+  }
+
+  getSesionesTratamiento(petId: string, tratId: string): Observable<SesionTratamiento[]> {
+    const r = collection(this.firestore, `mascotas/${petId}/tratamientos/${tratId}/sesiones`);
+    const q = query(r, orderBy('fecha', 'asc'));
+    return collectionData(q, { idField: 'id' }) as Observable<SesionTratamiento[]>;
+  }
+
+  async addSesionTratamiento(petId: string, tratId: string, data: SesionTratamiento): Promise<any> {
+    const clean = this.security.sanitizeFirestoreObject(data as any);
+    return addDoc(collection(this.firestore, `mascotas/${petId}/tratamientos/${tratId}/sesiones`), clean);
+  }
+
+  async updateSesionTratamiento(
+    petId: string, tratId: string, sesionId: string, data: Partial<SesionTratamiento>
+  ): Promise<void> {
+    const clean = this.security.sanitizeFirestoreObject(data as any);
+    await updateDoc(doc(this.firestore, `mascotas/${petId}/tratamientos/${tratId}/sesiones/${sesionId}`), clean);
+  }
+
+  async deleteSesionTratamiento(petId: string, tratId: string, sesionId: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, `mascotas/${petId}/tratamientos/${tratId}/sesiones/${sesionId}`));
+  }
+
+  /** Cada tratamiento con sus sesiones ya cargadas — para listarlos juntos
+   *  en la UI y para armar el calendario, sin que cada consumidor tenga que
+   *  volver a hacer el join subcolección-dentro-de-subcolección. */
+  getTratamientosConSesiones(petId: string): Observable<(Tratamiento & { sesiones: SesionTratamiento[] })[]> {
+    return this.getTratamientosByMascota(petId).pipe(
+      switchMap(tratamientos => {
+        if (!tratamientos.length) return of([]);
+        return combineLatest(
+          tratamientos.map(t =>
+            this.getSesionesTratamiento(petId, t.id!).pipe(
+              map(sesiones => ({ ...t, sesiones }))
+            )
+          )
+        );
+      })
+    );
   }
 
   // ── Documentos PDF ────────────────────────────────────────────────────────────

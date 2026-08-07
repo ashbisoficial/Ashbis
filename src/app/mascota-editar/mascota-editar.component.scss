@@ -99,6 +99,18 @@
   border-bottom: 1px solid var(--ashbis-surface-border, rgba(255, 255, 255, .08));
 }
 
+/* Sesión de un tratamiento, anidada visualmente bajo su tarjeta */
+.sesion-item {
+  --padding-start: 32px;
+  --background: var(--ashbis-surface-alt, rgba(255, 255, 255, .03));
+
+  h4 {
+    margin: 0 0 2px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
 .tramo-titulo {
   display: flex;
   align-items: center;
