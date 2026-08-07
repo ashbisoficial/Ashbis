@@ -62,9 +62,9 @@
               <span class="accion-icono accion-icono-danger"><ion-icon name="qr-code-outline"></ion-icon></span>
               <span class="accion-txt">QR</span>
             </button>
+            <input #qrInput type="file" accept="image/*" capture="environment" hidden
+              (change)="onQrFileSelected($event)" />
             <ng-container *ngIf="puedeTransferir()">
-              <input #qrInput type="file" accept="image/*" capture="environment" hidden
-                (change)="onQrFileSelected($event)" />
               <button class="accion-item" type="button" [disabled]="escaneandoQr" (click)="darEnAdopcion()">
                 <span class="accion-icono"><ion-icon name="paw-outline"></ion-icon></span>
                 <span class="accion-txt">Adopción</span>
@@ -74,6 +74,11 @@
                 <span class="accion-txt">Hogar temp.</span>
               </button>
             </ng-container>
+            <button *ngIf="puedeGestionarCoDuenos()" class="accion-item" type="button"
+              [disabled]="escaneandoQr" (click)="agregarCoDueno()">
+              <span class="accion-icono"><ion-icon name="people-outline"></ion-icon></span>
+              <span class="accion-txt">Co-dueño</span>
+            </button>
             <button *ngIf="puedePublicarAdopcion()" class="accion-item" type="button"
               [disabled]="publicandoAdopcion" (click)="publicarEnAdopcion()">
               <span class="accion-icono"><ion-icon name="megaphone-outline"></ion-icon></span>

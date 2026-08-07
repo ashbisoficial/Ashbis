@@ -289,14 +289,19 @@ export namespace Models {
 
     /**
      * Subcolección mascotas/{id}/colaboradores: acceso compartido al perfil
-     * de una mascota puntual sin cambiar de dueño (hogar temporal). Se crea
-     * al aceptar una Transferencia de tipo 'hogar_temporal'.
+     * de una mascota puntual. Se crea al aceptar una Transferencia.
+     * - 'hogar_temporal': NO cambia de dueño, acceso limitado (ver
+     *   firestore.rules) — máximo uno activo a la vez.
+     * - 'co_dueno': mismos permisos que el dueño real sobre esta mascota
+     *   (editar datos base, historial, etc.) sin ser efectivamente el
+     *   uidUsuario — hasta 2 a la vez, para que hasta 3 cuentas (dueño +
+     *   2 co-dueños) compartan una misma mascota (ej. una familia).
      */
     export interface ColaboradorMascota {
       uid: string;
       nombre: string;
       email: string;
-      tipo: 'hogar_temporal';
+      tipo: 'hogar_temporal' | 'co_dueno';
       agregadoEn?: any;
       /**
        * Id y nombre de la mascota duplicados dentro del propio documento
@@ -410,8 +415,14 @@ export namespace Models {
      * se agrega a quien acepta como colaborador en
      * mascotas/{id}/colaboradores/{uid}, y el refugio sigue siendo el dueño
      * legal. Pensado para hogares temporales o foster.
+     * 'co_dueno': acceso compartido con los MISMOS permisos que el dueño
+     * (ej. hermanos/familia que se turnan para llevar a la mascota al
+     * veterinario) — hasta 2 co-dueños por mascota, además del dueño
+     * original. A diferencia de 'adopcion'/'hogar_temporal', esta la puede
+     * iniciar tanto el dueño como cualquier co-dueño ya aceptado (ver
+     * firestore.rules), no solo el dueño/equipo del refugio.
      */
-    export type TipoTransferencia = 'adopcion' | 'hogar_temporal';
+    export type TipoTransferencia = 'adopcion' | 'hogar_temporal' | 'co_dueno';
 
     /**
      * Solicitud de cambio de dueño o de acceso compartido de una mascota,

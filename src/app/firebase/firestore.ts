@@ -243,9 +243,27 @@ export class FirestoreService {
    */
   async hayHogarTemporalActivo(petId: string): Promise<boolean> {
     const snap = await getDocs(
-      query(collection(this.firestore, `mascotas/${petId}/colaboradores`), limit(1))
+      query(
+        collection(this.firestore, `mascotas/${petId}/colaboradores`),
+        where('tipo', '==', 'hogar_temporal'),
+        limit(1)
+      )
     );
     return !snap.empty;
+  }
+
+  /** Cuántos co-dueños tiene ya esta mascota (máximo 2, además del dueño
+   *  real) — se usa para avisar antes de mandar una nueva invitación,
+   *  aunque el chequeo real que no se puede saltear vive en la Cloud
+   *  Function aceptarTransferencia (esto es solo feedback temprano en la UI). */
+  async contarCoDuenos(petId: string): Promise<number> {
+    const snap = await getDocs(
+      query(
+        collection(this.firestore, `mascotas/${petId}/colaboradores`),
+        where('tipo', '==', 'co_dueno')
+      )
+    );
+    return snap.size;
   }
 
   /** Quién tiene hogar temporal activo de esta mascota ahora mismo (para

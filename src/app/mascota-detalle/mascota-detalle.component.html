@@ -51,6 +51,29 @@
       </ion-card-content>
     </ion-card>
 
+    <!-- Co-dueños: mismos permisos que el dueño real. Visible para
+         cualquiera con acceso a la mascota; cualquier co-dueño (no solo el
+         dueño original) puede quitar a otro. -->
+    <ion-card class="tarjeta-hogar-temporal" *ngIf="colaboradoresCoDuenos.length">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="people-outline"></ion-icon>
+          Co-dueños
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" *ngFor="let colab of colaboradoresCoDuenos">
+          <ion-label class="ion-text-wrap">
+            <h2>{{ colab.nombre }}</h2>
+            <p>{{ colab.email }}</p>
+          </ion-label>
+          <ion-button *ngIf="puedoGestionarCoDuenos" slot="end" fill="clear" color="danger" (click)="quitarCoDueno(colab)">
+            <ion-icon name="person-remove-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
     <ion-segment [value]="segmentoActual" (ionChange)="segmentoCambiado($event)" scrollable="true">
 
       <ion-segment-button value="veterinarias" layout="icon-top" *ngIf="!soyVeterinario">

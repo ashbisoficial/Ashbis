@@ -12,7 +12,8 @@ import { Subject, takeUntil } from 'rxjs';
 import { addIcons } from 'ionicons';
 import {
   alertCircleOutline, checkmarkCircleOutline, keyOutline, chevronForwardOutline,
-  createOutline, timeOutline, qrCodeOutline, pawOutline, homeOutline, megaphoneOutline
+  createOutline, timeOutline, qrCodeOutline, pawOutline, homeOutline, megaphoneOutline,
+  peopleOutline
 } from 'ionicons/icons';
 import { FirestoreService, Mascota } from '../firebase/firestore';
 import { VeterinariaFavorita } from 'src/app/firebase/firestore';
@@ -68,16 +69,24 @@ export class MascotaPerfilComponent implements OnDestroy {
   // ── Escanear QR de cuenta (evita tipear el email a mano) ─────────────────
   @ViewChild('qrInput') private qrInputRef?: ElementRef<HTMLInputElement>;
   escaneandoQr = false;
-  private tipoEscaneoPendiente: 'adopcion' | 'hogar_temporal' | null = null;
+  private tipoEscaneoPendiente: 'adopcion' | 'hogar_temporal' | 'co_dueno' | null = null;
 
   private miUid: string | null = null;
   private misRefugios: string[] = [];
   private miRolEsRefugio = false;
 
+  /** true si soy dueño/a directo O ya soy co-dueño/a de esta mascota — a
+   *  diferencia de puedeTransferir (dar en adopción/hogar temporal), esto
+   *  NO requiere rol 'refugio': cualquier cuenta común puede compartir su
+   *  mascota con hasta 2 co-dueños más. */
+  puedeGestionarCoDuenos = signal(false);
+  private soyCoDuenoActual = false;
+
   constructor() {
     addIcons({
       alertCircleOutline, checkmarkCircleOutline, keyOutline, chevronForwardOutline,
-      createOutline, timeOutline, qrCodeOutline, pawOutline, homeOutline, megaphoneOutline
+      createOutline, timeOutline, qrCodeOutline, pawOutline, homeOutline, megaphoneOutline,
+      peopleOutline
     });
 
     // 1) intenta tomar desde router state (rápido)
@@ -95,6 +104,13 @@ export class MascotaPerfilComponent implements OnDestroy {
       .subscribe((doc) => {
         if (doc) this.mascota.set(doc);
         this.loading.set(false);
+        this.actualizarPuedeTransferir();
+      });
+
+    this.fs.getColaboradoresMascota(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(colabs => {
+        this.soyCoDuenoActual = !!this.miUid && colabs.some(c => c.uid === this.miUid && c.tipo === 'co_dueno');
         this.actualizarPuedeTransferir();
       });
 
@@ -124,12 +140,14 @@ export class MascotaPerfilComponent implements OnDestroy {
     if (!m || !this.miUid) {
       this.puedeTransferir.set(false);
       this.puedePublicarAdopcion.set(false);
+      this.puedeGestionarCoDuenos.set(false);
       return;
     }
     const esDuenoDirecto = m.uidUsuario === this.miUid;
     const esEquipoDelRefugioDueno = this.misRefugios.includes(m.uidUsuario);
     this.puedeTransferir.set((esDuenoDirecto && this.miRolEsRefugio) || esEquipoDelRefugioDueno);
     this.puedePublicarAdopcion.set(esDuenoDirecto);
+    this.puedeGestionarCoDuenos.set(esDuenoDirecto || this.soyCoDuenoActual);
   }
 
   ngOnDestroy(): void {
@@ -321,17 +339,63 @@ editarPerfil() {
     this.elegirMetodoTransferencia(m, 'hogar_temporal');
   }
 
-  /** Un solo botón por tipo de solicitud (adopción / hogar temporal): al
-   *  tocarlo se pregunta cómo identificar a la otra persona — tipeando su
-   *  email o escaneando su QR de cuenta. Ambos métodos hacen exactamente
-   *  lo mismo, solo cambia cómo se llega al email. */
+  /** Invitar a un co-dueño: hasta 2 además de mí (3 cuentas en total
+   *  compartiendo la mascota con los mismos permisos). Lo puede iniciar
+   *  el dueño real o cualquier co-dueño ya aceptado (ver puedeGestionarCoDuenos). */
+  async agregarCoDueno(): Promise<void> {
+    const m = this.mascota();
+    if (!m?.id) return;
+    const coDuenos = await this.fs.contarCoDuenos(m.id);
+    if (coDuenos >= 2) {
+      const alert = await this.alertCtrl.create({
+        header: 'Ya tiene el máximo de dueños',
+        message: `${m.nombre} ya tiene 3 dueños (vos y 2 más). Quita a alguien antes de invitar a otra persona.`,
+        buttons: ['Entendido'],
+      });
+      await alert.present();
+      return;
+    }
+    this.elegirMetodoTransferencia(m, 'co_dueno');
+  }
+
+  /** Título/mensajes por tipo de solicitud, para no repetir el mismo
+   *  ternario/switch en cada método de abajo. */
+  private copiaTransferencia(tipo: 'adopcion' | 'hogar_temporal' | 'co_dueno', nombre: string) {
+    switch (tipo) {
+      case 'adopcion':
+        return {
+          titulo: `Adopción de ${nombre}`,
+          mensajeInvitar: 'El nuevo dueño recibirá una solicitud en su perfil. La mascota (con todo su historial) solo pasa a su cuenta cuando la acepte.',
+          placeholderEmail: 'Email de quien la adopta',
+          mensajeExito: 'Solicitud de adopción enviada.',
+        };
+      case 'hogar_temporal':
+        return {
+          titulo: `Hogar temporal para ${nombre}`,
+          mensajeInvitar: 'La persona recibirá una solicitud en su perfil. Al aceptar, comparte acceso al perfil e historial de la mascota, pero tú sigues como dueño/a.',
+          placeholderEmail: 'Email de quien la va a cuidar',
+          mensajeExito: 'Solicitud de hogar temporal enviada.',
+        };
+      case 'co_dueno':
+        return {
+          titulo: `Agregar co-dueño de ${nombre}`,
+          mensajeInvitar: `La persona recibirá una solicitud en su perfil. Al aceptarla, va a tener los mismos permisos que vos sobre ${nombre}: puede editar su información, agregar vacunas/historial, e invitar a un tercer co-dueño (máximo 3 en total).`,
+          placeholderEmail: 'Email del otro dueño/a',
+          mensajeExito: 'Invitación de co-dueño enviada.',
+        };
+    }
+  }
+
+  /** Un solo botón por tipo de solicitud (adopción / hogar temporal /
+   *  co-dueño): al tocarlo se pregunta cómo identificar a la otra persona —
+   *  tipeando su email o escaneando su QR de cuenta. Ambos métodos hacen
+   *  exactamente lo mismo, solo cambia cómo se llega al email. */
   private async elegirMetodoTransferencia(
     m: Mascota,
-    tipo: 'adopcion' | 'hogar_temporal'
+    tipo: 'adopcion' | 'hogar_temporal' | 'co_dueno'
   ): Promise<void> {
-    const esAdopcion = tipo === 'adopcion';
     const alert = await this.alertCtrl.create({
-      header: esAdopcion ? `Adopción de ${m.nombre}` : `Hogar temporal para ${m.nombre}`,
+      header: this.copiaTransferencia(tipo, m.nombre).titulo,
       message: '¿Cómo quieres identificar a la persona? Las dos formas hacen lo mismo.',
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
@@ -344,16 +408,14 @@ editarPerfil() {
 
   private async pedirDatosTransferencia(
     m: Mascota,
-    tipo: 'adopcion' | 'hogar_temporal'
+    tipo: 'adopcion' | 'hogar_temporal' | 'co_dueno'
   ): Promise<void> {
-    const esAdopcion = tipo === 'adopcion';
+    const copia = this.copiaTransferencia(tipo, m.nombre);
     const alert = await this.alertCtrl.create({
-      header: esAdopcion ? `Adopción de ${m.nombre}` : `Hogar temporal para ${m.nombre}`,
-      message: esAdopcion
-        ? 'El nuevo dueño recibirá una solicitud en su perfil. La mascota (con todo su historial) solo pasa a su cuenta cuando la acepte.'
-        : 'La persona recibirá una solicitud en su perfil. Al aceptar, comparte acceso al perfil e historial de la mascota, pero tú sigues como dueño/a.',
+      header: copia.titulo,
+      message: copia.mensajeInvitar,
       inputs: [
-        { name: 'email', type: 'email', placeholder: `Email de ${esAdopcion ? 'quien la adopta' : 'quien la va a cuidar'}` },
+        { name: 'email', type: 'email', placeholder: copia.placeholderEmail },
         { name: 'mensaje', type: 'textarea', placeholder: 'Mensaje (opcional)' },
       ],
       buttons: [
@@ -380,11 +442,10 @@ editarPerfil() {
    *  otra persona. */
   private async enviarSolicitudTransferencia(
     m: Mascota,
-    tipo: 'adopcion' | 'hogar_temporal',
+    tipo: 'adopcion' | 'hogar_temporal' | 'co_dueno',
     email: string,
     mensaje?: string
   ): Promise<boolean> {
-    const esAdopcion = tipo === 'adopcion';
     try {
       const uid = this.auth.getCurrentUser()?.uid;
       const perfil = uid ? await this.fs.getDocument(`usuarios/${uid}`) : null;
@@ -392,10 +453,7 @@ editarPerfil() {
         || `${perfil?.nombre ?? ''} ${perfil?.apellido ?? ''}`.trim()
         || 'Un refugio';
       await this.fs.crearTransferencia(tipo, m.id!, m.nombre, m.uidUsuario, deNombre, email, mensaje);
-      await this.presentToast(
-        esAdopcion ? 'Solicitud de adopción enviada.' : 'Solicitud de hogar temporal enviada.',
-        'success'
-      );
+      await this.presentToast(this.copiaTransferencia(tipo, m.nombre).mensajeExito, 'success');
       return true;
     } catch (err: any) {
       await this.presentToast(err?.message || 'No se pudo enviar la solicitud. Intenta nuevamente.', 'danger');
@@ -403,11 +461,15 @@ editarPerfil() {
     }
   }
 
-  private async iniciarEscaneoQr(tipo: 'adopcion' | 'hogar_temporal'): Promise<void> {
+  private async iniciarEscaneoQr(tipo: 'adopcion' | 'hogar_temporal' | 'co_dueno'): Promise<void> {
     const m = this.mascota();
     if (!m?.id) return;
     if (tipo === 'hogar_temporal' && await this.fs.hayHogarTemporalActivo(m.id)) {
       await this.presentToast(`${m.nombre} ya está en un hogar temporal activo.`, 'danger');
+      return;
+    }
+    if (tipo === 'co_dueno' && (await this.fs.contarCoDuenos(m.id)) >= 2) {
+      await this.presentToast(`${m.nombre} ya tiene el máximo de 3 dueños.`, 'danger');
       return;
     }
     if (!this.preferencias.camaraHabilitada) {
@@ -452,12 +514,11 @@ editarPerfil() {
 
   private async confirmarEnvioPorQr(
     m: Mascota,
-    tipo: 'adopcion' | 'hogar_temporal',
+    tipo: 'adopcion' | 'hogar_temporal' | 'co_dueno',
     info: Models.Auth.QrCuentaInfo
   ): Promise<void> {
-    const esAdopcion = tipo === 'adopcion';
     const alert = await this.alertCtrl.create({
-      header: esAdopcion ? `Adopción de ${m.nombre}` : `Hogar temporal para ${m.nombre}`,
+      header: this.copiaTransferencia(tipo, m.nombre).titulo,
       message: `¿Enviarle la solicitud a ${info.nombre} (${info.email})?`,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },

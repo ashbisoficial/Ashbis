@@ -563,6 +563,27 @@ export const eliminarCuenta = onRequest(
       // 2. Eliminar subcolecciones y datos de cada mascota
       for (const mascotaDoc of mascotasSnap.docs) {
         const petId = mascotaDoc.id;
+
+        // Si esta mascota tiene co-dueños, no se borra: se transfiere a
+        // uno de ellos (el que la aceptó primero) en vez de destruirla
+        // para las otras cuentas que la siguen compartiendo por igual.
+        // Se ordena en código (no con orderBy) para no depender de un
+        // índice compuesto nuevo solo para este caso poco frecuente.
+        const coDuenosSnap = await db.collection(`mascotas/${petId}/colaboradores`)
+          .where('tipo', '==', 'co_dueno')
+          .get();
+        if (!coDuenosSnap.empty) {
+          const masAntiguo = coDuenosSnap.docs.reduce((a, b) =>
+            (a.get('agregadoEn')?.toMillis?.() ?? 0) <= (b.get('agregadoEn')?.toMillis?.() ?? 0) ? a : b
+          );
+          await mascotaDoc.ref.update({
+            uidUsuario: masAntiguo.id,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          await masAntiguo.ref.delete();
+          continue;
+        }
+
         const subcolecciones = ['vacunas', 'medicamentos', 'examenes', 'citas', 'documentos'];
 
         for (const sub of subcolecciones) {
@@ -589,6 +610,17 @@ export const eliminarCuenta = onRequest(
         }
 
         await mascotaDoc.ref.delete();
+      }
+
+      // 2.5 Quitar a esta cuenta de mascotas AJENAS donde figura como
+      // colaboradora (hogar temporal o co-dueña) — si no, quedaría un
+      // colaborador "fantasma" apuntando a un uid que ya no existe.
+      const colaboracionesSnap = await db.collectionGroup('colaboradores')
+        .where('uid', '==', uid).get();
+      if (colaboracionesSnap.docs.length > 0) {
+        const batch = db.batch();
+        colaboracionesSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
       }
 
       // 3. Eliminar datos del usuario
@@ -800,9 +832,11 @@ export const aceptarTransferencia = onRequest(
           // colaborador de esta mascota puntual. Una mascota solo puede
           // estar en UN hogar temporal a la vez — si alguien mandó varias
           // solicitudes en paralelo (a distintas personas), la primera que
-          // se acepte gana y las demás quedan sin efecto acá.
+          // se acepte gana y las demás quedan sin efecto acá. Filtrado por
+          // tipo: no bloquea si la mascota ya tiene co-dueños (son estados
+          // independientes).
           const colaboradoresExistentes = await tx.get(
-            mascotaRef.collection('colaboradores').limit(1)
+            mascotaRef.collection('colaboradores').where('tipo', '==', 'hogar_temporal').limit(1)
           );
           if (!colaboradoresExistentes.empty) {
             throw new HttpError(409, 'Esta mascota ya tiene un hogar temporal activo.');
@@ -818,6 +852,31 @@ export const aceptarTransferencia = onRequest(
             nombre,
             email: decoded.email || '',
             tipo: 'hogar_temporal',
+            agregadoEn: admin.firestore.FieldValue.serverTimestamp(),
+            mascotaId: t['mascotaId'],
+            mascotaNombre: t['mascotaNombre'] || '',
+          });
+        } else if (t['tipo'] === 'co_dueno') {
+          // Co-dueño: mismo nivel de acceso que el dueño real (ver
+          // firestore.rules), sin cambiar mascotas/{id}.uidUsuario. Hasta 2
+          // co-dueños por mascota (3 cuentas en total contando al dueño).
+          const coDuenosExistentes = await tx.get(
+            mascotaRef.collection('colaboradores').where('tipo', '==', 'co_dueno')
+          );
+          if (coDuenosExistentes.size >= 2) {
+            throw new HttpError(409, 'Esta mascota ya tiene el máximo de 3 dueños (el dueño y 2 co-dueños).');
+          }
+
+          const accepterSnap = await tx.get(db.doc(`usuarios/${decoded.uid}`));
+          const accepterData = accepterSnap.exists ? accepterSnap.data()! : {};
+          const nombre = `${accepterData['nombre'] ?? ''} ${accepterData['apellido'] ?? ''}`.trim()
+            || decoded.email || 'Co-dueño/a';
+
+          tx.set(mascotaRef.collection('colaboradores').doc(decoded.uid), {
+            uid: decoded.uid,
+            nombre,
+            email: decoded.email || '',
+            tipo: 'co_dueno',
             agregadoEn: admin.firestore.FieldValue.serverTimestamp(),
             mascotaId: t['mascotaId'],
             mascotaNombre: t['mascotaNombre'] || '',
@@ -1182,11 +1241,16 @@ export const onTransferenciaCreada = onDocumentCreated(
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
-    const esAdopcion = data['tipo'] === 'adopcion';
+    const copiaPorTipo: Record<string, { title: string; verbo: string }> = {
+      adopcion: { title: 'Solicitud de adopción', verbo: 'transferirte' },
+      co_dueno: { title: 'Invitación de co-dueño/a', verbo: 'que seas co-dueño/a de' },
+      hogar_temporal: { title: 'Solicitud de hogar temporal', verbo: 'compartirte el acceso a' },
+    };
+    const copia = copiaPorTipo[data['tipo']] || copiaPorTipo['hogar_temporal'];
     try {
       await enviarPushPorEmail(data['paraEmail'], {
-        title: esAdopcion ? 'Solicitud de adopción' : 'Solicitud de hogar temporal',
-        body: `${data['deNombre']} quiere ${esAdopcion ? 'transferirte' : 'compartirte el acceso a'} ${data['mascotaNombre']}.`,
+        title: copia.title,
+        body: `${data['deNombre']} quiere ${copia.verbo} ${data['mascotaNombre']}.`,
         ruta: '/tabs/notificaciones',
       });
     } catch (error) {
@@ -1703,20 +1767,30 @@ export const reenviarNotificacionTransferencia = onRequest(
         return;
       }
 
-      // Solo el dueño del refugio o alguien de su equipo puede reenviar.
+      // Solo el dueño del refugio, alguien de su equipo, o (si es una
+      // invitación de co-dueño) otro co-dueño ya aceptado, puede reenviar.
       const esDueno = decoded.uid === t['deUid'];
-      const esMiembro = esDueno ? true : (
+      let autorizado = esDueno || (
         await db.doc(`usuarios/${t['deUid']}/miembros/${decoded.uid}`).get()
       ).exists;
-      if (!esMiembro) {
+      if (!autorizado && t['tipo'] === 'co_dueno') {
+        const colabSnap = await db.doc(`mascotas/${t['mascotaId']}/colaboradores/${decoded.uid}`).get();
+        autorizado = colabSnap.exists && colabSnap.data()?.['tipo'] === 'co_dueno';
+      }
+      if (!autorizado) {
         res.status(403).json({ error: 'No podés reenviar esta solicitud.' });
         return;
       }
 
-      const esAdopcion = t['tipo'] === 'adopcion';
+      const copiaPorTipo: Record<string, { title: string; verbo: string }> = {
+        adopcion: { title: 'Solicitud de adopción', verbo: 'transferirte' },
+        co_dueno: { title: 'Invitación de co-dueño/a', verbo: 'que seas co-dueño/a de' },
+        hogar_temporal: { title: 'Solicitud de hogar temporal', verbo: 'compartirte el acceso a' },
+      };
+      const copia = copiaPorTipo[t['tipo']] || copiaPorTipo['hogar_temporal'];
       await enviarPushPorEmail(t['paraEmail'], {
-        title: esAdopcion ? 'Solicitud de adopción' : 'Solicitud de hogar temporal',
-        body: `${t['deNombre']} quiere ${esAdopcion ? 'transferirte' : 'compartirte el acceso a'} ${t['mascotaNombre']}.`,
+        title: copia.title,
+        body: `${t['deNombre']} quiere ${copia.verbo} ${t['mascotaNombre']}.`,
         ruta: '/tabs/notificaciones',
       });
 

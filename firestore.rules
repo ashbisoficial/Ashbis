@@ -48,11 +48,20 @@ service cloud.firestore {
       return isUser(refugioUid) || esMiembroDelRefugio(refugioUid);
     }
 
-    // Acceso compartido a UNA mascota puntual (hogar temporal), sin ser
-    // parte del equipo del refugio ni dueño.
+    // Acceso compartido a UNA mascota puntual (hogar temporal o co-dueño),
+    // sin ser parte del equipo del refugio ni el dueño real.
     function esColaboradorMascota(petId) {
       return isAuth() &&
         exists(/databases/$(database)/documents/mascotas/$(petId)/colaboradores/$(request.auth.uid));
+    }
+
+    // Co-dueño: mismo nivel de acceso que el dueño real (ver
+    // mascotas/{petId} allow update más abajo) — a diferencia de un
+    // colaborador de hogar temporal, que NO puede editar los datos base.
+    function esCoDuenoMascota(petId) {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/mascotas/$(petId)/colaboradores/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/mascotas/$(petId)/colaboradores/$(request.auth.uid)).data.tipo == 'co_dueno';
     }
 
     function puedeAccederMascota(petId) {
@@ -246,8 +255,11 @@ service cloud.firestore {
         tieneAccesoVeterinario(petId)
       );
       allow create: if ownsData() && noLongStrings(request.resource.data);
+      // Un co-dueño puede editar los datos base (mismo nivel que el dueño
+      // real) — a diferencia de un colaborador de hogar temporal, que NO
+      // puede tocar este documento, solo las subcolecciones de abajo.
       allow update: if isAuth()
-                    && puedeOperarComoRefugio(resource.data.uidUsuario)
+                    && (puedeOperarComoRefugio(resource.data.uidUsuario) || esCoDuenoMascota(petId))
                     && request.resource.data.get('uidUsuario', resource.data.uidUsuario)
                        == resource.data.uidUsuario
                     && noLongStrings(request.resource.data);
@@ -336,9 +348,11 @@ service cloud.firestore {
         allow read:   if puedeAccederMascota(petId);
         allow create: if false;
         allow update: if false;
-        // El refugio (dueño/equipo) puede terminar el hogar temporal, o el
-        // colaborador se puede ir solo.
+        // El refugio (dueño/equipo) puede terminar el hogar temporal o
+        // quitar un co-dueño, un co-dueño puede quitar a otro co-dueño (o
+        // al colaborador de hogar temporal), y cualquiera se puede ir solo.
         allow delete: if puedeOperarComoRefugio(get(/databases/$(database)/documents/mascotas/$(petId)).data.uidUsuario)
+                      || esCoDuenoMascota(petId)
                       || isUser(colabUid);
       }
     }
@@ -526,6 +540,7 @@ service cloud.firestore {
       // (ni rechazar) las transferencias dirigidas a ella.
       allow read: if isAuth() &&
         (puedeOperarComoRefugio(resource.data.deUid) ||
+         esCoDuenoMascota(resource.data.mascotaId) ||
          resource.data.paraEmail == request.auth.token.email.lower());
 
       // Nota: NO se exige esCuentaRefugio(deUid) acá — desde que cualquier
@@ -533,8 +548,18 @@ service cloud.firestore {
       // (#51), el dueño real puede ser una cuenta 'usuario' común. Lo que
       // de verdad autoriza la transferencia es que deUid sea el dueño
       // real de la mascota (el get() de abajo), no su rol autodeclarado.
-      allow create: if puedeOperarComoRefugio(request.resource.data.deUid)
-                    && request.resource.data.tipo in ['adopcion', 'hogar_temporal']
+      //
+      // tipo='co_dueno' además la puede iniciar cualquier co-dueño YA
+      // aceptado (no solo el dueño real) — mismo criterio de "permisos
+      // iguales al dueño" que el resto de esta mascota; 'adopcion' y
+      // 'hogar_temporal' siguen reservadas al dueño/equipo del refugio,
+      // para que un co-dueño no pueda regalar o dar en hogar temporal una
+      // mascota que comparte con otros sin que ellos lo inicien.
+      allow create: if (
+                      puedeOperarComoRefugio(request.resource.data.deUid) ||
+                      (request.resource.data.tipo == 'co_dueno' && esCoDuenoMascota(request.resource.data.mascotaId))
+                    )
+                    && request.resource.data.tipo in ['adopcion', 'hogar_temporal', 'co_dueno']
                     && request.resource.data.estado == 'pendiente'
                     && get(/databases/$(database)/documents/mascotas/$(request.resource.data.mascotaId)).data.uidUsuario
                        == request.resource.data.deUid
@@ -547,8 +572,12 @@ service cloud.firestore {
                     && request.resource.data.estado == 'rechazada'
                     && soloCambiaEstado();
 
-      // Cancelar: el refugio (dueño o equipo), mientras siga pendiente.
-      allow update: if puedeOperarComoRefugio(resource.data.deUid)
+      // Cancelar: el refugio (dueño o equipo), o cualquier co-dueño si es
+      // tipo='co_dueno', mientras siga pendiente.
+      allow update: if (
+                      puedeOperarComoRefugio(resource.data.deUid) ||
+                      (resource.data.tipo == 'co_dueno' && esCoDuenoMascota(resource.data.mascotaId))
+                    )
                     && resource.data.estado == 'pendiente'
                     && request.resource.data.estado == 'cancelada'
                     && soloCambiaEstado();

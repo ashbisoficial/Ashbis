@@ -32,15 +32,15 @@
             </ion-avatar>
             <div class="solicitud-info">
               <h2>{{ t.mascotaNombre }}</h2>
-              <span class="badge-tipo" [class.tipo-adopcion]="t.tipo === 'adopcion'" [class.tipo-hogar]="t.tipo !== 'adopcion'">
-                {{ t.tipo === 'adopcion' ? '🏡 Adopción' : '🕐 Hogar temporal' }}
+              <span class="badge-tipo" [ngClass]="copiaSolicitud(t).claseBadge">
+                {{ copiaSolicitud(t).badge }}
               </span>
             </div>
           </div>
 
           <p class="solicitud-texto">
             <strong>{{ t.deNombre }}</strong>
-            {{ t.tipo === 'adopcion' ? 'quiere transferirte a' : 'quiere compartirte el acceso a' }}
+            {{ copiaSolicitud(t).textoLista }}
             {{ t.mascotaNombre }}.
           </p>
           <p class="solicitud-mensaje" *ngIf="t.mensaje">"{{ t.mensaje }}"</p>

@@ -145,13 +145,47 @@ export class NotificacionesComponent implements OnDestroy {
     this.destroy$.complete();
   }
 
+  /** Texto por tipo de solicitud, para no repetir el mismo switch/ternario
+   *  en la plantilla y acá — ver también copiaTransferencia en
+   *  perfil-mascota.component.ts (mismo criterio, del lado de quien invita). */
+  copiaSolicitud(t: Models.Transferencias.Transferencia) {
+    switch (t.tipo) {
+      case 'adopcion':
+        return {
+          badge: '🏡 Adopción',
+          claseBadge: 'tipo-adopcion',
+          textoLista: 'quiere transferirte a',
+          headerAceptar: 'Aceptar mascota',
+          mensajeAceptar: `${t.deNombre} te está transfiriendo a ${t.mascotaNombre}. Al aceptar, la mascota (con todo su historial) pasa a tu cuenta.`,
+          toastExito: `¡${t.mascotaNombre} ahora es tuya! 🐾`,
+        };
+      case 'co_dueno':
+        return {
+          badge: '🤝 Co-dueño/a',
+          claseBadge: 'tipo-co-dueno',
+          textoLista: 'quiere que seas co-dueño/a de',
+          headerAceptar: 'Aceptar co-dueño/a',
+          mensajeAceptar: `${t.deNombre} te está invitando a ser co-dueño/a de ${t.mascotaNombre}. Al aceptar, vas a tener los mismos permisos que ${t.deNombre}: editar su información, historial médico, y agregar a un tercer co-dueño.`,
+          toastExito: `Ahora eres co-dueño/a de ${t.mascotaNombre}. 🐾`,
+        };
+      case 'hogar_temporal':
+      default:
+        return {
+          badge: '🕐 Hogar temporal',
+          claseBadge: 'tipo-hogar',
+          textoLista: 'quiere compartirte el acceso a',
+          headerAceptar: 'Aceptar hogar temporal',
+          mensajeAceptar: `${t.deNombre} te está compartiendo el acceso a ${t.mascotaNombre}. Al aceptar, vas a poder ver y actualizar su perfil e historial, pero ${t.deNombre} sigue como dueño/a.`,
+          toastExito: `Ya tienes acceso a ${t.mascotaNombre}. 🐾`,
+        };
+    }
+  }
+
   async aceptarSolicitud(t: Models.Transferencias.Transferencia): Promise<void> {
-    const esAdopcion = t.tipo === 'adopcion';
+    const copia = this.copiaSolicitud(t);
     const alert = await this.alertCtrl.create({
-      header: esAdopcion ? 'Aceptar mascota' : 'Aceptar hogar temporal',
-      message: esAdopcion
-        ? `${t.deNombre} te está transfiriendo a ${t.mascotaNombre}. Al aceptar, la mascota (con todo su historial) pasa a tu cuenta.`
-        : `${t.deNombre} te está compartiendo el acceso a ${t.mascotaNombre}. Al aceptar, vas a poder ver y actualizar su perfil e historial, pero ${t.deNombre} sigue como dueño/a.`,
+      header: copia.headerAceptar,
+      message: copia.mensajeAceptar,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {
@@ -161,10 +195,7 @@ export class NotificacionesComponent implements OnDestroy {
             try {
               await this.firestoreService.aceptarTransferencia(t.id);
               this.confetti.lanzar();
-              await this.showToast(
-                esAdopcion ? `¡${t.mascotaNombre} ahora es tuya! 🐾` : `Ya tienes acceso a ${t.mascotaNombre}. 🐾`,
-                'success'
-              );
+              await this.showToast(copia.toastExito, 'success');
             } catch (error: any) {
               await this.showToast(error?.message || 'No se pudo aceptar la solicitud.', 'danger');
             }

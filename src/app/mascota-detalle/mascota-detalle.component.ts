@@ -53,6 +53,7 @@ import {
   keyOutline,
   copyOutline,
   personRemoveOutline,
+  peopleOutline,
   sendOutline,
   timeOutline,
   alertCircleOutline,
@@ -193,6 +194,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
       keyOutline,
       copyOutline,
       personRemoveOutline,
+      peopleOutline,
       sendOutline,
       timeOutline,
       alertCircleOutline,
@@ -251,10 +253,20 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
    *  gestionar hogar temporal sigue el mismo criterio que editar la
    *  mascota, no el de veterinarias/publicaciones/equipo. */
   puedoGestionarHogarTemporal = false;
+  /** true si soy dueño/equipo O ya soy co-dueño/a de esta mascota — a
+   *  diferencia de puedoGestionarHogarTemporal, un co-dueño SÍ puede
+   *  gestionar (quitar) a otro co-dueño, con los mismos permisos. */
+  puedoGestionarCoDuenos = false;
 
   entradasHistorial: Models.HistorialMedico.Entrada[] = [];
   accesosVeterinario: Models.Mascotas.AccesoVeterinario[] = [];
-  colaboradoresHogarTemporal: Models.Mascotas.ColaboradorMascota[] = [];
+  private colaboradoresTodos: Models.Mascotas.ColaboradorMascota[] = [];
+  get colaboradoresHogarTemporal(): Models.Mascotas.ColaboradorMascota[] {
+    return this.colaboradoresTodos.filter(c => c.tipo === 'hogar_temporal');
+  }
+  get colaboradoresCoDuenos(): Models.Mascotas.ColaboradorMascota[] {
+    return this.colaboradoresTodos.filter(c => c.tipo === 'co_dueno');
+  }
   /** Antes era un único cuadro de texto libre; ahora captura una atención
    *  estructurada (motivo/diagnóstico/tratamiento) — "texto" queda para
    *  observaciones sueltas que no encajan en los otros 3 campos. Al menos
@@ -307,7 +319,7 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
   }
 
   private calcularPuedoGestionarHogarTemporal(mascota: Mascota | undefined) {
-    if (!mascota) { this.puedoGestionarHogarTemporal = false; return; }
+    if (!mascota) { this.puedoGestionarHogarTemporal = false; this.puedoGestionarCoDuenos = false; return; }
     this.refugioCtx.contexto$()
       .pipe(take(1), takeUntil(this.destroy$))
       .subscribe(ctx => {
@@ -315,6 +327,10 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
         // propio si la cuenta no es de rol 'refugio', pero cualquier cuenta
         // puede ser dueña directa de una mascota en hogar temporal.
         this.puedoGestionarHogarTemporal = mascota.uidUsuario === ctx.miUid || ctx.todos.includes(mascota.uidUsuario);
+        // Recalcula acá también (no solo cuando llegan los colaboradores):
+        // los dos streams son asíncronos y pueden resolver en cualquier orden.
+        this.puedoGestionarCoDuenos = this.puedoGestionarHogarTemporal
+          || this.colaboradoresTodos.some(c => c.uid === this.miUid && c.tipo === 'co_dueno');
       });
   }
 
@@ -339,7 +355,11 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
 
     this.firestoreService.getColaboradoresMascota(this.mascotaId)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(data => this.colaboradoresHogarTemporal = data);
+      .subscribe(data => {
+        this.colaboradoresTodos = data;
+        this.puedoGestionarCoDuenos = this.puedoGestionarHogarTemporal
+          || data.some(c => c.uid === this.miUid && c.tipo === 'co_dueno');
+      });
   }
 
   segmentoCambiado(evento: any) {
@@ -595,6 +615,32 @@ export class MascotaDetalleComponent implements OnInit, OnDestroy {
             try {
               await this.firestoreService.quitarColaboradorMascota(this.mascotaId, colab.uid);
               await this.mostrarToast('Se quitó el hogar temporal.', 'success');
+            } catch {
+              await this.mostrarToast('No se pudo quitar. Intenta nuevamente.', 'danger');
+            }
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  // ── Co-dueños ─────────────────────────────────────────────────────────────
+
+  async quitarCoDueno(colab: Models.Mascotas.ColaboradorMascota): Promise<void> {
+    if (!this.puedoGestionarCoDuenos) return;
+    const alert = await this.alertCtrl.create({
+      header: 'Quitar co-dueño/a',
+      message: `¿Quitarle a "${colab.nombre}" los permisos de co-dueño/a de ${this.mascota?.nombre ?? 'esta mascota'}?`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Quitar',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              await this.firestoreService.quitarColaboradorMascota(this.mascotaId, colab.uid);
+              await this.mostrarToast('Se quitó el acceso de co-dueño/a.', 'success');
             } catch {
               await this.mostrarToast('No se pudo quitar. Intenta nuevamente.', 'danger');
             }

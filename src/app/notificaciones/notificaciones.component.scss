@@ -77,6 +77,11 @@
     background: rgba(255, 213, 79, .15);
     color: #ffd54f;
   }
+
+  &.tipo-co-dueno {
+    background: rgba(139, 8, 8, .15);
+    color: var(--ashbis-red, #8b0808);
+  }
 }
 
 .solicitud-texto {
